@@ -1,0 +1,25 @@
+import Link from "next/link";
+
+type ViewMoreButtonProps = {
+  href?: string;
+  className?: string;
+  size?: "sm" | "md";
+};
+
+export function ViewMoreButton({
+  href = "#",
+  className = "",
+  size = "md",
+}: ViewMoreButtonProps) {
+  const sizeClasses =
+    size === "sm" ? "px-2 py-0.5 text-[10px]" : "px-3 py-1 text-xs";
+
+  return (
+    <Link
+      href={href}
+      className={`inline-block bg-hmc-red font-semibold uppercase tracking-wide text-white transition-colors hover:bg-hmc-red-hover ${sizeClasses} ${className}`}
+    >
+      View More
+    </Link>
+  );
+}

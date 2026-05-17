@@ -1,26 +1,45 @@
 @import "tailwindcss";
 
 :root {
+  --hmc-topbar: #3a3a3a;
+  --hmc-primary: #1a5a9e;
+  --hmc-primary-dark: #144a85;
+  --hmc-orange: #e8751a;
+  --hmc-red: #c41e24;
+  --hmc-red-hover: #a8181d;
+  --hmc-subnav: #e5e5e5;
+  --hmc-placeholder: #f2f2f2;
+  --hmc-placeholder-border: #d8d8d8;
+  --hmc-interaction-header: #c9a66b;
+  --hmc-footer: #ececec;
+  --hmc-text: #333333;
+  --hmc-text-muted: #666666;
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #333333;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-hmc-topbar: var(--hmc-topbar);
+  --color-hmc-primary: var(--hmc-primary);
+  --color-hmc-primary-dark: var(--hmc-primary-dark);
+  --color-hmc-orange: var(--hmc-orange);
+  --color-hmc-red: var(--hmc-red);
+  --color-hmc-red-hover: var(--hmc-red-hover);
+  --color-hmc-subnav: var(--hmc-subnav);
+  --color-hmc-placeholder: var(--hmc-placeholder);
+  --color-hmc-placeholder-border: var(--hmc-placeholder-border);
+  --color-hmc-interaction-header: var(--hmc-interaction-header);
+  --color-hmc-footer: var(--hmc-footer);
+  --color-hmc-text: var(--hmc-text);
+  --color-hmc-text-muted: var(--hmc-text-muted);
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    Arial, Helvetica, sans-serif;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
 }
