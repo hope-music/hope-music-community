@@ -2,8 +2,9 @@
 
 :root {
   --hmc-topbar: #3a3a3a;
-  --hmc-primary: #1a5a9e;
-  --hmc-primary-dark: #144a85;
+  --hmc-primary: #1b5bb8;
+  --hmc-primary-dark: #164a96;
+  --hmc-nav-accent: #5daae2;
   --hmc-orange: #e8751a;
   --hmc-red: #c41e24;
   --hmc-red-hover: #a8181d;
@@ -24,6 +25,7 @@
   --color-hmc-topbar: var(--hmc-topbar);
   --color-hmc-primary: var(--hmc-primary);
   --color-hmc-primary-dark: var(--hmc-primary-dark);
+  --color-hmc-nav-accent: var(--hmc-nav-accent);
   --color-hmc-orange: var(--hmc-orange);
   --color-hmc-red: var(--hmc-red);
   --color-hmc-red-hover: var(--hmc-red-hover);
@@ -36,6 +38,8 @@
   --color-hmc-text-muted: var(--hmc-text-muted);
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     Arial, Helvetica, sans-serif;
+  --font-hope-studio: "Brush Script MT", "Segoe Script", "Snell Roundhand",
+    "Palatino Linotype", Palatino, Georgia, serif;
 }
 
 body {

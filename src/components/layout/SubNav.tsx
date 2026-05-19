@@ -1,26 +1,20 @@
-import Link from "next/link";
-import { SUB_NAV_LINKS } from "@/lib/constants";
+import { HeaderContainer } from "@/components/layout/HeaderContainer";
+import { COMMUNITY_TICKER_MESSAGE } from "@/lib/constants";
 
 export function SubNav() {
   return (
     <nav
       className="border-b border-hmc-placeholder-border bg-white"
-      aria-label="Section navigation"
+      aria-label="Community announcements"
     >
-      <ul className="mx-auto flex max-w-6xl items-center gap-2 px-4 py-2 text-[10px] font-medium uppercase tracking-[0.12em] text-hmc-text-muted sm:px-6 lg:px-8">
-        {SUB_NAV_LINKS.map((link, index) => (
-          <li key={link.href} className="flex items-center gap-2">
-            {index > 0 && (
-              <span className="text-hmc-placeholder-border" aria-hidden>
-                |
-              </span>
-            )}
-            <Link href={link.href} className="transition-colors hover:text-hmc-primary">
-              {link.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
+      <HeaderContainer className="h-9 min-h-9 justify-between gap-4">
+        <span className="shrink-0 text-xs font-bold uppercase tracking-[0.1em] text-black">
+          Community
+        </span>
+        <p className="min-w-0 truncate text-[10px] font-medium text-hmc-text">
+          {COMMUNITY_TICKER_MESSAGE}
+        </p>
+      </HeaderContainer>
     </nav>
   );
 }

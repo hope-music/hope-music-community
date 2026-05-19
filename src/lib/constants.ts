@@ -2,19 +2,16 @@ export const SITE_NAME = "HOPE MUSIC COMMUNITY";
 export const SITE_TAGLINE = "BECAUSE YOU LOVE MUSIC";
 
 export const MAIN_NAV_LINKS = [
-  { label: "PERFORMANCE", href: "/performance" },
-  { label: "STAGE PRODUCTION", href: "/stage-production" },
-  { label: "HOPE STUDIO", href: "/hope-studio" },
-  { label: "INTERACTION", href: "/interaction" },
-  { label: "NEWS", href: "/news" },
-  { label: "COMMUNITY", href: "/community" },
-  { label: "SEARCH", href: "/search" },
+  { label: "PERFORMANCE", href: "/performance", variant: "default" as const },
+  { label: "STAGE PRODUCTION", href: "/stage-production", variant: "default" as const },
+  { label: "HOPE STUDIO", href: "/hope-studio", variant: "hope-studio" as const },
+  { label: "INTERACTION", href: "/interaction", variant: "default" as const },
+  { label: "NEWS", href: "/news", variant: "default" as const },
+  { label: "COMMUNITY", href: "/community", variant: "default" as const },
 ] as const;
 
-export const SUB_NAV_LINKS = [
-  { label: "INFORMATION", href: "/information" },
-  { label: "REGISTRATION", href: "/registration" },
-] as const;
+export const COMMUNITY_TICKER_MESSAGE =
+  "Welcome to our music community — discover performances, collaborations, and creative resources.";
 
 export const PERFORMANCE_CATEGORIES = [
   "Musical",
