@@ -3,9 +3,9 @@ import { SITE_NAME, SITE_TAGLINE } from "@/lib/constants";
 
 export function TopBar() {
   return (
-    <div className="bg-gradient-to-r from-[#111111] via-[#222222] to-[#111111] text-white">
-      <HeaderContainer className="h-[60px] min-h-[60px] justify-end">
-        <div className="flex flex-col items-end justify-center gap-1 text-right">
+    <div className="bg-gradient-to-r from-[rgb(20,20,20)] via-[rgb(38,38,38)] to-[rgb(20,20,20)] text-white">
+      <HeaderContainer className="justify-end pt-6 pb-2">
+        <div className="flex flex-col items-end gap-1 text-right">
           <p className="whitespace-nowrap text-[13px] font-semibold uppercase leading-tight tracking-[0.26em]">
             {SITE_NAME}
           </p>
