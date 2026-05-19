@@ -1,22 +1,19 @@
 export const SITE_NAME = "HOPE MUSIC COMMUNITY";
-export const SITE_TAGLINE = "CREATING THE BEST MUSIC";
+export const SITE_TAGLINE = "BECAUSE YOU LOVE MUSIC";
 
 export const MAIN_NAV_LINKS = [
-  { label: "HOME", href: "/" },
   { label: "PERFORMANCE", href: "/performance" },
+  { label: "STAGE PRODUCTION", href: "/stage-production" },
+  { label: "HOPE STUDIO", href: "/hope-studio" },
   { label: "INTERACTION", href: "/interaction" },
   { label: "NEWS", href: "/news" },
-  { label: "ABOUT US", href: "/about" },
+  { label: "COMMUNITY", href: "/community" },
+  { label: "SEARCH", href: "/search" },
 ] as const;
 
 export const SUB_NAV_LINKS = [
-  { label: "OVERVIEW", href: "/performance" },
-  { label: "MUSICALS", href: "/performance#musical" },
-  { label: "OPERA", href: "/performance#opera" },
-  { label: "CONCERT", href: "/performance#concert" },
-  { label: "BALLET", href: "/performance#ballet" },
-  { label: "EDM", href: "/performance#edm" },
-  { label: "FESTIVAL", href: "/performance#festival" },
+  { label: "INFORMATION", href: "/information" },
+  { label: "REGISTRATION", href: "/registration" },
 ] as const;
 
 export const PERFORMANCE_CATEGORIES = [

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: "%s | Hope Music Community",
   },
   description:
-    "Hope Music Community — creating the best music through performance, interaction, and news.",
+    "Hope Music Community — because you love music.",
 };
 
 export default function RootLayout({
