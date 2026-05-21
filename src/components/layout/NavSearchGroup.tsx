@@ -37,7 +37,7 @@ export function NavSearchGroup() {
       />
       <button
         type="submit"
-        className="h-8 bg-hmc-primary-dark px-3.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-white transition-colors hover:bg-[#123d75]"
+        className="inline-flex items-center whitespace-nowrap px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition-opacity hover:opacity-85 lg:px-4"
       >
         Search
       </button>

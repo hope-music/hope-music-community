@@ -9,9 +9,15 @@ export function HeroSection() {
           className="aspect-[21/7] w-full bg-gradient-to-br from-sky-200 via-emerald-100 to-slate-300"
           aria-label="Hero image placeholder"
         />
-        <p className="mt-2 text-center text-xs italic text-hmc-text-muted">
-          {HERO_CAPTION}
-        </p>
+        <div className="mt-2 flex flex-col items-center gap-2">
+          <a
+            href="/hope-studio"
+            className="cursor-pointer text-[12px] text-hmc-text-muted transition-colors hover:text-[#D96A32]"
+          >
+            <span className="italic">Shangri-La</span>, HopeStudio&apos;s unperformed immersive musical
+          </a>
+          <div className="w-full" style={{ borderBottom: "1px solid #D96A32" }} />
+        </div>
       </Container>
     </section>
   );

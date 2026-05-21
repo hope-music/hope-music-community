@@ -1,0 +1,280 @@
+import { ListingItem } from "@/components/category/CategoryListing";
+
+export const MOCK_PERFORMANCE_ITEMS: ListingItem[] = [
+  {
+    id: "1",
+    title: "Celebrate Teacher Appreciation Week by Announcing New Back to School Campaign",
+    date: "June 25, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=600",
+  },
+  {
+    id: "2",
+    title: "Global Musicals Gala 2026: A Night of Spectacular Performances",
+    date: "June 24, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=600",
+  },
+  {
+    id: "3",
+    title: "Behind the Scenes: How We Create Immersive Musical Theater Experiences",
+    date: "June 23, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=600",
+  },
+  {
+    id: "4",
+    title: "Young Talents Shine at the Annual Musical Competition",
+    date: "June 22, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1513883049090-d0b7439799bf?w=600",
+  },
+  {
+    id: "5",
+    title: "Shangri-La: HopeStudio's Most Anticipated Immersive Musical",
+    date: "June 21, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600",
+  },
+  {
+    id: "6",
+    title: "Community Theater Workshop: Building Bridges Through Music",
+    date: "June 20, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?w=600",
+  },
+  {
+    id: "7",
+    title: "Professional Vocal Training Techniques from Industry Experts",
+    date: "June 19, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600",
+  },
+  {
+    id: "8",
+    title: "The Evolution of Musical Theater: From Broadway to Digital Stages",
+    date: "June 18, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600",
+  },
+  {
+    id: "9",
+    title: "Collaborative Performance Project Unites Local Schools",
+    date: "June 17, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600",
+  },
+  {
+    id: "10",
+    title: "Hope Studio Opens New Rehearsal Space for Emerging Artists",
+    date: "June 16, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600",
+  },
+  {
+    id: "11",
+    title: "Award-Winning Composers Share Insights on Modern Musical Scores",
+    date: "June 15, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600",
+  },
+  {
+    id: "12",
+    title: "Summer Musical Intensive: Registration Now Open for 2026",
+    date: "June 14, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600",
+  },
+  {
+    id: "13",
+    title: "Historic Opera House Celebrates 100 Years of Musical Excellence",
+    date: "June 13, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=600",
+  },
+  {
+    id: "14",
+    title: "Adaptive Musical Theater: Making Arts Accessible for All",
+    date: "June 12, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600",
+  },
+  {
+    id: "15",
+    title: "Student Performance Showcase Highlights Creative Potential",
+    date: "June 11, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1501612780327-45045538702b?w=600",
+  },
+];
+
+export const MOCK_INTERACTION_ITEMS: ListingItem[] = [
+  {
+    id: "1",
+    title: "ISAT Interaction 2023 v1.0.4 Released",
+    date: "June 25, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600",
+  },
+  {
+    id: "2",
+    title: "How to optimize latent settings in DAW Soundworks",
+    date: "June 24, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600",
+  },
+  {
+    id: "3",
+    title: "MIDI controller mapping tutorial for live performance",
+    date: "June 23, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600",
+  },
+  {
+    id: "4",
+    title: "Best free VST plugins for orchestral composition",
+    date: "June 22, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600",
+  },
+  {
+    id: "5",
+    title: "Audio interface latency troubleshooting guide",
+    date: "June 21, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600",
+  },
+  {
+    id: "6",
+    title: "Setting up multi-monitor workspace for mixing",
+    date: "June 20, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600",
+  },
+  {
+    id: "7",
+    title: "Cloud collaboration tools for remote music production",
+    date: "June 19, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?w=600",
+  },
+  {
+    id: "8",
+    title: "Automating reverb sends with sidechain compression",
+    date: "June 18, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600",
+  },
+  {
+    id: "9",
+    title: "Exporting stems correctly for film scoring projects",
+    date: "June 17, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600",
+  },
+  {
+    id: "10",
+    title: "Building a custom macro pad for live DJ sets",
+    date: "June 16, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600",
+  },
+  {
+    id: "11",
+    title: "Analog vs Digital: Which mixing console is right for you?",
+    date: "June 15, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=600",
+  },
+  {
+    id: "12",
+    title: "Mastering EQ techniques for orchestral recordings",
+    date: "June 14, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1513883049090-d0b7439799bf?w=600",
+  },
+  {
+    id: "13",
+    title: "Budget home studio setup under $1000",
+    date: "June 13, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1501612780327-45045538702b?w=600",
+  },
+  {
+    id: "14",
+    title: "Sound design principles for immersive theater experiences",
+    date: "June 12, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=600",
+  },
+  {
+    id: "15",
+    title: "Wireless audio solutions for stage productions",
+    date: "June 11, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=600",
+  },
+];
+
+export const MOCK_NEWS_ITEMS: ListingItem[] = [
+  {
+    id: "1",
+    title: "Announcing the 2024 Global Musicals Gala line-up",
+    date: "June 25, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=600",
+  },
+  {
+    id: "2",
+    title: "Hope Studio partners with industry leader for pro-audio workshop series",
+    date: "June 25, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=600",
+  },
+  {
+    id: "3",
+    title: "Artist Community Spotlight: Rising stars share their journey with HOPE",
+    date: "June 25, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600",
+  },
+  {
+    id: "4",
+    title: "Hope Music Community Launches Summer Youth Initiative",
+    date: "June 24, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=600",
+  },
+  {
+    id: "5",
+    title: "Annual Fundraising Gala Exceeds Record Goals",
+    date: "June 23, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=600",
+  },
+  {
+    id: "6",
+    title: "New Collaboration Portal Opens for Independent Artists",
+    date: "June 22, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?w=600",
+  },
+  {
+    id: "7",
+    title: "Hope Studio Upgrades to State-of-the-Art Recording Equipment",
+    date: "June 21, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600",
+  },
+  {
+    id: "8",
+    title: "Community Members Share Their Musical Journey Stories",
+    date: "June 20, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1513883049090-d0b7439799bf?w=600",
+  },
+  {
+    id: "9",
+    title: "Digital Archive Project Preserves Musical Heritage",
+    date: "June 19, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=600",
+  },
+  {
+    id: "10",
+    title: "Mentorship Program Connects Veterans with Emerging Artists",
+    date: "June 18, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600",
+  },
+  {
+    id: "11",
+    title: "Open Mic Nights Return to Hope Studio This Summer",
+    date: "June 17, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=600",
+  },
+  {
+    id: "12",
+    title: "Annual Music Festival Announces Headlining Artists",
+    date: "June 16, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600",
+  },
+  {
+    id: "13",
+    title: "Educational Workshops Expand to Regional Communities",
+    date: "June 15, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600",
+  },
+  {
+    id: "14",
+    title: "Technology Grant Enables Free Access to Production Tools",
+    date: "June 14, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600",
+  },
+  {
+    id: "15",
+    title: "Global Network of Music Schools Joins HOPE Initiative",
+    date: "June 13, 2026",
+    imageUrl: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600",
+  },
+];
