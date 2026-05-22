@@ -10,6 +10,8 @@ export function HopeStudioNavLink({ href, className = "" }: HopeStudioNavLinkPro
   return (
     <Link
       href={href}
+      target="_blank"
+      rel="noopener noreferrer"
       className={`flex min-w-[3.25rem] flex-col items-center justify-center px-3 py-1.5 text-center text-white transition-opacity hover:opacity-85 ${className}`}
     >
       <span className="font-hope-studio text-[17px] font-semibold leading-[1.05] tracking-normal">

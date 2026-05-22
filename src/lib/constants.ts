@@ -6,8 +6,8 @@ export const MAIN_NAV_LINKS = [
   { label: "STAGE PRODUCTION", href: "/stage-production", variant: "default" as const },
   { label: "HOPE STUDIO", href: "/hope-studio", variant: "hope-studio" as const },
   { label: "INTERACTION", href: "/interaction", variant: "default" as const },
-  { label: "NEWS", href: "/news", variant: "default" as const },
-  { label: "COMMUNITY", href: "/community", variant: "default" as const },
+  { label: "NEWS", href: "/news", variant: "default" as const, external: true as const },
+  { label: "COMMUNITY", href: "/", variant: "default" as const },
 ] as const;
 
 export const COMMUNITY_TICKER_MESSAGE =

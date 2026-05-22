@@ -81,7 +81,7 @@ export function InteractionForumList({
           {/* New Topic Button */}
           <button
             type="button"
-            className="shrink-0 rounded-xl border border-[#C8102E] bg-white px-5 py-2 text-sm font-semibold text-[#C8102E] shadow-sm transition-all duration-150 hover:bg-[#C8102E] hover:text-white"
+            className="shrink-0 rounded-xl border border-[#C8102E] bg-white px-5 py-2 text-sm font-semibold text-[#C8102E] shadow-sm transition-all duration-200 hover:bg-[#C8102E] hover:text-white hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
           >
             + New Topic
           </button>
@@ -95,7 +95,7 @@ export function InteractionForumList({
               href={`/interaction/${categorySlug}/${post.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center justify-between rounded-xl border border-hmc-placeholder-border bg-white px-5 py-4 shadow-sm transition-all duration-200 hover:border-[#D96A32] hover:shadow-md"
+              className="group flex items-center justify-between rounded-xl border border-hmc-placeholder-border bg-white px-5 py-4 shadow-sm transition-all duration-200 hover:border-[#D96A32] hover:shadow-md hover:scale-[1.01] active:scale-[0.99]"
             >
               {/* Left: Pinned Tag + Title + Author */}
               <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -145,10 +145,10 @@ export function InteractionForumList({
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`min-w-[36px] rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 ${
+                  className={`min-w-[36px] rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 ${
                     currentPage === page
-                      ? "bg-[#C8102E] text-white"
-                      : "bg-white text-hmc-text hover:bg-gray-100"
+                      ? "bg-[#C8102E] text-white shadow-sm scale-105"
+                      : "bg-white text-hmc-text hover:bg-gray-100 hover:shadow-sm active:scale-95"
                   }`}
                 >
                   {page}
