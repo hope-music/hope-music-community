@@ -1,266 +1,145 @@
 "use client";
 
-import { use } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
-const VALID_CATEGORIES = [
-  "software",
-  "hardware",
-  "music",
-  "stage-production",
-  "artical",
-  "others",
-];
-
-const CATEGORY_DISPLAY: Record<string, string> = {
-  software: "Software",
-  hardware: "Hardware",
-  music: "Music",
-  "stage-production": "Stage Production",
-  artical: "Artical",
-  others: "Others",
-};
-
-const FALLBACK_AUTHORS: Record<string, string> = {
-  software: "HopeAdmin",
-  hardware: "GearReviewer",
-  music: "SongCraft_Maya",
-  "stage-production": "LiveSound_Tech",
-  artical: "TheaterHistorian_Mara",
-  others: "CommunityLead_Amara",
-};
-
-const AVATAR_URLS = [
-  "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop",
-  "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop",
-  "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=100&h=100&fit=crop",
-  "https://images.unsplash.com/photo-1599566150163-29194dcabd36?w=100&h=100&fit=crop",
-  "https://images.unsplash.com/photo-1580489944761-15a19d654956?w=100&h=100&fit=crop",
-];
-
-const FALLBACK_CONTENT: Record<string, string> = {
-  software: "This thread discusses important software-related topics for the Hope Music Community. Join the conversation and share your insights with fellow members.\n\nOur community is actively discussing the latest tools, plugins, and workflows that can enhance your music production experience.",
-  hardware:
-    "This thread covers essential hardware topics for audio professionals and enthusiasts. From interfaces to microphones, our community shares real-world experiences and recommendations.\n\nFeel free to contribute your own hardware discoveries and troubleshooting tips.",
-  music: "This thread explores the creative and theoretical side of music. Our members share techniques, inspiration, and deep dives into what makes music work.\n\nJoin the discussion and let your voice be heard in our passionate music community.",
-  "stage-production":
-    "This thread dives into live production, staging, and technical execution. Our experienced members share best practices for running professional shows.\n\nSafety, efficiency, and creative excellence are at the heart of this conversation.",
-  artical:
-    "This article-driven thread shares knowledge and perspective on important music industry topics. Our community curates insights that matter to working musicians and industry professionals.\n\nWe welcome well-reasoned contributions from all perspectives.",
-  others:
-    "This thread is part of our community hub where members connect, share resources, and support each other. From introductions to announcements, our community forum covers it all.\n\nWelcome — we're glad you're here.",
-};
-
-function FallbackThread({
-  id,
-  category,
-  categoryDisplay,
-}: {
+interface Interaction {
   id: string;
+  title: string;
   category: string;
-  categoryDisplay: string;
-}) {
-  const displayTitle = id
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+  description: string;
+  coverImage: string;
+  content: string;
+  author: string;
+}
 
-  const avatarUrl = AVATAR_URLS[Math.floor(Math.random() * AVATAR_URLS.length)];
-  const author = FALLBACK_AUTHORS[category] || "HopeAdmin";
-  const today = new Date().toLocaleDateString("en-US", {
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
+interface Comment {
+  id: string;
+  authorName: string;
+  content: string;
+  createdAt: number;
+  replies: { id: string; authorName: string; content: string; createdAt: number }[];
+}
 
-  const fallbackContent =
-    FALLBACK_CONTENT[category] ||
-    FALLBACK_CONTENT["others"];
+const CATEGORIES = [
+  { value: "software", label: "Software" },
+  { value: "hardware", label: "Hardware" },
+  { value: "music", label: "Music" },
+  { value: "production", label: "Production" },
+  { value: "resources", label: "Resources" },
+  { value: "other", label: "Other" },
+];
 
-  const sampleReplies = [
-    {
-      id: "r1",
-      author: "AudioEngineer_Mike",
-      avatarUrl: AVATAR_URLS[2],
-      date: `${today} at 10:30 AM`,
-      floor: 2,
-      content:
-        "Great topic — this is something I've been thinking about a lot lately. The more I work in this field, the more I appreciate the nuance here.",
-    },
-    {
-      id: "r2",
-      author: "GearReviewer",
-      avatarUrl: AVATAR_URLS[3],
-      date: `${today} at 11:45 AM`,
-      floor: 3,
-      content:
-        "Completely agree. I've been recommending this approach to everyone in my network. It makes a real difference in practice.",
-    },
-    {
-      id: "r3",
-      author: "HarmonyGuru_Omar",
-      avatarUrl: AVATAR_URLS[0],
-      date: `${today} at 1:15 PM`,
-      floor: 4,
-      content:
-        "Thanks for bringing this up — I think more people need to understand the fundamentals before jumping to conclusions. Well said.",
-    },
-  ];
+export default function InteractionDetailPage() {
+  const params = useParams();
+  const [item, setItem] = useState<Interaction | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [authorName, setAuthorName] = useState("");
+  const [newComment, setNewComment] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [replyAuthor, setReplyAuthor] = useState("");
+
+  useEffect(() => {
+    const id = params.id as string;
+    const stored = localStorage.getItem("admin_interaction");
+    if (stored) {
+      const data = JSON.parse(stored);
+      const found = data.find((i: Interaction) => i.id === id);
+      setItem(found || null);
+    }
+    const commentsStored = localStorage.getItem("interaction_comments");
+    if (commentsStored) {
+      const all = JSON.parse(commentsStored);
+      setComments(all[id] || []);
+    }
+    setLoading(false);
+  }, [params.id]);
+
+  const saveComments = (itemId: string, newComments: Comment[]) => {
+    const stored = localStorage.getItem("interaction_comments");
+    const all = stored ? JSON.parse(stored) : {};
+    all[itemId] = newComments;
+    localStorage.setItem("interaction_comments", JSON.stringify(all));
+    setComments(newComments);
+  };
+
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authorName.trim() || !newComment.trim() || !item) return;
+    const comment: Comment = { id: Date.now().toString(), authorName: authorName.trim(), content: newComment.trim(), createdAt: Date.now(), replies: [] };
+    saveComments(item.id, [comment, ...comments]);
+    setNewComment("");
+  };
+
+  const handleSubmitReply = (e: React.FormEvent, commentId: string) => {
+    e.preventDefault();
+    if (!replyAuthor.trim() || !replyContent.trim() || !item) return;
+    const reply = { id: Date.now().toString(), authorName: replyAuthor.trim(), content: replyContent.trim(), createdAt: Date.now() };
+    const updated = comments.map((c) => c.id === commentId ? { ...c, replies: [...c.replies, reply] } : c);
+    saveComments(item.id, updated);
+    setReplyingTo(null); setReplyContent(""); setReplyAuthor("");
+  };
+
+  const formatTime = (t: number) => new Date(t).toLocaleString();
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div></div>;
+  if (!item) return <div className="min-h-screen flex flex-col items-center justify-center py-20"><h1 className="text-2xl font-bold mb-4">Not Found</h1><Link href="/interaction" className="px-4 py-2 bg-[#D96A32] text-white rounded-md">Back</Link></div>;
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Breadcrumb */}
-      <div className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-3">
-          <nav className="flex items-center gap-2 text-sm text-gray-500">
-            <Link
-              href="/interaction"
-              className="hover:text-[#D96A32] transition-colors"
-            >
-              Forum
-            </Link>
-            <span>/</span>
-            <Link
-              href={`/interaction/${category}`}
-              className="hover:text-[#D96A32] transition-colors"
-            >
-              {categoryDisplay}
-            </Link>
-            <span>/</span>
-            <span className="truncate max-w-xs text-gray-400">{displayTitle}</span>
-          </nav>
-        </div>
-      </div>
-
-      {/* Thread Header */}
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="mb-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="mb-4 flex items-start gap-4">
-            <img
-              src={avatarUrl}
-              alt={author}
-              className="h-12 w-12 shrink-0 rounded-full object-cover ring-2 ring-gray-100"
-            />
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-xl font-bold text-gray-900">{displayTitle}</h1>
-                <span className="shrink-0 rounded bg-[#C8102E] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
-                  #1
-                </span>
-              </div>
-              <p className="mt-1 text-sm text-gray-500">
-                Posted by{" "}
-                <span className="font-medium text-gray-700">{author}</span> •{" "}
-                {today}
-              </p>
-            </div>
+      <div className="border-b border-t border-[#D96A32]"><div className="mx-auto max-w-4xl px-4 py-4"><Link href="/interaction" className="text-sm text-gray-500 hover:text-[#D96A32]">← Back to Interaction</Link></div></div>
+      <article className="max-w-4xl mx-auto px-4 py-12">
+        <div className="text-sm font-semibold text-red-600 uppercase tracking-wider mb-2">{CATEGORIES.find((c) => c.value === item.category)?.label || item.category}</div>
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-4">{item.title}</h1>
+        {item.author && <p className="text-gray-500 mb-6">by {item.author}</p>}
+        {item.coverImage && <img src={item.coverImage} alt={item.title} className="w-full aspect-[16/9] object-cover rounded-xl shadow-md mb-8" />}
+        {item.content && <div className="prose lg:prose-lg text-gray-700 max-w-none space-y-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: item.content }} />}
+      </article>
+      <div className="max-w-4xl mx-auto px-4 py-12 border-t border-gray-200">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments ({comments.length})</h2>
+        <form onSubmit={handleSubmitComment} className="mb-10 bg-gray-50 rounded-xl p-6">
+          <h3 className="text-lg font-semibold mb-4"> Leave a Comment</h3>
+          <div className="space-y-4">
+            <input type="text" value={authorName} onChange={(e) => setAuthorName(e.target.value)} placeholder="Your Name" className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#D96A32]" required />
+            <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Your comment..." rows={4} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#D96A32] resize-none" required />
+            <button type="submit" className="px-6 py-2 bg-[#D96A32] text-white font-medium rounded-lg hover:bg-[#c45a28]">Post Comment</button>
           </div>
-
-          <div className="prose prose-gray max-w-none text-gray-700">
-            {fallbackContent.split("\n\n").map((para, i) => (
-              <p key={i} className="mb-4 text-[15px] leading-relaxed">
-                {para}
-              </p>
-            ))}
-          </div>
-        </div>
-
-        {/* Reply Count */}
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">
-            {sampleReplies.length} Replies
-          </h2>
-          <a
-            href={`/interaction/${category}`}
-            className="text-sm text-[#D96A32] transition-all duration-150 hover:translate-x-[-2px] hover:underline"
-          >
-            ← Back to {categoryDisplay}
-          </a>
-        </div>
-
-        {/* Replies */}
-        <div className="mb-6 flex flex-col gap-4">
-          {sampleReplies.map((reply) => (
-            <div
-              key={reply.id}
-              className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition-all duration-200 hover:border-[#D96A32] hover:shadow-md hover:scale-[1.01] active:scale-[0.99]"
-            >
-              <div className="mb-3 flex items-center gap-3">
-                <img
-                  src={reply.avatarUrl}
-                  alt={reply.author}
-                  className="h-9 w-9 shrink-0 rounded-full object-cover"
-                />
-                <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-gray-800">
-                    {reply.author}
-                  </span>
-                  <span className="shrink-0 rounded bg-gray-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-gray-500">
-                    #{reply.floor}
-                  </span>
+        </form>
+        <div className="space-y-6">
+          {comments.length === 0 ? <p className="text-center text-gray-500 py-8">No comments yet.</p> : comments.map((comment) => (
+            <div key={comment.id} className="border-b border-gray-100 pb-6">
+              <div className="flex gap-4">
+                <div className="w-10 h-10 bg-[#D96A32] rounded-full flex items-center justify-center text-white font-bold">{comment.authorName.charAt(0).toUpperCase()}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1"><span className="font-semibold">{comment.authorName}</span><span className="text-sm text-gray-400">{formatTime(comment.createdAt)}</span></div>
+                  <p className="text-gray-700 mb-2">{comment.content}</p>
+                  <button onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)} className="text-sm text-[#D96A32] font-medium">Reply</button>
+                  {replyingTo === comment.id && (
+                    <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="mt-4 bg-gray-50 rounded-lg p-4 space-y-3">
+                      <input type="text" value={replyAuthor} onChange={(e) => setReplyAuthor(e.target.value)} placeholder="Your name" className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#D96A32]" required />
+                      <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="Your reply..." rows={2} className="w-full px-3 py-2 border rounded-lg text-sm outline-none resize-none focus:ring-2 focus:ring-[#D96A32]" required />
+                      <div className="flex gap-2"><button type="submit" className="px-4 py-1.5 bg-[#D96A32] text-white text-sm rounded-lg">Post</button><button type="button" onClick={() => { setReplyingTo(null); setReplyContent(""); setReplyAuthor(""); }} className="px-4 py-1.5 bg-gray-200 text-sm rounded-lg">Cancel</button></div>
+                    </form>
+                  )}
+                  {comment.replies.length > 0 && (
+                    <div className="mt-4 space-y-4 pl-4 border-l-2 border-gray-200">
+                      {comment.replies.map((reply) => (
+                        <div key={reply.id} className="flex gap-3">
+                          <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold text-sm">{reply.authorName.charAt(0).toUpperCase()}</div>
+                          <div><div className="flex items-center gap-2 mb-1"><span className="font-semibold text-sm">{reply.authorName}</span><span className="text-xs text-gray-400">{formatTime(reply.createdAt)}</span></div><p className="text-sm text-gray-700">{reply.content}</p></div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <span className="ml-auto text-xs text-gray-400">{reply.date}</span>
               </div>
-              <p className="text-[15px] leading-relaxed text-gray-700">
-                {reply.content}
-              </p>
             </div>
           ))}
         </div>
-
-        {/* Leave a Reply */}
-        <div className="rounded-xl border-2 border-dashed border-[#D96A32] bg-orange-50 p-6 text-center">
-          <p className="mb-3 text-sm font-medium text-gray-600">
-            Want to contribute to this discussion?
-          </p>
-          <button
-            type="button"
-            className="rounded-xl bg-[#C8102E] px-8 py-3 text-sm font-bold uppercase tracking-wider text-white shadow-sm transition-all duration-200 hover:bg-[#a00d26] hover:shadow-md active:scale-95"
-          >
-            Leave a Reply
-          </button>
-        </div>
       </div>
     </main>
-  );
-}
-
-export default function InteractionDetailPage({
-  params,
-}: {
-  params: Promise<{ category: string; id: string }>;
-}) {
-  const { category, id } = use(params);
-
-  const isValidCategory = VALID_CATEGORIES.includes(category);
-  const displayName = CATEGORY_DISPLAY[category] || category;
-
-  if (!isValidCategory) {
-    return (
-      <main className="min-h-screen bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-20 text-center">
-          <h1 className="mb-4 text-3xl font-bold text-gray-900">
-            Category Not Found
-          </h1>
-          <p className="mb-6 text-gray-500">
-            The category &quot;{category}&quot; does not exist.
-          </p>
-          <Link
-            href="/interaction"
-            className="text-[#D96A32] hover:underline"
-          >
-            ← Back to Forum
-          </Link>
-        </div>
-      </main>
-    );
-  }
-
-  return (
-    <FallbackThread
-      id={id}
-      category={category}
-      categoryDisplay={displayName}
-    />
   );
 }

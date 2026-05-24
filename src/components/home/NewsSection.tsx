@@ -1,33 +1,60 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useQuery } from "convex/react";
+import { api } from "@/lib/convex";
 import { Container } from "@/components/ui/Container";
 import { ViewMoreButton } from "@/components/ui/ViewMoreButton";
 
-const NEWS_ITEMS = [
-  {
-    id: "1",
-    title: "Announcing the 2024 Global Musicals Gala line-up",
-    date: "June 25, 2026",
-    image: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=500",
-    href: "/news/1",
-  },
-  {
-    id: "2",
-    title: "Hope Studio partners with industry leader for pro-audio workshop series",
-    date: "June 25, 2026",
-    image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=500",
-    href: "/news/2",
-  },
-  {
-    id: "3",
-    title: "Artist Community Spotlight: Rising stars share their journey with HOPE",
-    date: "June 25, 2026",
-    image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500",
-    href: "/news/3",
-  },
-];
-
 export function NewsSection() {
+  // Fetch published news from Convex (real-time reactive)
+  const news = useQuery(api.admin.getPublishedNews, { limit: 3 });
+
+  const formatDate = (dateValue?: number | string): string => {
+    if (!dateValue) return "Coming soon";
+    const date = typeof dateValue === "number" ? new Date(dateValue) : new Date(dateValue);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  // Map Convex data to display format
+  const newsItems = (news ?? []).slice(0, 3).map((article: any) => ({
+    id: article._id,
+    title: article.title || "Untitled",
+    date: formatDate(article.publishDate),
+    image: article.coverImage || "",
+    href: `/news/${article._id}`,
+  }));
+
+  // Fallback demo data if no Convex data
+  const displayItems = newsItems.length > 0 ? newsItems : [
+    {
+      id: "demo-1",
+      title: "Announcing the 2024 Global Musicals Gala line-up",
+      date: "June 25, 2026",
+      image: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=500",
+      href: "/news/1",
+    },
+    {
+      id: "demo-2",
+      title: "Hope Studio partners with industry leader for pro-audio workshop series",
+      date: "June 25, 2026",
+      image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=500",
+      href: "/news/2",
+    },
+    {
+      id: "demo-3",
+      title: "Artist Community Spotlight: Rising stars share their journey with HOPE",
+      date: "June 25, 2026",
+      image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500",
+      href: "/news/3",
+    },
+  ];
+
   return (
     <section className="py-6 pb-10" aria-labelledby="news-heading">
       <Container>
@@ -37,38 +64,63 @@ export function NewsSection() {
           </h2>
           <ViewMoreButton href="/news" />
         </div>
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          {NEWS_ITEMS.map((item) => (
-            <Link
-              key={item.id}
-              href={item.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex h-full flex-col overflow-hidden rounded-xl border border-hmc-placeholder-border bg-white shadow-sm transition-shadow duration-200 hover:shadow-md"
-            >
-              <div className="aspect-[4/3] w-full overflow-hidden bg-hmc-placeholder">
-                <Image
-                  src={item.image}
-                  alt={item.title}
-                  width={500}
-                  height={375}
-                  className="h-full w-full rounded-xl object-cover transition-transform duration-200 group-hover:scale-105"
-                />
+
+        {news === undefined ? (
+          // Loading state
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {[1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="animate-pulse rounded-xl border border-hmc-placeholder-border bg-white p-0 shadow-sm"
+              >
+                <div className="aspect-[4/3] bg-gray-200" />
+                <div className="p-4">
+                  <div className="mb-2 h-3 w-20 rounded bg-gray-200" />
+                  <div className="h-4 w-full rounded bg-gray-200" />
+                </div>
               </div>
-              <div className="flex flex-1 flex-col gap-2 p-4">
-                <time
-                  className="text-xs text-hmc-text-muted"
-                  dateTime="2026-06-25"
-                >
-                  {item.date}
-                </time>
-                <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors duration-150 group-hover:text-[#C8102E]">
-                  {item.title}
-                </h3>
-              </div>
-            </Link>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            {displayItems.map((item: any) => (
+              <Link
+                key={item.id}
+                href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex h-full flex-col overflow-hidden rounded-xl border border-hmc-placeholder-border bg-white shadow-sm transition-shadow duration-200 hover:shadow-md"
+              >
+                <div className="aspect-[4/3] w-full overflow-hidden bg-hmc-placeholder">
+                  {item.image ? (
+                    <Image
+                      src={item.image}
+                      alt={item.title}
+                      width={500}
+                      height={375}
+                      className="h-full w-full rounded-xl object-cover transition-transform duration-200 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-gray-200">
+                      <span className="text-sm text-gray-400">No Image</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-1 flex-col gap-2 p-4">
+                  <time
+                    className="text-xs text-hmc-text-muted"
+                    dateTime={item.date}
+                  >
+                    {item.date}
+                  </time>
+                  <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors duration-150 group-hover:text-[#C8102E]">
+                    {item.title}
+                  </h3>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </Container>
     </section>
   );

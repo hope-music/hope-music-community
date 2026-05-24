@@ -1,7 +1,8 @@
 "use client";
 
+import { useState, useEffect } from "react";
+import Link from "next/link";
 import Image from "next/image";
-import { ViewMoreButton } from "@/components/ui/ViewMoreButton";
 import { PLACEHOLDER_ARTICLE } from "@/lib/constants";
 
 type ContentCardProps = {
@@ -27,7 +28,7 @@ export function ContentCard({
 
   return (
     <article className="flex h-full flex-col">
-      {/* Top Clickable Group - Opens in NEW TAB */}
+      {/* Top Content - Opens in NEW TAB */}
       {href && (
         <a
           href={href}
@@ -53,10 +54,17 @@ export function ContentCard({
         </a>
       )}
 
-      {/* Bottom Red Button - CENTERED */}
+      {/* Bottom Red Button - Opens in NEW TAB */}
       {showViewMore && categoryHref && (
         <div className="flex w-full justify-center border border-hmc-placeholder-border bg-white">
-          <ViewMoreButton href={categoryHref} size="sm" />
+          <a
+            href={categoryHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 rounded bg-[#D96A32] px-3 py-1.5 text-center text-xs font-medium text-white hover:bg-[#c45a28] transition-colors"
+          >
+            View More
+          </a>
         </div>
       )}
     </article>

@@ -1,135 +1,146 @@
-import React from "react";
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 
-const VALID_CATEGORIES = [
-  "stage", "video", "lighting", "audio",
-  "effects", "costumes", "props", "makeup", "others",
-];
-
-const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
-  stage: "Stage",
-  video: "Video",
-  lighting: "Lighting",
-  audio: "Audio",
-  effects: "Effects",
-  costumes: "Costumes",
-  props: "Props",
-  makeup: "Makeup",
-  others: "Others",
-};
-
-interface DetailPageProps {
-  params: Promise<{ category: string; slug: string }>;
+interface StageProduction {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  coverImage: string;
+  content: string;
+  status: "upcoming" | "past" | "draft";
+  eventDate?: string;
+  createdAt: number;
 }
 
-export default async function StageProductionDetailPage({ params }: DetailPageProps) {
-  const { category, slug } = await params;
+interface Comment {
+  id: string;
+  authorName: string;
+  content: string;
+  createdAt: number;
+  replies: { id: string; authorName: string; content: string; createdAt: number }[];
+}
 
-  if (!VALID_CATEGORIES.includes(category)) {
-    return (
-      <main className="min-h-screen bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-20 text-center">
-          <h1 className="mb-4 text-3xl font-bold text-gray-900">
-            Category Not Found
-          </h1>
-          <p className="text-gray-500">
-            The stage production category &quot;{category}&quot; does not exist.
-          </p>
-        </div>
-      </main>
-    );
-  }
+const CATEGORIES = [
+  { value: "sets", label: "Sets" },
+  { value: "lighting", label: "Lighting" },
+  { value: "sound", label: "Sound" },
+  { value: "projection", label: "Projection" },
+  { value: "scenery", label: "Scenery" },
+  { value: "others", label: "Others" },
+];
 
-  const displayCategory = CATEGORY_DISPLAY_NAMES[category] || category;
-  const displayTitle = slug
-    .replace(/-/g, " ")
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+export default function StageProductionDetailPage() {
+  const params = useParams();
+  const [item, setItem] = useState<StageProduction | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [authorName, setAuthorName] = useState("");
+  const [newComment, setNewComment] = useState("");
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const [replyContent, setReplyContent] = useState("");
+  const [replyAuthor, setReplyAuthor] = useState("");
+
+  useEffect(() => {
+    const id = params.slug as string;
+    const stored = localStorage.getItem("admin_stage_production");
+    if (stored) {
+      const data = JSON.parse(stored);
+      const found = data.find((i: StageProduction) => i.id === id);
+      setItem(found || null);
+    }
+    const commentsStored = localStorage.getItem("stage_production_comments");
+    if (commentsStored) {
+      const all = JSON.parse(commentsStored);
+      setComments(all[id] || []);
+    }
+    setLoading(false);
+  }, [params.slug]);
+
+  const saveComments = (itemId: string, newComments: Comment[]) => {
+    const stored = localStorage.getItem("stage_production_comments");
+    const all = stored ? JSON.parse(stored) : {};
+    all[itemId] = newComments;
+    localStorage.setItem("stage_production_comments", JSON.stringify(all));
+    setComments(newComments);
+  };
+
+  const handleSubmitComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!authorName.trim() || !newComment.trim() || !item) return;
+    const comment: Comment = { id: Date.now().toString(), authorName: authorName.trim(), content: newComment.trim(), createdAt: Date.now(), replies: [] };
+    saveComments(item.id, [comment, ...comments]);
+    setNewComment("");
+  };
+
+  const handleSubmitReply = (e: React.FormEvent, commentId: string) => {
+    e.preventDefault();
+    if (!replyAuthor.trim() || !replyContent.trim() || !item) return;
+    const reply = { id: Date.now().toString(), authorName: replyAuthor.trim(), content: replyContent.trim(), createdAt: Date.now() };
+    const updated = comments.map((c) => c.id === commentId ? { ...c, replies: [...c.replies, reply] } : c);
+    saveComments(item.id, updated);
+    setReplyingTo(null); setReplyContent(""); setReplyAuthor("");
+  };
+
+  const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
+  const formatTime = (t: number) => new Date(t).toLocaleString();
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div></div>;
+  if (!item) return <div className="min-h-screen flex flex-col items-center justify-center py-20"><h1 className="text-2xl font-bold mb-4">Not Found</h1><Link href="/stage-production" className="px-4 py-2 bg-[#D96A32] text-white rounded-md">Back</Link></div>;
 
   return (
     <main className="min-h-screen bg-white">
-      {/* Breadcrumb */}
-      <div className="border-b border-gray-200 bg-white">
-        <div className="mx-auto max-w-6xl px-4 py-3">
-          <nav className="flex items-center gap-2 text-sm text-gray-500">
-            <Link href="/stage-production" className="hover:text-[#D96A32] transition-colors">
-              Stage Production
-            </Link>
-            <span>/</span>
-            <Link
-              href={`/stage-production/${category}`}
-              className="hover:text-[#D96A32] transition-colors"
-            >
-              {displayCategory}
-            </Link>
-            <span>/</span>
-            <span className="max-w-xs truncate text-gray-400">{displayTitle}</span>
-          </nav>
-        </div>
-      </div>
-
-      <div className="mx-auto max-w-4xl px-4 py-12">
-        {/* Category Tag */}
-        <div className="mb-2 text-sm font-semibold uppercase tracking-wider text-red-600">
-          {displayCategory}
-        </div>
-
-        {/* Title */}
-        <h1 className="mb-4 text-3xl font-bold leading-tight text-gray-900 sm:text-4xl">
-          {displayTitle}
-        </h1>
-
-        {/* Date */}
-        <div className="mb-8 flex items-center gap-2 text-sm text-gray-500">
-          <span>Published on:</span>
-          <time className="font-medium text-gray-700">June 25, 2026</time>
-        </div>
-
-        {/* Hero Image */}
-        <div className="mb-8 aspect-[16/9] w-full overflow-hidden rounded-xl bg-gray-100 shadow-md">
-          <Image
-            src="https://images.unsplash.com/photo-1503095396549-807759245b35?w=1200"
-            alt={displayTitle}
-            width={1200}
-            height={675}
-            className="h-full w-full object-cover"
-          />
-        </div>
-
-        {/* Content */}
-        <article className="prose max-w-none space-y-6 text-gray-700 leading-relaxed lg:prose-lg">
-          <p className="text-lg font-semibold text-gray-800">
-            Stage production is a complex, collaborative art form that brings together design,
-            technology, and performance into a unified live experience. At Hope Music Community,
-            we celebrate every discipline that makes a show possible — from the first sketch
-            to the final bow.
-          </p>
-          <p>
-            Whether you are a lighting designer plotting your rig, a stage manager coordinating
-            cues, or a costume designer sourcing materials, the technical backbone of live
-            performance is what transforms a script into something unforgettable. This article
-            explores best practices, emerging tools, and the craft behind the scenes.
-          </p>
-          <p>
-            Our community resources are curated by working professionals with decades of
-            combined experience across Broadway, touring productions, regional theater, and
-            experimental venues. We believe that sharing knowledge elevates the entire industry.
-          </p>
-          <p>
-            For collaboration inquiries, production partnerships, or to contribute your own
-            expertise to our library, reach out through our community portal. Every voice
-            matters in the making of great theater.
-          </p>
-        </article>
-
-        {/* Back Link */}
-        <div className="mt-10">
-          <Link
-            href={`/stage-production/${category}`}
-            className="text-sm text-[#D96A32] transition-all duration-150 hover:translate-x-[-2px] hover:underline"
-          >
-            ← Back to {displayCategory}
-          </Link>
+      <div className="border-b border-t border-[#D96A32]"><div className="mx-auto max-w-4xl px-4 py-4"><Link href="/stage-production" className="text-sm text-gray-500 hover:text-[#D96A32]">← Back</Link></div></div>
+      <article className="max-w-4xl mx-auto px-4 py-12">
+        <div className="text-sm font-semibold text-red-600 uppercase tracking-wider mb-2">{CATEGORIES.find((c) => c.value === item.category)?.label || item.category}</div>
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-4">{item.title}</h1>
+        {item.eventDate && <div className="text-gray-500 text-sm mb-6">Event Date: <time className="font-medium text-gray-700">{formatDate(item.eventDate)}</time></div>}
+        {item.coverImage && <img src={item.coverImage} alt={item.title} className="w-full aspect-[16/9] object-cover rounded-xl shadow-md mb-8" />}
+        {item.content && <div className="prose lg:prose-lg text-gray-700 max-w-none space-y-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: item.content }} />}
+      </article>
+      <div className="max-w-4xl mx-auto px-4 py-12 border-t border-gray-200">
+        <h2 className="text-2xl font-bold text-gray-900 mb-6">Comments ({comments.length})</h2>
+        <form onSubmit={handleSubmitComment} className="mb-10 bg-gray-50 rounded-xl p-6">
+          <h3 className="text-lg font-semibold mb-4">Leave a Comment</h3>
+          <div className="space-y-4">
+            <input type="text" value={authorName} onChange={(e) => setAuthorName(e.target.value)} placeholder="Your Name" className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#D96A32]" required />
+            <textarea value={newComment} onChange={(e) => setNewComment(e.target.value)} placeholder="Your comment..." rows={4} className="w-full px-4 py-2 border border-gray-300 rounded-lg outline-none focus:ring-2 focus:ring-[#D96A32] resize-none" required />
+            <button type="submit" className="px-6 py-2 bg-[#D96A32] text-white font-medium rounded-lg hover:bg-[#c45a28]">Post Comment</button>
+          </div>
+        </form>
+        <div className="space-y-6">
+          {comments.length === 0 ? <p className="text-center text-gray-500 py-8">No comments yet.</p> : comments.map((comment) => (
+            <div key={comment.id} className="border-b border-gray-100 pb-6">
+              <div className="flex gap-4">
+                <div className="w-10 h-10 bg-[#D96A32] rounded-full flex items-center justify-center text-white font-bold">{comment.authorName.charAt(0).toUpperCase()}</div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1"><span className="font-semibold">{comment.authorName}</span><span className="text-sm text-gray-400">{formatTime(comment.createdAt)}</span></div>
+                  <p className="text-gray-700 mb-2">{comment.content}</p>
+                  <button onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)} className="text-sm text-[#D96A32] font-medium">Reply</button>
+                  {replyingTo === comment.id && (
+                    <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="mt-4 bg-gray-50 rounded-lg p-4 space-y-3">
+                      <input type="text" value={replyAuthor} onChange={(e) => setReplyAuthor(e.target.value)} placeholder="Your name" className="w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#D96A32]" required />
+                      <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="Your reply..." rows={2} className="w-full px-3 py-2 border rounded-lg text-sm outline-none resize-none focus:ring-2 focus:ring-[#D96A32]" required />
+                      <div className="flex gap-2"><button type="submit" className="px-4 py-1.5 bg-[#D96A32] text-white text-sm rounded-lg">Post</button><button type="button" onClick={() => { setReplyingTo(null); setReplyContent(""); setReplyAuthor(""); }} className="px-4 py-1.5 bg-gray-200 text-sm rounded-lg">Cancel</button></div>
+                    </form>
+                  )}
+                  {comment.replies.length > 0 && (
+                    <div className="mt-4 space-y-4 pl-4 border-l-2 border-gray-200">
+                      {comment.replies.map((reply) => (
+                        <div key={reply.id} className="flex gap-3">
+                          <div className="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold text-sm">{reply.authorName.charAt(0).toUpperCase()}</div>
+                          <div><div className="flex items-center gap-2 mb-1"><span className="font-semibold text-sm">{reply.authorName}</span><span className="text-xs text-gray-400">{formatTime(reply.createdAt)}</span></div><p className="text-sm text-gray-700">{reply.content}</p></div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </main>
