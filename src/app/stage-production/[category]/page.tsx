@@ -14,11 +14,14 @@ interface StageProduction {
 }
 
 const CATEGORIES = [
-  { value: "sets", label: "Sets" },
+  { value: "stage", label: "Stage" },
+  { value: "video", label: "Video" },
   { value: "lighting", label: "Lighting" },
-  { value: "sound", label: "Sound" },
-  { value: "projection", label: "Projection" },
-  { value: "scenery", label: "Scenery" },
+  { value: "audio", label: "Audio" },
+  { value: "effects", label: "Effects" },
+  { value: "costumes", label: "Costumes" },
+  { value: "props", label: "Props" },
+  { value: "makeup", label: "Makeup" },
   { value: "others", label: "Others" },
 ];
 

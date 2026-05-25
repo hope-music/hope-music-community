@@ -16,11 +16,14 @@ interface StageProduction {
 }
 
 const CATEGORIES = [
-  { value: "sets", label: "Sets" },
+  { value: "stage", label: "Stage" },
+  { value: "video", label: "Video" },
   { value: "lighting", label: "Lighting" },
-  { value: "sound", label: "Sound" },
-  { value: "projection", label: "Projection" },
-  { value: "scenery", label: "Scenery" },
+  { value: "audio", label: "Audio" },
+  { value: "effects", label: "Effects" },
+  { value: "costumes", label: "Costumes" },
+  { value: "props", label: "Props" },
+  { value: "makeup", label: "Makeup" },
   { value: "others", label: "Others" },
 ];
 
@@ -110,7 +113,7 @@ export default function AdminStageProductionsPage() {
     if (coverInputRef.current) coverInputRef.current.value = "";
   };
 
-  const handleNew = () => { setEditingId(null); setTitle(""); setDescription(""); setContent(""); setCategory("sets"); setStatus("draft"); setEventDate(""); setCoverImage(""); setCoverPreview(null); setShowForm(true); };
+  const handleNew = () => { setEditingId(null); setTitle(""); setDescription(""); setContent(""); setCategory("stage"); setStatus("draft"); setEventDate(""); setCoverImage(""); setCoverPreview(null); setShowForm(true); };
   const handleEdit = (item: StageProduction) => { setEditingId(item.id); setTitle(item.title || ""); setDescription(item.description || ""); setContent(item.content || ""); setCategory(item.category || "sets"); setStatus(item.status || "draft"); setEventDate(item.eventDate || ""); setCoverImage(item.coverImage || ""); setCoverPreview(item.coverImage || null); setShowForm(true); };
 
   const handleSave = async (e: React.FormEvent) => {
