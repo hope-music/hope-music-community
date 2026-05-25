@@ -1,0 +1,27 @@
+# Dependencies (Prevents massive file count explosion)
+node_modules/
+
+# Next.js build cache and outputs
+.next/
+
+# Clerk authentication local cache
+.clerk/
+
+# Convex backend local generated files
+.convex/
+convex/_generated/
+
+# Build and production outputs
+dist/
+build/
+out/
+
+# System and log files
+.DS_Store
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# TypeScript build info cache
+tsconfig.tsbuildinfo

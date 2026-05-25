@@ -126,6 +126,40 @@ export default function NewsAdminPage() {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Migrate from localStorage to Convex on mount
+  useEffect(() => {
+    if (allArticles === undefined) return;
+
+    const migrateData = async () => {
+      const stored = localStorage.getItem("admin_news");
+      const migrated = localStorage.getItem("news_migrated");
+      if (stored && !migrated) {
+        try {
+          const oldArticles = JSON.parse(stored);
+          if (oldArticles.length > 0 && allArticles.length === 0) {
+            for (const article of oldArticles) {
+              if (article.isPublished) {
+                await createArticle({
+                  title: article.title,
+                  content: article.content,
+                  coverImage: article.coverImage,
+                  excerpt: article.excerpt,
+                  isPublished: article.isPublished,
+                  isFeatured: article.isFeatured,
+                });
+              }
+            }
+          }
+          localStorage.removeItem("admin_news");
+          localStorage.setItem("news_migrated", "true");
+        } catch (e) {
+          console.error("Migration error:", e);
+        }
+      }
+    };
+    migrateData();
+  }, [allArticles, createArticle]);
+
   useEffect(() => { if (message) { const t = setTimeout(() => setMessage(null), 5000); return () => clearTimeout(t); } }, [message]);
 
   const articles = allArticles || [];
