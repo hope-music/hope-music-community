@@ -23,14 +23,34 @@ const DEFAULT_ITEMS: ContentItem[] = [
 
 export default function HopeStudioPage() {
   const [items, setItems] = useState<ContentItem[]>(DEFAULT_ITEMS);
-  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("hope_studio_content");
-    if (stored) {
-      setItems(JSON.parse(stored));
-    }
-    setLoading(false);
+    const loadData = () => {
+      const stored = localStorage.getItem("hope_studio_content");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setItems(parsed);
+          }
+        } catch (e) {
+          console.error("Failed to parse stored data", e);
+        }
+      }
+    };
+
+    loadData();
+
+    // Listen for storage changes (when admin updates)
+    window.addEventListener("storage", loadData);
+
+    // Poll for changes every second (for same-tab updates)
+    const interval = setInterval(loadData, 1000);
+
+    return () => {
+      window.removeEventListener("storage", loadData);
+      clearInterval(interval);
+    };
   }, []);
 
   return (
@@ -42,41 +62,35 @@ export default function HopeStudioPage() {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-10">
-        {loading ? (
-          <div className="py-20 text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map((item) => (
-              <Link
-                key={item.id}
-                href={`/hope-studio/${item.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex flex-col"
-              >
-                <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-gray-100">
-                  <Image
-                    src={item.image}
-                    alt={item.title}
-                    width={800}
-                    height={600}
-                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  />
-                </div>
-                <div className="mt-4 text-center">
-                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#C8102E]">
-                    {item.title}
-                  </h3>
-                  <p className="mt-2 text-sm text-gray-500 line-clamp-2">
-                    {item.description}
-                  </p>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {items.map((item) => (
+            <Link
+              key={item.id}
+              href={`/hope-studio/${item.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex flex-col"
+            >
+              <div className="aspect-[4/3] w-full overflow-hidden rounded-xl bg-gray-100">
+                <Image
+                  src={item.image}
+                  alt={item.title}
+                  width={800}
+                  height={600}
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
+              </div>
+              <div className="mt-4 text-center">
+                <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#C8102E]">
+                  {item.title}
+                </h3>
+                <p className="mt-2 text-sm text-gray-500 line-clamp-2">
+                  {item.description}
+                </p>
+              </div>
+            </Link>
+          ))}
+        </div>
       </div>
     </main>
   );
