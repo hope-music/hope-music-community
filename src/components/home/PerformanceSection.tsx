@@ -56,9 +56,9 @@ function CategoryCard({ category, data }: { category: string; data: CategoryData
   return (
     <CategoryBox title={category}>
       <article className="flex h-full flex-col">
-        {/* Top Content - Opens in NEW TAB */}
+        {/* Top Content - Opens detail page */}
         <a
-          href={categoryHref}
+          href={item ? `/performance/${item.category}/${item.id}` : categoryHref}
           target="_blank"
           rel="noopener noreferrer"
           className="flex flex-1 cursor-pointer flex-col gap-2 border border-hmc-placeholder-border border-b-0 bg-white p-2 transition-opacity duration-200 hover:opacity-80"
