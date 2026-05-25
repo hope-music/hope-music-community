@@ -163,14 +163,17 @@ export default function AdminStageProductionsPage() {
         </div>
       )}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {filteredItems.length === 0 ? <div className="col-span-full rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">No items.</div> : filteredItems.map((item) => (
+        {filteredItems.length === 0 ? <div className="col-span-full rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">No items.</div> : filteredItems.map((item) => {
+          const categoryLabel = CATEGORIES.find(c => c.value === item.category)?.label || item.category;
+          return (
           <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-4">
             {item.coverImage && <img src={item.coverImage} alt={item.title} className="h-32 w-full rounded-md object-cover" />}
-            <div className="mt-3 flex items-start justify-between gap-2"><h3 className="font-medium">{item.title}</h3>{getBadge(item.status)}</div>
+            <div className="mt-2 flex items-center gap-2"><span className="rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-600">{categoryLabel}</span>{getBadge(item.status)}</div>
+            <h3 className="mt-2 font-medium">{item.title}</h3>
             <p className="mt-2 text-sm text-gray-500 line-clamp-2">{item.description?.replace(/<[^>]*>/g, "").substring(0, 100)}</p>
             <div className="mt-3 flex gap-2 border-t pt-3"><button onClick={() => handleEdit(item)} className="flex-1 rounded bg-gray-100 px-3 py-1.5 text-xs font-medium hover:bg-gray-200">Edit</button><button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600">Delete</button></div>
           </div>
-        ))}
+        );})}
       </div>
     </div>
   );
