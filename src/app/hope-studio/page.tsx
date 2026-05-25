@@ -79,7 +79,7 @@ export default function HopeStudioPage() {
                   />
                 </div>
                 <div className="mt-4">
-                  <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#C8102E]">
+                  <h3 className="text-lg font-semibold text-center text-gray-900 group-hover:text-[#C8102E]">
                     {item.title}
                   </h3>
                   <p className="mt-2 text-sm text-gray-500 line-clamp-2">

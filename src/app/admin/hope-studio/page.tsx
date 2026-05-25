@@ -1,160 +1,48 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
+import Link from "next/link";
 
-function RichTextEditor({ content, onChange }: { content: string; onChange: (c: string) => void }) {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const execCommand = (cmd: string, val?: string) => {
-    document.execCommand(cmd, false, val);
-    if (editorRef.current) onChange(editorRef.current.innerHTML);
-  };
-  const handleInput = () => { if (editorRef.current) onChange(editorRef.current.innerHTML); };
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (ev) => { if (ev.target?.result) execCommand("insertImage", ev.target.result as string); };
-      reader.readAsDataURL(file);
-    }
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-  useEffect(() => { if (editorRef.current && !editorRef.current.innerHTML) editorRef.current.innerHTML = content; }, []);
-
-  return (
-    <div className="overflow-hidden rounded-md border border-gray-300 bg-white">
-      <div className="flex flex-wrap items-center gap-1 border-b border-gray-300 bg-gray-50 px-2 py-2">
-        <button type="button" onClick={() => execCommand("bold")} className="rounded px-2 py-1 text-sm font-bold hover:bg-gray-200">B</button>
-        <button type="button" onClick={() => execCommand("italic")} className="rounded px-2 py-1 text-sm italic hover:bg-gray-200">I</button>
-        <div className="mx-1 h-5 w-px bg-gray-300" />
-        <button type="button" onClick={() => execCommand("insertUnorderedList")} className="rounded px-2 py-1 text-sm hover:bg-gray-200">• List</button>
-        <div className="mx-1 h-5 w-px bg-gray-300" />
-        <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
-        <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded px-2 py-1 text-sm hover:bg-gray-200">🖼 Image</button>
-      </div>
-      <div ref={editorRef} contentEditable onInput={handleInput} className="min-h-[200px] max-h-[400px] overflow-y-auto px-4 py-3 focus:outline-none" style={{ fontFamily: "Georgia, serif", fontSize: "15px", lineHeight: "1.7" }} />
-    </div>
-  );
-}
-
-interface Service {
-  id: string;
-  serviceName: string;
-  description: string;
-  availability: string;
-  pricing: string;
-  category: string;
-  coverImage: string;
-  content: string;
-  createdAt: number;
-  updatedAt: number;
-}
-
-const CATEGORIES = [
-  { value: "recording", label: "Recording" },
-  { value: "mixing", label: "Mixing" },
-  { value: "mastering", label: "Mastering" },
-  { value: "production", label: "Production" },
-  { value: "lessons", label: "Lessons" },
-  { value: "rental", label: "Rental" },
-  { value: "other", label: "Other" },
+const HOPE_STUDIO_ITEMS = [
+  { id: "welcome", title: "Welcome to Hope Music Community", image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800" },
+  { id: "studio", title: "Hope Studio", image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800" },
+  { id: "jesse-liu", title: "Jesse Liu", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800" },
+  { id: "shangri-la", title: "Shangri-La", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800" },
+  { id: "works", title: "Works", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800" },
+  { id: "schedule", title: "Performance Schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800" },
 ];
 
 export default function AdminHopeStudioPage() {
-  const [items, setItems] = useState<Service[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [serviceName, setServiceName] = useState("");
-  const [description, setDescription] = useState("");
-  const [content, setContent] = useState("");
-  const [availability, setAvailability] = useState("");
-  const [pricing, setPricing] = useState("");
-  const [category, setCategory] = useState("recording");
-  const [coverImage, setCoverImage] = useState("");
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    const stored = localStorage.getItem("admin_hope_studio");
-    if (stored) setItems(JSON.parse(stored));
-  }, []);
-
-  const saveToStorage = (data: Service[]) => {
-    localStorage.setItem("admin_hope_studio", JSON.stringify(data));
-    setItems(data);
-  };
-
-  useEffect(() => { if (message) { const t = setTimeout(() => setMessage(null), 5000); return () => clearTimeout(t); } }, [message]);
-
-  const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (ev) => { const base64 = ev.target?.result as string; setCoverImage(base64); setCoverPreview(base64); };
-      reader.readAsDataURL(file);
-    }
-    if (coverInputRef.current) coverInputRef.current.value = "";
-  };
-
-  const handleNew = () => { setEditingId(null); setServiceName(""); setDescription(""); setContent(""); setAvailability(""); setPricing(""); setCategory("recording"); setCoverImage(""); setCoverPreview(null); setShowForm(true); };
-  const handleEdit = (item: Service) => { setEditingId(item.id); setServiceName(item.serviceName || ""); setDescription(item.description || ""); setContent(item.content || ""); setAvailability(item.availability || ""); setPricing(item.pricing || ""); setCategory(item.category || "recording"); setCoverImage(item.coverImage || ""); setCoverPreview(item.coverImage || null); setShowForm(true); };
-
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!serviceName.trim()) { setMessage({ type: "error", text: "Service name required" }); return; }
-    setLoading(true);
-    try {
-      const now = Date.now();
-      if (editingId) {
-        const updated = items.map((item) => item.id === editingId ? { ...item, serviceName: serviceName.trim(), description, content, availability, pricing, category, coverImage, updatedAt: now } : item);
-        saveToStorage(updated);
-      } else {
-        const newItem: Service = { id: now.toString(), serviceName: serviceName.trim(), description, content, availability, pricing, category, coverImage, createdAt: now, updatedAt: now };
-        saveToStorage([newItem, ...items]);
-      }
-      setMessage({ type: "success", text: editingId ? "Updated!" : "Created!" });
-      setShowForm(false);
-    } catch { setMessage({ type: "error", text: "Failed" }); } finally { setLoading(false); }
-  };
-
-  const handleDelete = (id: string) => { if (confirm("Delete?")) { saveToStorage(items.filter((item) => item.id !== id)); setMessage({ type: "success", text: "Deleted" }); } };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-gray-900">Hope Studio Services</h1><p className="mt-1 text-sm text-gray-500">Manage studio services and offerings</p></div>
-        <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">+ New Service</button>
-      </div>
-      {message && <div className={`rounded-lg p-4 text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>{message.text}</div>}
-      {showForm && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="mb-4 text-lg font-semibold">{editingId ? "Edit" : "New"} Service</h2>
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div><label className="mb-1 block text-sm font-medium">Service Name</label><input type="text" value={serviceName} onChange={(e) => setServiceName(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" required /></div>
-              <div><label className="mb-1 block text-sm font-medium">Category</label><select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">{CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
-              <div><label className="mb-1 block text-sm font-medium">Availability</label><input type="text" value={availability} onChange={(e) => setAvailability(e.target.value)} placeholder="e.g., Mon-Fri 9am-6pm" className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
-              <div><label className="mb-1 block text-sm font-medium">Pricing</label><input type="text" value={pricing} onChange={(e) => setPricing(e.target.value)} placeholder="e.g., $100/hour" className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
-              <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Cover Image</label><input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverSelect} className="hidden" /><button type="button" onClick={() => coverInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Choose Image</button>{coverPreview && <img src={coverPreview} alt="Preview" className="mt-2 h-32 w-48 rounded-md object-cover" />}</div>
-              <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Summary</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
-              <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Full Content</label><RichTextEditor content={content} onChange={setContent} /></div>
-            </div>
-            <div className="flex justify-end gap-3 border-t pt-4"><button type="button" onClick={() => setShowForm(false)} className="rounded-md border border-gray-300 bg-white px-4 py-2">Cancel</button><button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-white disabled:opacity-50">{loading ? "Saving..." : editingId ? "Update" : "Create"}</button></div>
-          </form>
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Hope Studio</h1>
+          <p className="mt-1 text-sm text-gray-500">Fixed content pages - no editing needed</p>
         </div>
-      )}
+      </div>
+
+      <div className="rounded-lg bg-blue-50 p-4 text-sm text-blue-700">
+        These are fixed content pages. Content is managed in the source code.
+      </div>
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {items.length === 0 ? <div className="col-span-full rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">No services yet.</div> : items.map((item) => (
+        {HOPE_STUDIO_ITEMS.map((item) => (
           <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-4">
-            {item.coverImage && <img src={item.coverImage} alt={item.serviceName} className="h-32 w-full rounded-md object-cover" />}
-            <div className="mt-3"><span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">{CATEGORIES.find((c) => c.value === item.category)?.label || item.category}</span></div>
-            <h3 className="mt-2 font-medium text-gray-900">{item.serviceName}</h3>
-            <p className="mt-2 text-sm text-gray-500 line-clamp-2">{item.description?.replace(/<[^>]*>/g, "").substring(0, 100)}</p>
-            {item.pricing && <p className="mt-2 text-sm font-medium text-green-600">{item.pricing}</p>}
-            <div className="mt-3 flex gap-2 border-t pt-3"><button onClick={() => handleEdit(item)} className="flex-1 rounded bg-gray-100 px-3 py-1.5 text-xs font-medium hover:bg-gray-200">Edit</button><button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600">Delete</button></div>
+            <img src={item.image} alt={item.title} className="h-32 w-full rounded-md object-cover" />
+            <h3 className="mt-3 text-center font-medium text-gray-900">{item.title}</h3>
+            <div className="mt-3 flex justify-center border-t pt-3">
+              <a
+                href={`/hope-studio/${item.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-200"
+              >
+                View Page
+              </a>
+            </div>
           </div>
         ))}
       </div>
