@@ -19,7 +19,7 @@ function ShangriLaBanner() {
         {/* Right Button Side */}
         <div className="flex-shrink-0">
           <Link
-            href="/performance/musical/shangri-la"
+            href="/hope-studio/shangri-la"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-block bg-white text-gray-900 font-medium px-8 py-3 rounded-full text-sm shadow transition-all duration-200 hover:bg-gray-100 hover:scale-105"
