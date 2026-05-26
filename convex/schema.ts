@@ -1,17 +1,26 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-// Schema with validation disabled to work with existing data
+// Schema with validation enabled
 export default defineSchema(
   {
     users: defineTable({
       email: v.string(),
       username: v.string(),
       avatar: v.string(),
-      role: v.optional(v.string()),
+      role: v.optional(v.union(
+        v.literal("super_admin"),
+        v.literal("operator"),
+        v.literal("member")
+      )),
+      status: v.optional(v.union(
+        v.literal("active"),
+        v.literal("disabled")
+      )),
       createdAt: v.optional(v.number()),
       isBanned: v.optional(v.boolean()),
-    }).index("by_email", ["email"]),
+    })
+    .index("by_email", ["email"]),
 
     posts: defineTable({
       authorEmail: v.string(),
@@ -72,6 +81,6 @@ export default defineSchema(
     }),
   },
   {
-    schemaValidation: false,
+    schemaValidation: true,
   }
 );

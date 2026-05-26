@@ -3,16 +3,18 @@
 import { useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
+import { useQuery } from "convex/react";
+import { api } from "@/lib/convex";
 
-  const NAV_ITEMS = [
-    { label: "Performance", href: "/admin/productions" },
-    { label: "Stage Production", href: "/admin/stage-production" },
-    { label: "Hope Studio", href: "/admin/hope-studio" },
-    { label: "Interaction", href: "/admin/interaction" },
-    { label: "News", href: "/admin/news" },
-    { label: "Community", href: "/admin/community" },
-    { label: "Users", href: "/admin/users" },
-  ];
+const BASE_NAV_ITEMS = [
+  { label: "Performance", href: "/admin/productions" },
+  { label: "Stage Production", href: "/admin/stage-production" },
+  { label: "Hope Studio", href: "/admin/hope-studio" },
+  { label: "Interaction", href: "/admin/interaction" },
+  { label: "News", href: "/admin/news" },
+  { label: "Community", href: "/admin/community" },
+  { label: "Users", href: "/admin/users" },
+];
 
 export default function AdminLayout({
   children,
@@ -22,9 +24,18 @@ export default function AdminLayout({
   const router = useRouter();
   const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
+  // Get current user
+  const currentUser = useQuery(
+    api.admin.getCurrentUser,
+    userEmail ? { email: userEmail } : "skip"
+  ) as { email: string; username: string; role: string; status: string } | null | undefined;
 
   useEffect(() => {
     setMounted(true);
+    const email = localStorage.getItem("user_email");
+    setUserEmail(email);
   }, []);
 
   const isLoginPage = pathname === "/admin/login";
@@ -33,13 +44,16 @@ export default function AdminLayout({
     if (!mounted) return;
     if (isLoginPage) return;
     
-    const isLoggedIn = sessionStorage.getItem("adminLoggedIn");
-    if (isLoggedIn !== "true") {
+    const isLoggedIn = localStorage.getItem("isLoggedIn") === "true" || sessionStorage.getItem("adminLoggedIn") === "true";
+    if (!isLoggedIn) {
       router.push("/admin/login");
     }
   }, [mounted, isLoginPage, router]);
 
   const handleLogout = () => {
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("user_email");
+    localStorage.removeItem("user_data");
     sessionStorage.removeItem("adminLoggedIn");
     router.push("/admin/login");
   };
@@ -52,7 +66,14 @@ export default function AdminLayout({
     return <>{children}</>;
   }
 
-  const isLoggedIn = sessionStorage.getItem("adminLoggedIn") === "true";
+  const isLoggedIn = localStorage.getItem("isLoggedIn") === "true" || sessionStorage.getItem("adminLoggedIn") === "true";
+  const isSuperAdmin = currentUser?.role === "super_admin";
+
+  // Build navigation items based on role
+  const navItems = [...BASE_NAV_ITEMS];
+  if (isSuperAdmin) {
+    navItems.push({ label: "员工管理", href: "/admin/employees" });
+  }
 
   if (!isLoggedIn) {
     return (
@@ -73,7 +94,7 @@ export default function AdminLayout({
                 Admin Panel
               </Link>
               <nav className="flex gap-1">
-                {NAV_ITEMS.map((item) => (
+                {BASE_NAV_ITEMS.map((item) => (
                   <Link
                     key={item.href}
                     href={item.href}
@@ -86,6 +107,19 @@ export default function AdminLayout({
                     {item.label}
                   </Link>
                 ))}
+                {/* Only show Employee Management for Super Admin */}
+                {isSuperAdmin && (
+                  <Link
+                    href="/admin/employees"
+                    className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                      pathname === "/admin/employees"
+                        ? "bg-red-100 text-red-700"
+                        : "text-red-600 hover:text-red-700 hover:bg-red-50"
+                    }`}
+                  >
+                    员工管理
+                  </Link>
+                )}
                 <Link
                   href="/admin/dashboard"
                   className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -99,6 +133,19 @@ export default function AdminLayout({
               </nav>
             </div>
             <div className="flex items-center gap-4">
+              {currentUser && (
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <img
+                    src={currentUser.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + currentUser.username}
+                    alt={currentUser.username}
+                    className="w-8 h-8 rounded-full bg-gray-200"
+                  />
+                  <span>{currentUser.username}</span>
+                  {isSuperAdmin && (
+                    <span className="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded">管理员</span>
+                  )}
+                </div>
+              )}
               <Link href="/" className="text-sm text-gray-500 hover:text-gray-900">
                 View Site
               </Link>

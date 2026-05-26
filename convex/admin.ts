@@ -2,6 +2,26 @@ import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 
 // ============================================
+// AUTH: Get Current User (for frontend use)
+// ============================================
+export const getCurrentUser = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const allUsers = await ctx.db.query("users").collect();
+    const user = allUsers.find((u: any) => u.email === args.email);
+    if (!user) return null;
+    return {
+      _id: user._id,
+      email: user.email,
+      username: user.username,
+      avatar: user.avatar,
+      role: user.role ?? "member",
+      status: user.status ?? "active",
+    };
+  },
+});
+
+// ============================================
 // FILE STORAGE: Generate Upload URL
 // ============================================
 export const generateUploadUrl = mutation({
@@ -12,16 +32,187 @@ export const generateUploadUrl = mutation({
 });
 
 // ============================================
-// HELPER: Skip Admin Authentication
-// Note: Admin panel is protected by password on frontend
+// HELPER: Require Super Admin
+// ============================================
+async function requireSuperAdmin(ctx: any, email: string | null): Promise<any> {
+  if (!email) {
+    throw new Error("请先登录");
+  }
+  const allUsers = await ctx.db.query("users").collect();
+  const user = allUsers.find((u: any) => u.email === email);
+  if (!user) {
+    throw new Error("用户不存在");
+  }
+  if (user.role !== "super_admin") {
+    throw new Error("权限不足，需要 Super Admin 权限");
+  }
+  if (user.status === "disabled") {
+    throw new Error("您的账号已被禁用");
+  }
+  return user;
+}
+
+// ============================================
+// HELPER: Skip Admin Authentication (for backward compatibility)
 // ============================================
 async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: string | null; email: string | null }> {
-  // Skip auth check - frontend password protection is sufficient for single admin
   return { isAdmin: true, userId: null, email: null };
 }
 
 // ============================================
-// TAB 1: USER MANAGEMENT
+// RBAC: Employee Management (Super Admin Only)
+// ============================================
+
+// List all employees - Super Admin only
+export const listEmployees = query({
+  args: { callerEmail: v.string() },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx, args.callerEmail);
+    const allUsers = await ctx.db.query("users").collect();
+    return allUsers.map((u: any) => ({
+      _id: u._id,
+      email: u.email ?? "",
+      username: u.username ?? "",
+      avatar: u.avatar ?? "",
+      role: u.role ?? "member",
+      status: u.status ?? "active",
+      createdAt: u.createdAt ?? Date.now(),
+    })).sort((a: any, b: any) => b.createdAt - a.createdAt);
+  },
+});
+
+// Create new employee - Super Admin only
+export const createEmployee = mutation({
+  args: {
+    callerEmail: v.string(),
+    email: v.string(),
+    username: v.string(),
+    avatar: v.string(),
+    role: v.optional(v.union(
+      v.literal("super_admin"),
+      v.literal("operator"),
+      v.literal("member")
+    )),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx, args.callerEmail);
+    
+    const allUsers = await ctx.db.query("users").collect();
+    
+    // Check if email exists
+    if (allUsers.some((u: any) => u.email === args.email)) {
+      throw new Error("该邮箱已被注册");
+    }
+    
+    // Check if username exists
+    if (allUsers.some((u: any) => u.username === args.username)) {
+      throw new Error("该用户名已被使用");
+    }
+    
+    // First user becomes super_admin automatically
+    const isFirstUser = allUsers.length === 0;
+    const finalRole = isFirstUser ? "super_admin" : (args.role ?? "member");
+    
+    const userId = await ctx.db.insert("users", {
+      email: args.email,
+      username: args.username,
+      avatar: args.avatar,
+      role: finalRole,
+      status: "active",
+      createdAt: Date.now(),
+      isBanned: false,
+    });
+    
+    return { 
+      success: true, 
+      userId, 
+      message: isFirstUser 
+        ? `第一个用户创建成功，角色：Super Admin` 
+        : `员工创建成功，角色：${finalRole}` 
+    };
+  },
+});
+
+// Toggle user status (active <-> disabled) - Super Admin only
+export const toggleUserStatus = mutation({
+  args: {
+    callerEmail: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx, args.callerEmail);
+    
+    // Prevent self-disable
+    const allUsers = await ctx.db.query("users").collect();
+    const caller = allUsers.find((u: any) => u.email === args.callerEmail);
+    if (caller && caller._id === args.userId) {
+      throw new Error("不能禁用自己的账号");
+    }
+    
+    const user = await ctx.db.get(args.userId);
+    if (!user) {
+      throw new Error("用户不存在");
+    }
+    
+    const newStatus = user.status === "disabled" ? "active" : "disabled";
+    await ctx.db.patch(args.userId, { status: newStatus });
+    
+    return { 
+      success: true, 
+      message: `用户状态已更新为：${newStatus === "active" ? "启用" : "禁用"}` 
+    };
+  },
+});
+
+// Update user role - Super Admin only
+export const updateUserRole = mutation({
+  args: {
+    callerEmail: v.string(),
+    userId: v.id("users"),
+    newRole: v.union(
+      v.literal("super_admin"),
+      v.literal("operator"),
+      v.literal("member")
+    ),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx, args.callerEmail);
+    
+    // Prevent self-demote
+    const allUsers = await ctx.db.query("users").collect();
+    const caller = allUsers.find((u: any) => u.email === args.callerEmail);
+    if (caller && caller._id === args.userId && args.newRole !== "super_admin") {
+      throw new Error("不能修改自己的超级管理员角色");
+    }
+    
+    await ctx.db.patch(args.userId, { role: args.newRole });
+    return { success: true, message: `用户角色已更新为：${args.newRole}` };
+  },
+});
+
+// Delete user - Super Admin only
+export const deleteUser = mutation({
+  args: {
+    callerEmail: v.string(),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx, args.callerEmail);
+    
+    // Prevent self-delete
+    const allUsers = await ctx.db.query("users").collect();
+    const caller = allUsers.find((u: any) => u.email === args.callerEmail);
+    if (caller && caller._id === args.userId) {
+      throw new Error("不能删除自己的账号");
+    }
+    
+    await ctx.db.delete(args.userId);
+    return { success: true, message: "用户已删除" };
+  },
+});
+
+// ============================================
+// TAB 1: USER MANAGEMENT (Legacy - kept for backward compatibility)
 // ============================================
 
 export const listAllUsers = query({
@@ -34,22 +225,11 @@ export const listAllUsers = query({
       email: u.email ?? "",
       username: u.username ?? "",
       avatar: u.avatar ?? "",
-      role: u.role ?? "user",
+      role: u.role ?? "member",
+      status: u.status ?? "active",
       isBanned: u.isBanned ?? false,
       createdAt: u.createdAt ?? Date.now(),
     }));
-  },
-});
-
-export const updateUserRole = mutation({
-  args: {
-    userId: v.id("users"),
-    newRole: v.union(v.literal("user"), v.literal("admin")),
-  },
-  handler: async (ctx, args) => {
-    await requireAdmin(ctx);
-    await ctx.db.patch("users", args.userId, { role: args.newRole });
-    return { success: true, message: `User role updated to ${args.newRole}` };
   },
 });
 
@@ -57,7 +237,7 @@ export const banUser = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    await ctx.db.patch("users", args.userId, { isBanned: true });
+    await ctx.db.patch(args.userId, { isBanned: true, status: "disabled" });
     return { success: true, message: "User banned successfully" };
   },
 });
@@ -66,8 +246,85 @@ export const unbanUser = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
-    await ctx.db.patch("users", args.userId, { isBanned: false });
+    await ctx.db.patch(args.userId, { isBanned: false, status: "active" });
     return { success: true, message: "User unbanned successfully" };
+  },
+});
+
+// ============================================
+// AUTH: Register with Auto Super Admin Logic
+// ============================================
+export const register = mutation({
+  args: {
+    email: v.string(),
+    username: v.string(),
+    avatar: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const allUsers = await ctx.db.query("users").collect();
+    
+    if (allUsers.some((u: any) => u.email === args.email)) {
+      throw new Error("邮箱已被注册");
+    }
+    if (allUsers.some((u: any) => u.username === args.username)) {
+      throw new Error("用户名已被使用");
+    }
+    
+    // First user becomes super_admin automatically
+    const isFirstUser = allUsers.length === 0;
+    const role = isFirstUser ? "super_admin" : "member";
+    
+    const userId = await ctx.db.insert("users", {
+      email: args.email,
+      username: args.username,
+      avatar: args.avatar,
+      role: role,
+      status: "active",
+      createdAt: Date.now(),
+      isBanned: false,
+    });
+    
+    return { 
+      userId, 
+      email: args.email, 
+      username: args.username, 
+      avatar: args.avatar,
+      role: role,
+      message: isFirstUser ? "恭喜！您成为系统第一个用户，已被设为超级管理员" : "注册成功"
+    };
+  },
+});
+
+// ============================================
+// AUTH: Login with Status Check
+// ============================================
+export const login = query({
+  args: { email: v.string() },
+  handler: async (ctx, args) => {
+    const allUsers = await ctx.db.query("users").collect();
+    const user = allUsers.find((u: any) => u.email === args.email);
+    
+    if (!user) {
+      throw new Error("邮箱不存在");
+    }
+    
+    // Check if disabled
+    if (user.status === "disabled") {
+      throw new Error("您的账号已被禁用，请联系管理员");
+    }
+    
+    // Check if banned (legacy field)
+    if (user.isBanned) {
+      throw new Error("您的账号已被封禁");
+    }
+    
+    return {
+      email: user.email,
+      username: user.username,
+      avatar: user.avatar,
+      role: user.role ?? "member",
+      status: user.status ?? "active",
+    };
   },
 });
 
@@ -77,7 +334,7 @@ export const unbanUser = mutation({
 
 export const listAllPosts = query({
   args: { includeDeleted: v.optional(v.boolean()) },
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     await requireAdmin(ctx);
     const allPosts = await ctx.db.query("posts").collect();
     return allPosts
@@ -99,7 +356,7 @@ export const listAllPosts = query({
 
 export const listAllComments = query({
   args: { includeDeleted: v.optional(v.boolean()) },
-  handler: async (ctx, args) => {
+  handler: async (ctx) => {
     await requireAdmin(ctx);
     const allComments = await ctx.db.query("comments").collect();
     return allComments
@@ -288,7 +545,7 @@ export const createHopeStudioService = mutation({
       serviceName: args.serviceName,
       description: args.description,
       category: args.category ?? "recording",
-availability: args.availability,
+      availability: args.availability,
       pricing: args.pricing,
       imageLinks: args.imageLinks ?? [],
       isActive: args.isActive ?? true,
@@ -465,55 +722,5 @@ export const deleteNewsArticle = mutation({
     await requireAdmin(ctx);
     await ctx.db.delete("news", args.id);
     return { success: true, message: "News article deleted" };
-  },
-});
-
-// ============================================
-// AUTH MUTATIONS
-// ============================================
-
-export const register = mutation({
-  args: {
-    email: v.string(),
-    username: v.string(),
-    avatar: v.string(),
-  },
-  handler: async (ctx, args) => {
-    const allUsers = await ctx.db.query("users").collect();
-    if (allUsers.some((u: any) => u.email === args.email)) {
-      throw new Error("Email already registered");
-    }
-    if (allUsers.some((u: any) => u.username === args.username)) {
-      throw new Error("Username already taken");
-    }
-    const userId = await ctx.db.insert("users", {
-      email: args.email,
-      username: args.username,
-      avatar: args.avatar,
-      role: "user",
-      createdAt: Date.now(),
-      isBanned: false,
-    });
-    return { userId, email: args.email, username: args.username, avatar: args.avatar };
-  },
-});
-
-export const login = query({
-  args: { email: v.string() },
-  handler: async (ctx, args) => {
-    const allUsers = await ctx.db.query("users").collect();
-    const user = allUsers.find((u: any) => u.email === args.email);
-    if (!user) {
-      throw new Error("Email not found");
-    }
-    if (user.isBanned) {
-      throw new Error("This account has been banned");
-    }
-    return {
-      email: user.email,
-      username: user.username,
-      avatar: user.avatar,
-      role: user.role ?? "user",
-    };
   },
 });
