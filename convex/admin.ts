@@ -102,11 +102,11 @@ export const createEmployee = mutation({
     email: v.string(),
     username: v.string(),
     avatar: v.string(),
-    role: v.optional(v.union(
+    role: v.union(
       v.literal("super_admin"),
       v.literal("operator"),
       v.literal("member")
-    )),
+    ),
   },
   handler: async (ctx, args) => {
     await requireSuperAdmin(ctx, args.callerEmail);
@@ -123,15 +123,11 @@ export const createEmployee = mutation({
       throw new Error("该用户名已被使用");
     }
     
-    // First user becomes super_admin automatically
-    const isFirstUser = allUsers.length === 0;
-    const finalRole = isFirstUser ? "super_admin" : (args.role ?? "member");
-    
     const userId = await ctx.db.insert("users", {
       email: args.email,
       username: args.username,
       avatar: args.avatar,
-      role: finalRole,
+      role: args.role,
       status: "active",
       createdAt: Date.now(),
       isBanned: false,
@@ -140,9 +136,7 @@ export const createEmployee = mutation({
     return { 
       success: true, 
       userId, 
-      message: isFirstUser 
-        ? `第一个用户创建成功，角色：Super Admin` 
-        : `员工创建成功，角色：${finalRole}` 
+      message: `Employee created successfully with role: ${args.role}` 
     };
   },
 });

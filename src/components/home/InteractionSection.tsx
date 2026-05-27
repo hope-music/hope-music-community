@@ -1,50 +1,125 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { CategoryBox } from "@/components/ui/CategoryBox";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ViewMoreButton } from "@/components/ui/ViewMoreButton";
-import {
-  INTERACTION_CATEGORIES,
-  SOFTWARE_PLACEHOLDER_ITEMS,
-  HARDWARE_PLACEHOLDER_ITEMS,
-  MUSIC_PLACEHOLDER_ITEMS,
-  STAGE_PRODUCTION_PLACEHOLDER_ITEMS,
-  ARTICAL_PLACEHOLDER_ITEMS,
-  OTHERS_PLACEHOLDER_ITEMS,
-} from "@/lib/constants";
+import { CategoryBox } from "@/components/ui/CategoryBox";
 
-const CATEGORY_SLUG_MAP: Record<string, string> = {
-  Software: "software",
-  Hardware: "hardware",
-  Music: "music",
-  "Stage Production": "stage-production",
-  Artical: "artical",
-  Others: "others",
+interface InteractionItem {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  coverImage: string;
+  author: string;
+  createdAt: number;
+}
+
+const CATEGORY_LABELS: Record<string, string> = {
+  software: "Software",
+  hardware: "Hardware",
+  music: "Music",
+  production: "Stage Production",
+  artical: "Artical",
+  others: "Others",
 };
 
-const CATEGORY_ITEMS_MAP: Record<string, readonly { id: string; title: string }[]> = {
-  Software: SOFTWARE_PLACEHOLDER_ITEMS,
-  Hardware: HARDWARE_PLACEHOLDER_ITEMS,
-  Music: MUSIC_PLACEHOLDER_ITEMS,
-  "Stage Production": STAGE_PRODUCTION_PLACEHOLDER_ITEMS,
-  Artical: ARTICAL_PLACEHOLDER_ITEMS,
-  Others: OTHERS_PLACEHOLDER_ITEMS,
+const CATEGORY_KEYS = ["software", "hardware", "music", "production", "artical", "others"];
+
+const PLACEHOLDER_POSTS: Record<string, { id: string; title: string }[]> = {
+  software: [
+    { id: "ph-soft-1", title: "ISAT Interaction 2023 v1.0.4 Released" },
+    { id: "ph-soft-2", title: "How to optimize latent settings in DAW Soundworks" },
+    { id: "ph-soft-3", title: "MIDI controller mapping tutorial for live performance" },
+    { id: "ph-soft-4", title: "Best free VST plugins for orchestral composition" },
+    { id: "ph-soft-5", title: "Audio interface latency troubleshooting guide" },
+    { id: "ph-soft-6", title: "Setting up multi-monitor workspace for mixing" },
+    { id: "ph-soft-7", title: "Cloud collaboration tools for remote music production" },
+    { id: "ph-soft-8", title: "Automating reverb sends with sidechain compression" },
+    { id: "ph-soft-9", title: "Exporting stems correctly for film scoring projects" },
+    { id: "ph-soft-10", title: "Building a custom macro pad for live DJ sets" },
+  ],
+  hardware: [
+    { id: "ph-hard-1", title: "Best audio interfaces of 2026 — comprehensive comparison" },
+    { id: "ph-hard-2", title: "Monitor speaker placement guide — acoustics for small rooms" },
+    { id: "ph-hard-3", title: "Understanding microphone polar patterns" },
+    { id: "ph-hard-4", title: "DI box explained: active vs passive" },
+    { id: "ph-hard-5", title: "Audio cabling basics — balanced vs unbalanced" },
+    { id: "ph-hard-6", title: "DIY acoustic treatment on a budget" },
+    { id: "ph-hard-7", title: "Headphone amplifier pairing guide" },
+    { id: "ph-hard-8", title: "How to choose the right MIDI keyboard" },
+    { id: "ph-hard-9", title: "Studio furniture and desk setup essentials" },
+    { id: "ph-hard-10", title: "Power conditioning and surge protection guide" },
+  ],
+  music: [
+    { id: "ph-music-1", title: "Songwriting 101: Finding your unique melodic voice" },
+    { id: "ph-music-2", title: "Orchestral arrangement tips for small ensembles" },
+    { id: "ph-music-3", title: "Understanding modal scales beyond major and minor" },
+    { id: "ph-music-4", title: "Music theory for producers" },
+    { id: "ph-music-5", title: "Creating emotional chord progressions" },
+    { id: "ph-music-6", title: "Rhythm and groove fundamentals" },
+    { id: "ph-music-7", title: "Melody writing techniques" },
+    { id: "ph-music-8", title: "Harmonic color — using extended chords" },
+    { id: "ph-music-9", title: "Arranging for different ensembles" },
+    { id: "ph-music-10", title: "Music production workflow optimization" },
+  ],
+  production: [
+    { id: "ph-prod-1", title: "Lighting design fundamentals for live stage" },
+    { id: "ph-prod-2", title: "Sound reinforcement setup for live theater" },
+    { id: "ph-prod-3", title: "Stage rigging safety standards" },
+    { id: "ph-prod-4", title: "Projection mapping techniques" },
+    { id: "ph-prod-5", title: "Set design and construction on a budget" },
+    { id: "ph-prod-6", title: "AV system integration for venues" },
+    { id: "ph-prod-7", title: "Backstage communication protocols" },
+    { id: "ph-prod-8", title: "Pyrotechnics and special effects safety" },
+    { id: "ph-prod-9", title: "Live mixing techniques for bands" },
+    { id: "ph-prod-10", title: "Stage management best practices" },
+  ],
+  artical: [
+    { id: "ph-art-1", title: "The rich history of musical theater" },
+    { id: "ph-art-2", title: "The evolution of recording technology" },
+    { id: "ph-art-3", title: "The 10 most influential composers of the 21st century" },
+    { id: "ph-art-4", title: "Psychoacoustics: how the brain processes music" },
+    { id: "ph-art-5", title: "Music therapy research — evidence-based practice" },
+    { id: "ph-art-6", title: "Copyright law for independent musicians" },
+    { id: "ph-art-7", title: "The streaming era — understanding music economics" },
+    { id: "ph-art-8", title: "AI in music composition" },
+    { id: "ph-art-9", title: "The future of live music performances" },
+    { id: "ph-art-10", title: "Music education trends and innovations" },
+  ],
+  others: [
+    { id: "ph-oth-1", title: "Community guidelines — keeping our forum respectful" },
+    { id: "ph-oth-2", title: "Community event calendar — upcoming meetups" },
+    { id: "ph-oth-3", title: "Introduce yourself to the Hope Music Community!" },
+    { id: "ph-oth-4", title: "Resources and tutorials master list" },
+    { id: "ph-oth-5", title: "Collaboration opportunities" },
+    { id: "ph-oth-6", title: "Gear marketplace — buy, sell, and trade" },
+    { id: "ph-oth-7", title: "Feedback welcome — share your thoughts" },
+    { id: "ph-oth-8", title: "Support and help desk" },
+    { id: "ph-oth-9", title: "Weekly listening sessions schedule" },
+    { id: "ph-oth-10", title: "Feature requests and suggestions board" },
+  ],
 };
 
 function TopicList({
   category,
   items,
+  placeholderItems,
 }: {
   category: string;
-  items: readonly { id: string; title: string }[];
+  items: InteractionItem[];
+  placeholderItems: { id: string; title: string }[];
 }) {
-  const slug = CATEGORY_SLUG_MAP[category];
+  const displayItems = items.length > 0 ? items.slice(0, 10) : placeholderItems;
+
   return (
     <ul className="space-y-0.5">
-      {items.map((item) => (
+      {displayItems.map((item) => (
         <li key={item.id}>
           <Link
-            href={`/interaction/${slug}/${item.id}`}
+            href={`/interaction/${category}/${item.id}`}
             target="_blank"
             rel="noopener noreferrer"
             className="group flex items-start gap-2 rounded px-2 py-1.5 text-sm text-hmc-text transition-colors duration-150 hover:bg-amber-50/50 hover:text-[#C8102E]"
@@ -59,6 +134,28 @@ function TopicList({
 }
 
 export function InteractionSection() {
+  const [allItems, setAllItems] = useState<InteractionItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("admin_interaction");
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        setAllItems(data);
+      } catch (e) {
+        console.error("Failed to parse interaction data", e);
+      }
+    }
+    setLoading(false);
+  }, []);
+
+  // Group items by category
+  const itemsByCategory: Record<string, InteractionItem[]> = {};
+  CATEGORY_KEYS.forEach((cat) => {
+    itemsByCategory[cat] = allItems.filter((item) => item.category === cat);
+  });
+
   return (
     <section className="py-6" aria-labelledby="interaction-heading">
       <Container>
@@ -67,23 +164,35 @@ export function InteractionSection() {
           id="interaction-heading"
           className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {INTERACTION_CATEGORIES.map((category) => {
-            const slug = CATEGORY_SLUG_MAP[category];
-            const items = CATEGORY_ITEMS_MAP[category];
+          {CATEGORY_KEYS.map((categorySlug) => {
+            const items = itemsByCategory[categorySlug] || [];
+            const categoryLabel = CATEGORY_LABELS[categorySlug] || categorySlug;
+            const placeholders = PLACEHOLDER_POSTS[categorySlug] || [];
+
             return (
               <CategoryBox
-                key={category}
-                title={category}
+                key={categorySlug}
+                title={categoryLabel}
                 headerVariant="interaction"
                 headerAction={
                   <ViewMoreButton
-                    href={`/interaction/${slug}`}
+                    href={`/interaction/${categorySlug}`}
                     size="sm"
                     className="!bg-white !text-hmc-text"
                   />
                 }
               >
-                {items && <TopicList category={category} items={items} />}
+                {loading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-[#D96A32]"></div>
+                  </div>
+                ) : (
+                  <TopicList
+                    category={categorySlug}
+                    items={items}
+                    placeholderItems={placeholders}
+                  />
+                )}
               </CategoryBox>
             );
           })}

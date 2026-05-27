@@ -13,7 +13,7 @@ export default function AdminLoginPage() {
   // Simple password check
   const CORRECT_PASSWORD = "hope1500";
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!password.trim()) {
       setError("Please enter password");
@@ -21,21 +21,27 @@ export default function AdminLoginPage() {
     }
 
     setLoading(true);
+    setError("");
 
-    if (password === CORRECT_PASSWORD) {
-      sessionStorage.setItem("adminLoggedIn", "true");
-      // Also set user info for RBAC system
-      localStorage.setItem("user_email", "admin@hopemusic.com");
-      localStorage.setItem("user_data", JSON.stringify({
-        email: "admin@hopemusic.com",
-        username: "Administrator",
-        role: "super_admin",
-        status: "active"
-      }));
-      router.push("/admin/dashboard");
-    } else {
-      setError("Incorrect password");
-      setPassword("");
+    try {
+      if (password === CORRECT_PASSWORD) {
+        sessionStorage.setItem("adminLoggedIn", "true");
+        localStorage.setItem("user_email", "admin@hopemusic.com");
+        localStorage.setItem("user_data", JSON.stringify({
+          email: "admin@hopemusic.com",
+          username: "Administrator",
+          role: "super_admin",
+          status: "active"
+        }));
+        setLoading(false);
+        window.location.href = "/admin/dashboard";
+      } else {
+        setError("Incorrect password");
+        setPassword("");
+        setLoading(false);
+      }
+    } catch (err) {
+      setError("Login failed. Please try again.");
       setLoading(false);
     }
   };
