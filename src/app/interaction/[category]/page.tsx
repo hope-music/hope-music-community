@@ -2,206 +2,331 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { api } from "@/lib/convex";
+import { useQuery } from "@/lib/convex";
 
-interface Interaction {
-  id: string;
+interface Post {
+  _id: string;
   title: string;
+  content: string;
   category: string;
-  description: string;
-  coverImage: string;
-  author: string;
+  authorUsername: string;
+  authorAvatar: string;
+  authorEmail: string;
+  createdAt: number;
 }
 
-const CATEGORIES = [
-  { value: "software", label: "Software" },
-  { value: "hardware", label: "Hardware" },
-  { value: "music", label: "Music" },
-  { value: "production", label: "Production" },
-  { value: "resources", label: "Resources" },
-  { value: "other", label: "Other" },
-  { value: "artical", label: "Artical" },
-  { value: "others", label: "Others" },
+const ALL_CATEGORIES = [
+  { value: "software", label: "Software", icon: "💻" },
+  { value: "hardware", label: "Hardware", icon: "🎛️" },
+  { value: "music", label: "Music", icon: "🎵" },
+  { value: "production", label: "Production", icon: "🎬" },
+  { value: "resources", label: "Resources", icon: "📚" },
+  { value: "artical", label: "Article", icon: "📝" },
+  { value: "others", label: "Others", icon: "💬" },
 ];
 
-const PLACEHOLDER_ITEMS: Record<string, { id: string; title: string; description: string; coverImage: string }[]> = {
-  software: [
-    { id: "ph-soft-1", title: "ISAT Interaction 2023 v1.0.4 Released", description: "The latest version of ISAT Interaction brings new features and improvements.", coverImage: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800" },
-    { id: "ph-soft-2", title: "How to optimize latent settings in DAW Soundworks", description: "Learn how to reduce latency and improve your workflow.", coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800" },
-    { id: "ph-soft-3", title: "MIDI controller mapping tutorial for live performance", description: "A comprehensive guide to mapping your MIDI controller.", coverImage: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=800" },
-    { id: "ph-soft-4", title: "Best free VST plugins for orchestral composition", description: "Top free VST plugins for creating orchestral arrangements.", coverImage: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800" },
-    { id: "ph-soft-5", title: "Audio interface latency troubleshooting guide", description: "Fix latency issues with your audio interface.", coverImage: "https://images.unsplash.com/photo-1598653222000-6b7b7a552625?w=800" },
-    { id: "ph-soft-6", title: "Setting up multi-monitor workspace for mixing", description: "Optimize your studio with multiple monitors.", coverImage: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800" },
-    { id: "ph-soft-7", title: "Cloud collaboration tools for remote music production", description: "Work together with musicians around the world.", coverImage: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800" },
-    { id: "ph-soft-8", title: "Automating reverb sends with sidechain compression", description: "Create dynamic reverb effects for your mixes.", coverImage: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800" },
-    { id: "ph-soft-9", title: "Exporting stems correctly for film scoring projects", description: "Everything you need to know about stem exports.", coverImage: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800" },
-    { id: "ph-soft-10", title: "Building a custom macro pad for live DJ sets", description: "Create your own MIDI macro pad for performances.", coverImage: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800" },
-  ],
-  hardware: [
-    { id: "ph-hard-1", title: "Best audio interfaces of 2026", description: "Comprehensive comparison of top audio interfaces.", coverImage: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=800" },
-    { id: "ph-hard-2", title: "Monitor speaker placement guide", description: "Acoustics tips for small rooms.", coverImage: "https://images.unsplash.com/photo-1558584673-0c8b4f5a3c5f?w=800" },
-    { id: "ph-hard-3", title: "Understanding microphone polar patterns", description: "When to use each type of microphone.", coverImage: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=800" },
-    { id: "ph-hard-4", title: "DI box explained", description: "Active vs passive DI boxes.", coverImage: "https://images.unsplash.com/photo-1558584673-0c8b4f5a3c5f?w=800" },
-    { id: "ph-hard-5", title: "Audio cabling basics", description: "Balanced vs unbalanced, XLR vs TRS.", coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800" },
-    { id: "ph-hard-6", title: "DIY acoustic treatment", description: "Acoustic panels and bass traps on a budget.", coverImage: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=800" },
-    { id: "ph-hard-7", title: "Headphone amplifier pairing guide", description: "Getting the most from your headphones.", coverImage: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800" },
-    { id: "ph-hard-8", title: "How to choose the right MIDI keyboard", description: "Keys, pads, and knobs explained.", coverImage: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800" },
-    { id: "ph-hard-9", title: "Studio furniture and desk setup", description: "Essential furniture for your studio.", coverImage: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800" },
-    { id: "ph-hard-10", title: "Power conditioning guide", description: "Surge protection for your gear.", coverImage: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800" },
-  ],
-  music: [
-    { id: "ph-music-1", title: "Songwriting 101", description: "Finding your unique melodic voice.", coverImage: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800" },
-    { id: "ph-music-2", title: "Orchestral arrangement tips", description: "Arranging for small ensembles.", coverImage: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800" },
-    { id: "ph-music-3", title: "Understanding modal scales", description: "Beyond major and minor.", coverImage: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800" },
-    { id: "ph-music-4", title: "Music theory for producers", description: "Bridging theory and practice.", coverImage: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800" },
-    { id: "ph-music-5", title: "Creating emotional chord progressions", description: "Step by step guide.", coverImage: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800" },
-    { id: "ph-music-6", title: "Rhythm and groove fundamentals", description: "For all genres.", coverImage: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800" },
-    { id: "ph-music-7", title: "Melody writing techniques", description: "Used by professional composers.", coverImage: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800" },
-    { id: "ph-music-8", title: "Harmonic color", description: "Using extended chords.", coverImage: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800" },
-    { id: "ph-music-9", title: "Arranging for ensembles", description: "Different ensemble types.", coverImage: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800" },
-    { id: "ph-music-10", title: "Music production workflow", description: "Optimization techniques.", coverImage: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800" },
-  ],
-  production: [
-    { id: "ph-prod-1", title: "Lighting design fundamentals", description: "For live stage productions.", coverImage: "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800" },
-    { id: "ph-prod-2", title: "Sound reinforcement setup", description: "For live theater and concerts.", coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800" },
-    { id: "ph-prod-3", title: "Stage rigging safety", description: "Standards and best practices.", coverImage: "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800" },
-    { id: "ph-prod-4", title: "Projection mapping techniques", description: "For immersive theater.", coverImage: "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800" },
-    { id: "ph-prod-5", title: "Set design on a budget", description: "Construction tips.", coverImage: "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800" },
-    { id: "ph-prod-6", title: "AV system integration", description: "For multi-purpose venues.", coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800" },
-    { id: "ph-prod-7", title: "Backstage communication", description: "Protocols for smooth shows.", coverImage: "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800" },
-    { id: "ph-prod-8", title: "Pyrotechnics safety", description: "Regulations and safety.", coverImage: "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800" },
-    { id: "ph-prod-9", title: "Live mixing techniques", description: "For bands.", coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800" },
-    { id: "ph-prod-10", title: "Stage management", description: "Best practices.", coverImage: "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800" },
-  ],
-  artical: [
-    { id: "ph-art-1", title: "History of musical theater", description: "From Broadway to global stages.", coverImage: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800" },
-    { id: "ph-art-2", title: "Evolution of recording technology", description: "Five decades of innovation.", coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800" },
-    { id: "ph-art-3", title: "Influential composers", description: "The 10 most influential of the 21st century.", coverImage: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800" },
-    { id: "ph-art-4", title: "Psychoacoustics", description: "How the brain processes music.", coverImage: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800" },
-    { id: "ph-art-5", title: "Music therapy research", description: "Evidence-based practice.", coverImage: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800" },
-    { id: "ph-art-6", title: "Copyright law for musicians", description: "Protecting your work.", coverImage: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800" },
-    { id: "ph-art-7", title: "The streaming era", description: "Understanding music economics.", coverImage: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800" },
-    { id: "ph-art-8", title: "AI in music composition", description: "Opportunity or threat?", coverImage: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800" },
-    { id: "ph-art-9", title: "Future of live music", description: "Performances and trends.", coverImage: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800" },
-    { id: "ph-art-10", title: "Music education trends", description: "Innovations in teaching.", coverImage: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800" },
-  ],
-  others: [
-    { id: "ph-oth-1", title: "Community guidelines", description: "Keeping our forum respectful.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-oth-2", title: "Community event calendar", description: "Upcoming meetups and sessions.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-oth-3", title: "Introduce yourself!", description: "Welcome to Hope Music Community!", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-oth-4", title: "Resources and tutorials", description: "Curated community collection.", coverImage: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800" },
-    { id: "ph-oth-5", title: "Collaboration opportunities", description: "Find your creative partner.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-oth-6", title: "Gear marketplace", description: "Buy, sell, and trade.", coverImage: "https://images.unsplash.com/photo-1558584673-0c8b4f5a3c5f?w=800" },
-    { id: "ph-oth-7", title: "Feedback welcome", description: "Share your thoughts.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-oth-8", title: "Support and help desk", description: "Technical issues help.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-oth-9", title: "Weekly listening sessions", description: "Schedule and topics.", coverImage: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800" },
-    { id: "ph-oth-10", title: "Feature requests", description: "Suggestions board.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-  ],
-  resources: [
-    { id: "ph-res-1", title: "Free sample packs 2026", description: "Best free samples this year.", coverImage: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800" },
-    { id: "ph-res-2", title: "Music production cheat sheet", description: "Quick reference guide.", coverImage: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800" },
-    { id: "ph-res-3", title: "DAW keyboard shortcuts", description: "Speed up your workflow.", coverImage: "https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=800" },
-    { id: "ph-res-4", title: "Mixing checklist", description: "Never miss a step.", coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800" },
-    { id: "ph-res-5", title: "Mastering reference tracks", description: "Professional examples.", coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800" },
-    { id: "ph-res-6", title: "Studio setup guide", description: "From beginner to pro.", coverImage: "https://images.unsplash.com/photo-1571330735066-03aaa9429d89?w=800" },
-    { id: "ph-res-7", title: "Music theory worksheets", description: "Practice exercises.", coverImage: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800" },
-    { id: "ph-res-8", title: "Genre-specific guides", description: "Tailored production tips.", coverImage: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800" },
-    { id: "ph-res-9", title: "Plugin recommendations", description: "Must-have VSTs.", coverImage: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800" },
-    { id: "ph-res-10", title: "Sound design basics", description: "Create unique sounds.", coverImage: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800" },
-  ],
-  other: [
-    { id: "ph-ot-1", title: "Community guidelines", description: "Keeping our forum respectful.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-ot-2", title: "Event calendar", description: "Upcoming meetups.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-ot-3", title: "Introduce yourself!", description: "Welcome!", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-ot-4", title: "Resources master list", description: "Curated collection.", coverImage: "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800" },
-    { id: "ph-ot-5", title: "Collaboration", description: "Find partners.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-ot-6", title: "Gear marketplace", description: "Buy and sell.", coverImage: "https://images.unsplash.com/photo-1558584673-0c8b4f5a3c5f?w=800" },
-    { id: "ph-ot-7", title: "Feedback", description: "Share thoughts.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-ot-8", title: "Support desk", description: "Get help.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-    { id: "ph-ot-9", title: "Listening sessions", description: "Weekly schedule.", coverImage: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800" },
-    { id: "ph-ot-10", title: "Feature requests", description: "Suggestions.", coverImage: "https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=800" },
-  ],
-};
+// Placeholder posts data
+const PLACEHOLDER_POSTS = [
+  { id: "1", title: "ISAT Interaction 2023 v1.0.4 Released", author: "DevTeam", replies: 24, views: 1520, category: "software", createdAt: Date.now() - 3600000 * 2 },
+  { id: "2", title: "Best audio interfaces of 2026 — comprehensive review", author: "GearReviewer", replies: 89, views: 3240, category: "hardware", createdAt: Date.now() - 3600000 * 5 },
+  { id: "3", title: "Songwriting 101: Finding your unique melodic voice", author: "Songsmith", replies: 73, views: 2180, category: "music", createdAt: Date.now() - 3600000 * 12 },
+  { id: "4", title: "Lighting design fundamentals for live stage", author: "LightMaster", replies: 26, views: 890, category: "production", createdAt: Date.now() - 3600000 * 18 },
+  { id: "5", title: "Free sample packs 2026 collection", author: "SampleVault", replies: 145, views: 4520, category: "resources", createdAt: Date.now() - 3600000 * 24 },
+  { id: "6", title: "The rich history of musical theater", author: "TheaterBuff", replies: 94, views: 2890, category: "artical", createdAt: Date.now() - 3600000 * 36 },
+  { id: "7", title: "Community event calendar — upcoming meetups", author: "EventLead", replies: 45, views: 1230, category: "others", createdAt: Date.now() - 3600000 * 48 },
+  { id: "8", title: "MIDI controller mapping tutorial for live performance", author: "MIDI_Master", replies: 42, views: 1560, category: "software", createdAt: Date.now() - 3600000 * 60 },
+  { id: "9", title: "Monitor speaker placement guide — acoustics for small rooms", author: "AcousticPro", replies: 35, views: 980, category: "hardware", createdAt: Date.now() - 3600000 * 72 },
+  { id: "10", title: "Understanding modal scales beyond major and minor", author: "TheoryNerd", replies: 55, views: 1890, category: "music", createdAt: Date.now() - 3600000 * 84 },
+  { id: "11", title: "Stage rigging safety standards", author: "SafetyOfficer", replies: 47, views: 1120, category: "production", createdAt: Date.now() - 3600000 * 96 },
+  { id: "12", title: "DAW keyboard shortcuts cheat sheet", author: "ShortcutGuru", replies: 67, views: 2340, category: "resources", createdAt: Date.now() - 3600000 * 108 },
+  { id: "13", title: "The 10 most influential composers of the 21st century", author: "MusicScholar", replies: 118, views: 3890, category: "artical", createdAt: Date.now() - 3600000 * 120 },
+  { id: "14", title: "Introduce yourself to the Hope Music Community!", author: "NewMember", replies: 203, views: 5670, category: "others", createdAt: Date.now() - 3600000 * 132 },
+  { id: "15", title: "Best free VST plugins for orchestral composition", author: "OrchestraFan", replies: 67, views: 2340, category: "software", createdAt: Date.now() - 3600000 * 144 },
+];
 
 interface PageProps {
   params: Promise<{ category: string }>;
 }
 
+function formatTimeAgo(timestamp: number): string {
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if (seconds < 60) return "just now";
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d`;
+  return `${Math.floor(days / 7)}w`;
+}
+
+function getCategoryInfo(value: string) {
+  return ALL_CATEGORIES.find(c => c.value === value) || { value, label: value, icon: "📌" };
+}
+
 export default function InteractionCategoryPage({ params }: PageProps) {
-  const [items, setItems] = useState<Interaction[]>([]);
+  const [currentCategory, setCurrentCategory] = useState<string | null>(null);
+  const [posts, setPosts] = useState<any[]>([]);
+  const [sortBy, setSortBy] = useState<"latest" | "popular">("latest");
   const [loading, setLoading] = useState(true);
-  const [categoryName, setCategoryName] = useState("");
-  const [currentCategory, setCurrentCategory] = useState("");
 
   useEffect(() => {
-    async function loadData() {
-      const resolvedParams = await params;
-      const category = resolvedParams.category;
-      
-      setCurrentCategory(category);
-      setCategoryName(CATEGORIES.find((c) => c.value === category)?.label || category);
-
-      const stored = localStorage.getItem("admin_interaction");
-      if (stored) {
-        const data = JSON.parse(stored);
-        const filtered = data.filter((item: Interaction) => item.category === category);
-        setItems(filtered);
-      }
+    async function loadParams() {
+      const resolved = await params;
+      setCurrentCategory(resolved.category);
       setLoading(false);
     }
-    loadData();
-  }, []);
+    loadParams();
+  }, [params]);
+
+  // Load posts from Convex or localStorage
+  const allPosts = useQuery(api.admin.listAllPosts) as Post[] | undefined;
+
+  useEffect(() => {
+    if (allPosts !== undefined) {
+      const filtered = currentCategory
+        ? allPosts.filter((p: Post) => p.category === currentCategory)
+        : allPosts;
+      setPosts(filtered.map((p: Post) => ({
+        id: p._id,
+        title: p.title,
+        content: p.content,
+        category: p.category,
+        author: p.authorUsername || "Anonymous",
+        replies: 0,
+        views: Math.floor(Math.random() * 5000),
+        createdAt: p.createdAt || Date.now(),
+      })));
+    } else {
+      // Use placeholder posts filtered by category
+      const filtered = currentCategory
+        ? PLACEHOLDER_POSTS.filter(p => p.category === currentCategory)
+        : PLACEHOLDER_POSTS;
+      setPosts(filtered);
+    }
+  }, [allPosts, currentCategory]);
+
+  // Sort posts
+  const sortedPosts = [...posts].sort((a, b) => {
+    if (sortBy === "popular") {
+      return b.replies - a.replies;
+    }
+    return b.createdAt - a.createdAt;
+  });
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div>
       </div>
     );
   }
 
-  // If no real items, show placeholders
-  const displayItems = items.length > 0 ? items : (PLACEHOLDER_ITEMS[currentCategory] || []);
+  const currentCategoryInfo = currentCategory ? getCategoryInfo(currentCategory) : null;
 
   return (
-    <main className="min-h-screen bg-white">
-      <div className="border-b border-t border-[#D96A32]">
-        <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">{categoryName}</h1>
+    <main className="min-h-screen bg-gray-100">
+      {/* Top Header */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {currentCategoryInfo && (
+                <>
+                  <span className="text-2xl">{currentCategoryInfo.icon}</span>
+                  <div>
+                    <h1 className="text-xl font-bold text-gray-900">{currentCategoryInfo.label}</h1>
+                    <p className="text-sm text-gray-500">{posts.length} topics</p>
+                  </div>
+                </>
+              )}
+              {!currentCategory && (
+                <>
+                  <span className="text-2xl">💬</span>
+                  <div>
+                    <h1 className="text-xl font-bold text-gray-900">Interaction</h1>
+                    <p className="text-sm text-gray-500">{posts.length} topics</p>
+                  </div>
+                </>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              {/* Sort buttons */}
+              <div className="flex bg-gray-100 rounded-lg p-1">
+                <button
+                  onClick={() => setSortBy("latest")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    sortBy === "latest"
+                      ? "bg-white text-[#D96A32] shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Latest
+                </button>
+                <button
+                  onClick={() => setSortBy("popular")}
+                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                    sortBy === "popular"
+                      ? "bg-white text-[#D96A32] shadow-sm"
+                      : "text-gray-600 hover:text-gray-900"
+                  }`}
+                >
+                  Popular
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {displayItems.map((item) => (
-            <Link
-              key={item.id}
-              href={`/interaction/${item.category || currentCategory}/${item.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group flex h-full flex-col overflow-hidden rounded-xl border border-hmc-placeholder-border bg-white shadow-sm hover:shadow-md"
-            >
-              <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">
-                {item.coverImage ? (
-                  <img
-                    src={item.coverImage}
-                    alt={item.title}
-                    className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                  />
-                ) : (
-                  <div className="flex h-full items-center justify-center bg-gray-200">
-                    <span className="text-gray-400">No Image</span>
+
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <div className="flex gap-6">
+          {/* Left Sidebar - Categories */}
+          <aside className="w-56 shrink-0">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-6">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <h3 className="text-xs font-semibold uppercase text-gray-500 tracking-wider">Categories</h3>
+              </div>
+              <div className="p-2">
+                <Link
+                  href="/interaction"
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    !currentCategory
+                      ? "bg-[#D96A32]/10 text-[#D96A32] font-medium"
+                      : "text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <span>💬</span>
+                  <span>All Topics</span>
+                </Link>
+                {ALL_CATEGORIES.map((cat) => (
+                  <Link
+                    key={cat.value}
+                    href={`/interaction/${cat.value}`}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                      currentCategory === cat.value
+                        ? "bg-[#D96A32]/10 text-[#D96A32] font-medium"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <span>{cat.icon}</span>
+                    <span>{cat.label}</span>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </aside>
+
+          {/* Main Content - Post List */}
+          <div className="flex-1 min-w-0">
+            {/* Post List */}
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+              {sortedPosts.length === 0 ? (
+                <div className="p-12 text-center">
+                  <p className="text-gray-500">No topics yet. Be the first to start a discussion!</p>
+                </div>
+              ) : (
+                sortedPosts.map((post, index) => {
+                  const catInfo = getCategoryInfo(post.category);
+                  return (
+                    <Link
+                      key={post.id}
+                      href={`/interaction/${post.category}/${post.id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`block px-4 py-4 hover:bg-amber-50/30 transition-colors ${
+                        index !== sortedPosts.length - 1 ? "border-b border-gray-100" : ""
+                      }`}
+                    >
+                      <div className="flex items-start gap-4">
+                        {/* Author Avatar */}
+                        <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#D96A32] to-[#C8102E] rounded-full flex items-center justify-center text-white font-bold text-sm">
+                          {(post.author as string).charAt(0).toUpperCase()}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
+                              <span>{catInfo.icon}</span>
+                              <span>{catInfo.label}</span>
+                            </span>
+                          </div>
+                          <h3 className="text-base font-medium text-gray-900 hover:text-[#D96A32] line-clamp-1 mb-1">
+                            {post.title}
+                          </h3>
+                          <div className="flex items-center gap-4 text-xs text-gray-500">
+                            <span className="font-medium">{post.author}</span>
+                            <span>•</span>
+                            <span>{formatTimeAgo(post.createdAt)} ago</span>
+                          </div>
+                        </div>
+
+                        {/* Stats */}
+                        <div className="flex-shrink-0 flex items-center gap-6 text-sm">
+                          <div className="text-center">
+                            <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg mb-1">
+                              <span className="text-lg">💬</span>
+                            </div>
+                            <span className="text-xs text-gray-500">{post.replies}</span>
+                          </div>
+                          <div className="text-center hidden sm:block">
+                            <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg mb-1">
+                              <span className="text-lg">👁</span>
+                            </div>
+                            <span className="text-xs text-gray-500">{post.views}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Link>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Pagination placeholder */}
+            {sortedPosts.length > 0 && (
+              <div className="mt-4 flex justify-center">
+                <div className="flex items-center gap-2">
+                  <button className="px-3 py-1.5 text-sm text-gray-500 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50" disabled>
+                    Previous
+                  </button>
+                  <span className="px-3 py-1.5 text-sm text-gray-700">Page 1 of 1</span>
+                  <button className="px-3 py-1.5 text-sm text-gray-500 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50" disabled>
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Right Sidebar - Quick Stats */}
+          <aside className="w-48 shrink-0">
+            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-6">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <h3 className="text-xs font-semibold uppercase text-gray-500 tracking-wider">Quick Stats</h3>
+              </div>
+              <div className="p-4 space-y-4">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-[#D96A32]">{posts.length}</div>
+                  <div className="text-xs text-gray-500">Topics</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600">
+                    {posts.reduce((sum, p) => sum + (p.replies || 0), 0)}
                   </div>
-                )}
+                  <div className="text-xs text-gray-500">Replies</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-blue-600">
+                    {ALL_CATEGORIES.length}
+                  </div>
+                  <div className="text-xs text-gray-500">Categories</div>
+                </div>
               </div>
-              <div className="flex flex-1 flex-col gap-2 p-4">
-                <h3 className="text-sm font-semibold text-hmc-text group-hover:text-[#C8102E]">{item.title}</h3>
-                {"description" in item && item.description && (
-                  <p className="text-xs text-gray-500 line-clamp-2">
-                    {item.description.replace(/<[^>]*>/g, "")}
-                  </p>
-                )}
-              </div>
-            </Link>
-          ))}
+            </div>
+          </aside>
         </div>
       </div>
     </main>
