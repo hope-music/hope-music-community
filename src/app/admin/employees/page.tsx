@@ -45,7 +45,7 @@ export default function EmployeesPage() {
   // Query employees
   const employeesResult = useQuery(
     api.admin.listEmployees,
-    isClient && currentUserEmail ? { callerEmail: currentUserEmail } : undefined
+    isClient && currentUserEmail ? { callerEmail: currentUserEmail } : "skip"
   );
 
   // Mutations

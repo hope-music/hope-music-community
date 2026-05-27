@@ -30,7 +30,7 @@ export default function AdminLayout({
   const currentUser = useQuery(
     api.admin.getCurrentUser,
     userEmail ? { email: userEmail } : "skip"
-  ) as { email: string; username: string; role: string; status: string } | null | undefined;
+  ) as { email: string; username: string; role: string; status: string; avatar?: string } | null | undefined;
 
   useEffect(() => {
     setMounted(true);
