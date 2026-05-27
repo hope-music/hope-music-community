@@ -21,10 +21,13 @@ const ROLE_COLORS: Record<string, string> = {
   member: "bg-gray-100 text-gray-700",
 };
 
+// Admin email - in production, this should come from your auth system
+const ADMIN_EMAIL = "admin@hopemusic.com";
+
 export default function EmployeesPage() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
-  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -36,16 +39,15 @@ export default function EmployeesPage() {
   // Client-side check
   useEffect(() => {
     setIsClient(true);
-    const email = localStorage.getItem("user_email");
-    if (email) {
-      setCurrentUserEmail(email);
-    }
+    // Check admin login status from sessionStorage
+    const loggedIn = sessionStorage.getItem("adminLoggedIn") === "true";
+    setIsLoggedIn(loggedIn);
   }, []);
 
-  // Query employees
+  // Query employees - use admin email directly for RBAC
   const employeesResult = useQuery(
     api.admin.listEmployees,
-    isClient && currentUserEmail ? { callerEmail: currentUserEmail } : "skip"
+    isClient && isLoggedIn ? { callerEmail: ADMIN_EMAIL } : "skip"
   );
 
   // Mutations
@@ -62,6 +64,13 @@ export default function EmployeesPage() {
     }
   }, [message]);
 
+  // Redirect if not logged in
+  useEffect(() => {
+    if (isClient && !isLoggedIn) {
+      router.push("/admin/login");
+    }
+  }, [isClient, isLoggedIn, router]);
+
   const handleCreateEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmail || !newUsername) {
@@ -71,7 +80,7 @@ export default function EmployeesPage() {
 
     try {
       const result = await createEmployeeFn({
-        callerEmail: currentUserEmail,
+        callerEmail: ADMIN_EMAIL,
         email: newEmail,
         username: newUsername,
         avatar: newAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${newUsername}`,
@@ -91,7 +100,7 @@ export default function EmployeesPage() {
   const handleToggleStatus = async (userId: string) => {
     try {
       const result = await toggleUserStatusFn({
-        callerEmail: currentUserEmail,
+        callerEmail: ADMIN_EMAIL,
         userId: userId as any,
       });
       setMessage({ type: "success", text: result.message });
@@ -103,7 +112,7 @@ export default function EmployeesPage() {
   const handleUpdateRole = async (userId: string, newRole: "super_admin" | "operator" | "member") => {
     try {
       const result = await updateUserRoleFn({
-        callerEmail: currentUserEmail,
+        callerEmail: ADMIN_EMAIL,
         userId: userId as any,
         newRole,
       });
@@ -117,7 +126,7 @@ export default function EmployeesPage() {
     if (!confirm("确定要删除该用户吗？此操作不可恢复。")) return;
     try {
       const result = await deleteUserFn({
-        callerEmail: currentUserEmail,
+        callerEmail: ADMIN_EMAIL,
         userId: userId as any,
       });
       setMessage({ type: "success", text: result.message });
@@ -135,7 +144,7 @@ export default function EmployeesPage() {
   };
 
   // Show loading if not client-side yet
-  if (!isClient || !currentUserEmail) {
+  if (!isClient || !isLoggedIn) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
@@ -177,7 +186,6 @@ export default function EmployeesPage() {
     );
   }
 
-  // Ensure employees is always an array
   const employees: Employee[] = Array.isArray(employeesResult) ? employeesResult : [];
   const activeCount = employees.filter(e => e.status === "active").length;
   const disabledCount = employees.filter(e => e.status === "disabled").length;
