@@ -112,7 +112,7 @@ function TopicList({
   items: InteractionItem[];
   placeholderItems: { id: string; title: string }[];
 }) {
-  const displayItems = items.length > 0 ? items.slice(0, 10) : placeholderItems;
+  const displayItems = items.length >= 10 ? items.slice(0, 10) : [...items, ...placeholderItems].slice(0, 10);
 
   return (
     <ul className="space-y-0.5">
