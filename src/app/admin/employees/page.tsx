@@ -15,13 +15,7 @@ interface Employee {
   createdAt: number;
 }
 
-const ROLE_LABELS = {
-  super_admin: "超级管理员",
-  operator: "运营人员",
-  member: "普通会员",
-};
-
-const ROLE_COLORS = {
+const ROLE_COLORS: Record<string, string> = {
   super_admin: "bg-red-100 text-red-700",
   operator: "bg-blue-100 text-blue-700",
   member: "bg-gray-100 text-gray-700",
@@ -32,40 +26,42 @@ export default function EmployeesPage() {
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
-  // New employee form
   const [newEmail, setNewEmail] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [newAvatar, setNewAvatar] = useState("");
   const [newRole, setNewRole] = useState<"super_admin" | "operator" | "member">("member");
 
-  // Get current user email from localStorage
+  // Get current user email
   useEffect(() => {
     const email = localStorage.getItem("user_email");
     setCurrentUserEmail(email);
   }, []);
 
-  // Query employees list
-  const employees = useQuery(
+  // Query employees - skip if no email
+  const queryArgs = currentUserEmail ? { callerEmail: currentUserEmail } : "skip";
+  const employeesResult = useQuery(
     api.admin.listEmployees,
-    currentUserEmail ? { callerEmail: currentUserEmail } : "skip"
-  ) as Employee[] | undefined;
+    queryArgs
+  );
+
+  // Handle employees result
+  useEffect(() => {
+    if (employeesResult === undefined) return;
+    if (typeof employeesResult === "object" && !Array.isArray(employeesResult)) {
+      // This is an error object from Convex
+      setError(employeesResult.message || "无法加载员工列表");
+    }
+  }, [employeesResult]);
 
   // Mutations
-  const createEmployee = useMutation(api.admin.createEmployee);
-  const toggleUserStatus = useMutation(api.admin.toggleUserStatus);
-  const updateUserRole = useMutation(api.admin.updateUserRole);
-  const deleteUser = useMutation(api.admin.deleteUser);
+  const createEmployeeFn = useMutation(api.admin.createEmployee);
+  const toggleUserStatusFn = useMutation(api.admin.toggleUserStatus);
+  const updateUserRoleFn = useMutation(api.admin.updateUserRole);
+  const deleteUserFn = useMutation(api.admin.deleteUser);
 
-  // Redirect if not logged in
-  useEffect(() => {
-    if (currentUserEmail === null) return;
-    if (!currentUserEmail) {
-      router.push("/");
-    }
-  }, [currentUserEmail, router]);
-
-  // Listen for errors
+  // Listen for messages
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(null), 4000);
@@ -81,11 +77,11 @@ export default function EmployeesPage() {
     }
 
     try {
-      const result = await createEmployee({
+      const result = await createEmployeeFn({
         callerEmail: currentUserEmail!,
         email: newEmail,
         username: newUsername,
-        avatar: newAvatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + newUsername,
+        avatar: newAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${newUsername}`,
         role: newRole,
       });
       setMessage({ type: "success", text: result.message });
@@ -99,9 +95,9 @@ export default function EmployeesPage() {
     }
   };
 
-  const handleToggleStatus = async (userId: string, currentStatus: string) => {
+  const handleToggleStatus = async (userId: string) => {
     try {
-      const result = await toggleUserStatus({
+      const result = await toggleUserStatusFn({
         callerEmail: currentUserEmail!,
         userId: userId as any,
       });
@@ -113,7 +109,7 @@ export default function EmployeesPage() {
 
   const handleUpdateRole = async (userId: string, newRole: "super_admin" | "operator" | "member") => {
     try {
-      const result = await updateUserRole({
+      const result = await updateUserRoleFn({
         callerEmail: currentUserEmail!,
         userId: userId as any,
         newRole,
@@ -127,7 +123,7 @@ export default function EmployeesPage() {
   const handleDeleteUser = async (userId: string) => {
     if (!confirm("确定要删除该用户吗？此操作不可恢复。")) return;
     try {
-      const result = await deleteUser({
+      const result = await deleteUserFn({
         callerEmail: currentUserEmail!,
         userId: userId as any,
       });
@@ -145,8 +141,8 @@ export default function EmployeesPage() {
     });
   };
 
-  // Show loading while checking auth
-  if (currentUserEmail === null || employees === undefined) {
+  // Loading state
+  if (currentUserEmail === null || employeesResult === undefined) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
@@ -157,16 +153,16 @@ export default function EmployeesPage() {
     );
   }
 
-  // Show access denied if not admin (employees query threw error)
-  if (!Array.isArray(employees)) {
+  // Error state
+  if (error || (employeesResult && typeof employeesResult === "object" && !Array.isArray(employeesResult))) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center p-8 bg-red-50 rounded-lg">
-          <h2 className="text-2xl font-bold text-red-600 mb-2">权限不足</h2>
-          <p className="text-gray-600">您没有权限访问此页面</p>
+        <div className="text-center p-8 bg-red-50 rounded-lg max-w-md">
+          <h2 className="text-xl font-bold text-red-600 mb-2">权限不足</h2>
+          <p className="text-gray-600 mb-4">{error || "您没有权限访问此页面"}</p>
           <button
             onClick={() => router.push("/")}
-            className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
             返回首页
           </button>
@@ -175,6 +171,7 @@ export default function EmployeesPage() {
     );
   }
 
+  const employees = employeesResult as Employee[];
   const activeCount = employees.filter(e => e.status === "active").length;
   const disabledCount = employees.filter(e => e.status === "disabled").length;
 
@@ -238,7 +235,7 @@ export default function EmployeesPage() {
                     <select
                       value={employee.role}
                       onChange={(e) => handleUpdateRole(employee._id, e.target.value as any)}
-                      className={`px-2 py-1 rounded text-xs font-medium border-0 ${ROLE_COLORS[employee.role]}`}
+                      className={`px-2 py-1 rounded text-xs font-medium border-0 ${ROLE_COLORS[employee.role] || ROLE_COLORS.member}`}
                     >
                       <option value="super_admin">超级管理员</option>
                       <option value="operator">运营人员</option>
@@ -260,7 +257,7 @@ export default function EmployeesPage() {
                   <td className="px-6 py-4 whitespace-nowrap text-sm">
                     <div className="flex gap-2">
                       <button
-                        onClick={() => handleToggleStatus(employee._id, employee.status)}
+                        onClick={() => handleToggleStatus(employee._id)}
                         className={`px-3 py-1 rounded text-xs font-medium ${
                           employee.status === "active"
                             ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
