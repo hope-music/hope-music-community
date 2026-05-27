@@ -31,7 +31,6 @@ const CATEGORIES = [
   { value: "others", label: "Others" },
 ];
 
-// Demo content for placeholder posts
 const DEMO_POSTS: Record<string, { title: string; content: string; author: string; createdAt: number }> = {
   "ph-soft-1": {
     title: "ISAT Interaction 2023 v1.0.4 Released",
@@ -63,7 +62,6 @@ const DEMO_POSTS: Record<string, { title: string; content: string; author: strin
   },
 };
 
-// Default demo content
 const DEFAULT_DEMO = {
   title: "Discussion Topic",
   content: `<p class="mb-4">Welcome to this discussion!</p>
@@ -104,7 +102,6 @@ export default function InteractionDetailPage({ params }: PageProps) {
   const [votes, setVotes] = useState(0);
   const [userVote, setUserVote] = useState<1 | -1 | 0>(0);
 
-  // Load params
   useEffect(() => {
     async function loadParams() {
       const resolved = await params;
@@ -115,11 +112,9 @@ export default function InteractionDetailPage({ params }: PageProps) {
     loadParams();
   }, [params]);
 
-  // Load post
   useEffect(() => {
     if (!postId || !category) return;
 
-    // Check if it's a demo post
     if (postId.startsWith("ph-") || postId.startsWith("demo-")) {
       const demoPost = DEMO_POSTS[postId] || { ...DEFAULT_DEMO, title: `Topic: ${postId}` };
       setPost({
@@ -136,7 +131,6 @@ export default function InteractionDetailPage({ params }: PageProps) {
       return;
     }
 
-    // Try localStorage
     const stored = localStorage.getItem("admin_interaction");
     if (stored) {
       const data = JSON.parse(stored);
@@ -157,7 +151,6 @@ export default function InteractionDetailPage({ params }: PageProps) {
     setLoading(false);
   }, [postId, category]);
 
-  // Load comments
   useEffect(() => {
     if (!postId) return;
     const stored = localStorage.getItem("interaction_comments");
@@ -167,7 +160,6 @@ export default function InteractionDetailPage({ params }: PageProps) {
     }
   }, [postId]);
 
-  // Save comments
   const saveComments = (newComments: Comment[]) => {
     const stored = localStorage.getItem("interaction_comments");
     const allComments = stored ? JSON.parse(stored) : {};
@@ -176,7 +168,6 @@ export default function InteractionDetailPage({ params }: PageProps) {
     setComments(newComments);
   };
 
-  // Submit comment
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
     if (!authorName.trim() || !newComment.trim()) return;
@@ -193,7 +184,6 @@ export default function InteractionDetailPage({ params }: PageProps) {
     setNewComment("");
   };
 
-  // Submit reply
   const handleSubmitReply = (e: React.FormEvent, commentId: string) => {
     e.preventDefault();
     if (!replyAuthor.trim() || !replyContent.trim()) return;
@@ -219,7 +209,6 @@ export default function InteractionDetailPage({ params }: PageProps) {
     setReplyAuthor("");
   };
 
-  // Vote handling
   const handleVote = (direction: 1 | -1) => {
     if (userVote === direction) {
       setUserVote(0);
@@ -258,17 +247,14 @@ export default function InteractionDetailPage({ params }: PageProps) {
     <main className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="flex gap-6">
-          {/* Left Sidebar - Categories */}
+          {/* Left Sidebar */}
           <aside className="w-56 shrink-0">
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden sticky top-6">
               <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
                 <h3 className="text-xs font-semibold uppercase text-gray-500 tracking-wider">Categories</h3>
               </div>
               <div className="p-2">
-                <Link
-                  href="/interaction"
-                  className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50"
-                >
+                <Link href="/interaction" className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
                   <span>💬</span>
                   <span>All Topics</span>
                 </Link>
@@ -277,9 +263,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
                     key={cat.value}
                     href={`/interaction/${cat.value}`}
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                      category === cat.value
-                        ? "bg-[#D96A32]/10 text-[#D96A32] font-medium"
-                        : "text-gray-700 hover:bg-gray-50"
+                      category === cat.value ? "bg-[#D96A32]/10 text-[#D96A32] font-medium" : "text-gray-700 hover:bg-gray-50"
                     }`}
                   >
                     <span>{cat.value === "software" ? "💻" : cat.value === "hardware" ? "🎛️" : cat.value === "music" ? "🎵" : cat.value === "production" ? "🎬" : cat.value === "artical" ? "📝" : "💬"}</span>
@@ -292,217 +276,122 @@ export default function InteractionDetailPage({ params }: PageProps) {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0 max-w-3xl">
-            {/* Back Link */}
-            <Link
-              href={`/interaction/${category}`}
-              className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#D96A32] mb-4"
-            >
+            <Link href={`/interaction/${category}`} className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#D96A32] mb-4">
               ← Back to r/{categoryLabel}
             </Link>
 
-            {/* Main Post Card */}
+            {/* Post Card */}
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden mb-4">
-              <div className="flex">
-                {/* Vote Column */}
-                <div className="flex flex-col items-center gap-1 p-3 bg-gray-50 border-r border-gray-200">
-                  <button
-                    onClick={() => handleVote(1)}
-                    className={`p-1 rounded hover:bg-orange-100 ${userVote === 1 ? "text-orange-500" : "text-gray-400"}`}
-                  >
-                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 4l-8 8h6v8h4v-8h6z" />
-                    </svg>
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center gap-3">
+                <button onClick={() => handleVote(1)} className={`p-1 rounded hover:bg-orange-100 ${userVote === 1 ? "text-orange-500" : "text-gray-400"}`}>
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4l-8 8h6v8h4v-8h6z" /></svg>
+                </button>
+                <span className={`text-sm font-bold ${votes > 0 ? "text-orange-500" : votes < 0 ? "text-blue-500" : "text-gray-600"}`}>{votes}</span>
+                <button onClick={() => handleVote(-1)} className={`p-1 rounded hover:bg-blue-100 ${userVote === -1 ? "text-blue-500" : "text-gray-400"}`}>
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20l8-8h-6V4h-4v8H4z" /></svg>
+                </button>
+                <span className="text-xs text-gray-400">|</span>
+                <span className="text-xs text-gray-500">Posted by</span>
+                <img src={`https://i.pravatar.cc/40?u=${post.authorUsername}`} alt={post.authorUsername} className="w-5 h-5 rounded-full" />
+                <span className="text-xs font-semibold text-gray-700">{post.authorUsername}</span>
+                <span className="text-xs text-gray-400">•</span>
+                <span className="text-xs text-gray-500">{formatTimeAgo(post.createdAt)}</span>
+              </div>
+              <div className="p-4">
+                <h1 className="text-xl font-bold text-gray-900 mb-3">{post.title}</h1>
+                <div className="prose prose-sm max-w-none text-gray-700 mb-4" dangerouslySetInnerHTML={{ __html: post.content }} />
+                <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
+                  <button className="flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-md text-sm">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+                    <span>{comments.length} Comments</span>
                   </button>
-                  <span className={`text-lg font-bold ${votes > 0 ? "text-orange-500" : votes < 0 ? "text-blue-500" : "text-gray-600"}`}>
-                    {votes}
-                  </span>
-                  <button
-                    onClick={() => handleVote(-1)}
-                    className={`p-1 rounded hover:bg-blue-100 ${userVote === -1 ? "text-blue-500" : "text-gray-400"}`}
-                  >
-                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 20l8-8h-6V4h-4v8H4z" />
-                    </svg>
+                  <button className="flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-md text-sm">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>
+                    <span>Share</span>
                   </button>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 p-4">
-                  {/* Post Meta */}
-                  <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-                    <img
-                      src={`https://i.pravatar.cc/40?u=${post.authorUsername}`}
-                      alt={post.authorUsername}
-                      className="w-6 h-6 rounded-full"
-                    />
-                    <span className="font-semibold">Posted by u/{post.authorUsername}</span>
-                    <span>•</span>
-                    <span>{formatTimeAgo(post.createdAt)}</span>
-                  </div>
-
-                  {/* Title */}
-                  <h1 className="text-xl font-bold text-gray-900 mb-3">{post.title}</h1>
-
-                  {/* Content */}
-                  <div
-                    className="prose prose-sm max-w-none text-gray-700 mb-4"
-                    dangerouslySetInnerHTML={{ __html: post.content }}
-                  />
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-4 pt-3 border-t border-gray-100">
-                    <button className="flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-md text-sm">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                      </svg>
-                      <span>{comments.length} Comments</span>
-                    </button>
-                    <button className="flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-md text-sm">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                      </svg>
-                      <span>Share</span>
-                    </button>
-                    <button className="flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-md text-sm">
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                      </svg>
-                      <span>Save</span>
-                    </button>
-                  </div>
+                  <button className="flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:bg-gray-100 rounded-md text-sm">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" /></svg>
+                    <span>Save</span>
+                  </button>
                 </div>
               </div>
+            </div>
+
+            {/* Comment Form */}
+            <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
+              <p className="text-sm text-gray-500 mb-3">Comment as <span className="font-semibold text-gray-700">guest</span></p>
+              <form onSubmit={handleSubmitComment}>
+                <textarea
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
+                  placeholder="What are your thoughts?"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none resize-none mb-3"
+                />
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <button type="button" className="px-3 py-1.5 text-xs text-gray-600 hover:text-[#D96A32] font-medium">Log In</button>
+                    <span className="text-gray-300">|</span>
+                    <button type="button" className="px-3 py-1.5 text-xs text-gray-600 hover:text-[#D96A32] font-medium">Sign Up</button>
+                  </div>
+                  <button type="submit" className="px-4 py-1.5 bg-[#D96A32] text-white text-sm font-medium rounded-full hover:bg-[#c45a28] transition-colors">Post Comment</button>
+                </div>
+              </form>
+            </div>
+
+            {/* Comments List */}
+            <div className="space-y-3">
+              {comments.length === 0 ? (
+                <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
+                  <p className="text-gray-500">No comments yet. Be the first to share your thoughts!</p>
+                </div>
+              ) : (
+                comments.map((comment) => (
+                  <div key={comment.id} className="bg-white rounded-lg border border-gray-200 p-4">
+                    <div className="flex gap-3">
+                      <img src={`https://i.pravatar.cc/40?u=${comment.authorName}`} alt={comment.authorName} className="w-8 h-8 rounded-full flex-shrink-0" />
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
+                          <span className="font-semibold text-gray-700">u/{comment.authorName}</span>
+                          <span>•</span>
+                          <span>{formatTimeAgo(comment.createdAt)}</span>
+                        </div>
+                        <p className="text-sm text-gray-800 mb-2">{comment.content}</p>
+                        <button onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)} className="text-xs text-gray-500 hover:text-[#D96A32] font-medium">Reply</button>
+
+                        {replyingTo === comment.id && (
+                          <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="mt-3">
+                            <input type="text" value={replyAuthor} onChange={(e) => setReplyAuthor(e.target.value)} placeholder="Your name" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none" required />
+                            <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="Write a reply..." rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none resize-none" required />
+                            <div className="flex gap-2">
+                              <button type="submit" className="px-3 py-1 bg-[#D96A32] text-white text-xs font-medium rounded-full hover:bg-[#c45a28]">Reply</button>
+                              <button type="button" onClick={() => { setReplyingTo(null); setReplyContent(""); setReplyAuthor(""); }} className="px-3 py-1 bg-gray-200 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-300">Cancel</button>
+                            </div>
+                          </form>
+                        )}
+
+                        {comment.replies.length > 0 && (
+                          <div className="mt-3 pl-4 border-l-2 border-gray-200 space-y-3">
+                            {comment.replies.map((reply) => (
+                              <div key={reply.id}>
+                                <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                                  <img src={`https://i.pravatar.cc/40?u=${reply.authorName}`} alt={reply.authorName} className="w-5 h-5 rounded-full" />
+                                  <span className="font-semibold text-gray-700">u/{reply.authorName}</span>
+                                  <span>•</span>
+                                  <span>{formatTimeAgo(reply.createdAt)}</span>
+                                </div>
+                                <p className="text-sm text-gray-800">{reply.content}</p>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
-
-        {/* Comment Form */}
-        <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-          <p className="text-sm text-gray-500 mb-3">Comment as <span className="font-semibold text-gray-700">guest</span></p>
-          <form onSubmit={handleSubmitComment}>
-            <textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="What are your thoughts?"
-              rows={3}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none resize-none mb-3"
-            />
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <button type="button" className="px-3 py-1.5 text-xs text-gray-600 hover:text-[#D96A32] font-medium">
-                  Log In
-                </button>
-                <span className="text-gray-300">|</span>
-                <button type="button" className="px-3 py-1.5 text-xs text-gray-600 hover:text-[#D96A32] font-medium">
-                  Sign Up
-                </button>
-              </div>
-              <button
-                type="submit"
-                className="px-4 py-1.5 bg-[#D96A32] text-white text-sm font-medium rounded-full hover:bg-[#c45a28] transition-colors"
-              >
-                Post Comment
-              </button>
-            </div>
-          </form>
-        </div>
-
-        {/* Comments Section */}
-        <div className="space-y-3">
-          {comments.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-              <p className="text-gray-500">No comments yet. Be the first to share your thoughts!</p>
-            </div>
-          ) : (
-            comments.map((comment) => (
-              <div key={comment.id} className="bg-white rounded-lg border border-gray-200 p-4">
-                <div className="flex gap-3">
-                  {/* Avatar */}
-                  <img
-                    src={`https://i.pravatar.cc/40?u=${comment.authorName}`}
-                    alt={comment.authorName}
-                    className="w-8 h-8 rounded-full flex-shrink-0"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-2">
-                      <span className="font-semibold text-gray-700">u/{comment.authorName}</span>
-                      <span>•</span>
-                      <span>{formatTimeAgo(comment.createdAt)}</span>
-                    </div>
-                    <p className="text-sm text-gray-800 mb-2">{comment.content}</p>
-                    <button
-                      onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                      className="text-xs text-gray-500 hover:text-[#D96A32] font-medium"
-                    >
-                      Reply
-                    </button>
-
-                    {/* Reply Form */}
-                    {replyingTo === comment.id && (
-                      <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="mt-3">
-                        <input
-                          type="text"
-                          value={replyAuthor}
-                          onChange={(e) => setReplyAuthor(e.target.value)}
-                          placeholder="Your name"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none"
-                          required
-                        />
-                        <textarea
-                          value={replyContent}
-                          onChange={(e) => setReplyContent(e.target.value)}
-                          placeholder="Write a reply..."
-                          rows={2}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none resize-none"
-                          required
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            type="submit"
-                            className="px-3 py-1 bg-[#D96A32] text-white text-xs font-medium rounded-full hover:bg-[#c45a28]"
-                          >
-                            Reply
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReplyingTo(null);
-                              setReplyContent("");
-                              setReplyAuthor("");
-                            }}
-                            className="px-3 py-1 bg-gray-200 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-300"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </form>
-                    )}
-
-                    {/* Replies */}
-                    {comment.replies.length > 0 && (
-                      <div className="mt-3 pl-4 border-l-2 border-gray-200 space-y-3">
-                        {comment.replies.map((reply) => (
-                          <div key={reply.id}>
-                            <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                              <img
-                                src={`https://i.pravatar.cc/40?u=${reply.authorName}`}
-                                alt={reply.authorName}
-                                className="w-5 h-5 rounded-full"
-                              />
-                              <span className="font-semibold text-gray-700">u/{reply.authorName}</span>
-                              <span>•</span>
-                              <span>{formatTimeAgo(reply.createdAt)}</span>
-                            </div>
-                            <p className="text-sm text-gray-800">{reply.content}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
 
           {/* Right Sidebar */}
           <aside className="w-48 shrink-0">
@@ -511,9 +400,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
                 <h3 className="text-xs font-semibold uppercase text-gray-500 tracking-wider">About Community</h3>
               </div>
               <div className="p-4">
-                <p className="text-sm text-gray-600 mb-3">
-                  Hope Music Community forum for discussing music production, hardware, and more.
-                </p>
+                <p className="text-sm text-gray-600 mb-3">Hope Music Community forum for discussing music production, hardware, and more.</p>
                 <div className="space-y-2 text-xs text-gray-500">
                   <div className="flex justify-between">
                     <span>Members</span>
