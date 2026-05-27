@@ -177,7 +177,8 @@ export default function EmployeesPage() {
     );
   }
 
-  const employees = employeesResult as Employee[];
+  // Ensure employees is always an array
+  const employees: Employee[] = Array.isArray(employeesResult) ? employeesResult : [];
   const activeCount = employees.filter(e => e.status === "active").length;
   const disabledCount = employees.filter(e => e.status === "disabled").length;
 

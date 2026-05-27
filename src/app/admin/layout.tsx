@@ -67,7 +67,7 @@ export default function AdminLayout({
   }
 
   const isLoggedIn = localStorage.getItem("isLoggedIn") === "true" || sessionStorage.getItem("adminLoggedIn") === "true";
-  const isSuperAdmin = currentUser?.role === "super_admin";
+  const isSuperAdmin = currentUser && typeof currentUser === "object" && currentUser.role === "super_admin";
 
   // Build navigation items based on role
   const navItems = [...BASE_NAV_ITEMS];
