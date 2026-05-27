@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { HopeStudioNavLink } from "@/components/layout/HopeStudioNavLink";
 import { HeaderContainer } from "@/components/layout/HeaderContainer";
 import { NavSearchGroup } from "@/components/layout/NavSearchGroup";
+import { UserMenu } from "@/components/layout/UserMenu";
 import { MAIN_NAV_LINKS } from "@/lib/constants";
 
 export function MainNav() {
@@ -86,7 +87,10 @@ export function MainNav() {
         </ul>
 
         <div className="ml-4 shrink-0 lg:ml-6">
-          <NavSearchGroup />
+          <div className="flex items-center gap-3">
+            <NavSearchGroup />
+            <UserMenu />
+          </div>
         </div>
       </HeaderContainer>
     </nav>

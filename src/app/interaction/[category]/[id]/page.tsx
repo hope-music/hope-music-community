@@ -101,6 +101,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
   const [replyAuthor, setReplyAuthor] = useState("");
   const [votes, setVotes] = useState(0);
   const [userVote, setUserVote] = useState<1 | -1 | 0>(0);
+  const [currentUser, setCurrentUser] = useState<any>(null);
 
   useEffect(() => {
     async function loadParams() {
@@ -111,6 +112,21 @@ export default function InteractionDetailPage({ params }: PageProps) {
     }
     loadParams();
   }, [params]);
+
+  useEffect(() => {
+    const userData = localStorage.getItem("hmc_current_user");
+    if (userData) {
+      const user = JSON.parse(userData);
+      setCurrentUser(user);
+      setAuthorName(user.username);
+    } else {
+      const forumUser = localStorage.getItem("forumUser");
+      if (forumUser) {
+        const user = JSON.parse(forumUser);
+        setAuthorName(user.username || "");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (!postId || !category) return;
@@ -319,24 +335,43 @@ export default function InteractionDetailPage({ params }: PageProps) {
 
             {/* Comment Form */}
             <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-              <p className="text-sm text-gray-500 mb-3">Comment as <span className="font-semibold text-gray-700">guest</span></p>
-              <form onSubmit={handleSubmitComment}>
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="What are your thoughts?"
-                  rows={3}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none resize-none mb-3"
-                />
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <button type="button" className="px-3 py-1.5 text-xs text-gray-600 hover:text-[#D96A32] font-medium">Log In</button>
-                    <span className="text-gray-300">|</span>
-                    <button type="button" className="px-3 py-1.5 text-xs text-gray-600 hover:text-[#D96A32] font-medium">Sign Up</button>
-                  </div>
-                  <button type="submit" className="px-4 py-1.5 bg-[#D96A32] text-white text-sm font-medium rounded-full hover:bg-[#c45a28] transition-colors">Post Comment</button>
+              {currentUser ? (
+                <div>
+                  <p className="text-sm text-gray-500 mb-3">
+                    Comment as <span className="font-semibold text-gray-700">{currentUser.username}</span>
+                  </p>
+                  <form onSubmit={handleSubmitComment}>
+                    <textarea
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      placeholder="What are your thoughts?"
+                      rows={3}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none resize-none mb-3"
+                    />
+                    <div className="flex items-center justify-end">
+                      <button type="submit" className="px-4 py-1.5 bg-[#D96A32] text-white text-sm font-medium rounded-full hover:bg-[#c45a28] transition-colors">Post Comment</button>
+                    </div>
+                  </form>
                 </div>
-              </form>
+              ) : (
+                <div>
+                  <p className="text-sm text-gray-500 mb-3">Sign in to join the conversation</p>
+                  <div className="flex items-center gap-3">
+                    <Link
+                      href="/login"
+                      className="px-4 py-2 text-sm font-medium text-[#D96A32] border border-[#D96A32] rounded-full hover:bg-[#D96A32]/10 transition-colors"
+                    >
+                      Log In
+                    </Link>
+                    <Link
+                      href="/registration"
+                      className="px-4 py-2 text-sm font-medium text-white bg-[#D96A32] rounded-full hover:bg-[#c45a28] transition-colors"
+                    >
+                      Sign Up
+                    </Link>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Comments List */}
