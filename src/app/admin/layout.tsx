@@ -89,7 +89,6 @@ export default function AdminLayout({
                     {item.label}
                   </Link>
                 ))}
-                {/* Employee Management - always visible for now */}
                 <Link
                   href="/admin/employees"
                   className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
@@ -98,7 +97,7 @@ export default function AdminLayout({
                       : "text-red-600 hover:text-red-700 hover:bg-red-50"
                   }`}
                 >
-                  员工管理
+                  Employee Management
                 </Link>
                 <Link
                   href="/admin/dashboard"

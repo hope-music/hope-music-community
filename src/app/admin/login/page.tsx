@@ -10,8 +10,8 @@ export default function AdminLoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // Simple password check - "admin123"
-  const CORRECT_PASSWORD = "admin123";
+  // Simple password check
+  const CORRECT_PASSWORD = "hope1500";
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();

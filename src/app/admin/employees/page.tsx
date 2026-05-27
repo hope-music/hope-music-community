@@ -82,7 +82,7 @@ export default function EmployeesPage() {
   const handleCreateEmployee = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newEmail || !newUsername) {
-      setMessage({ type: "error", text: "请填写邮箱和用户名" });
+      setMessage({ type: "error", text: "Please fill in email and username" });
       return;
     }
 
@@ -101,7 +101,7 @@ export default function EmployeesPage() {
       setNewAvatar("");
       setNewRole("member");
     } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "创建失败" });
+      setMessage({ type: "error", text: err.message || "Failed to create" });
     }
   };
 
@@ -131,7 +131,7 @@ export default function EmployeesPage() {
   };
 
   const handleDeleteUser = async (userId: string) => {
-    if (!confirm("确定要删除该用户吗？此操作不可恢复。")) return;
+    if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
     try {
       const result = await deleteUserFn({
         callerEmail: currentUserEmail,
@@ -204,18 +204,18 @@ export default function EmployeesPage() {
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">员工管理</h1>
+            <h1 className="text-2xl font-bold text-gray-900">Employee Management</h1>
             <p className="text-gray-500 mt-1">
               共 {employees.length} 人 | 
-              <span className="text-green-600"> 启用 {activeCount}</span> | 
-              <span className="text-red-500"> 禁用 {disabledCount}</span>
+              <span className="text-green-600"> Active {activeCount}</span> |
+              <span className="text-red-500"> Disabled {disabledCount}</span>
             </p>
           </div>
           <button
             onClick={() => setShowCreateModal(true)}
             className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
           >
-            <span>+</span> 添加员工
+            <span>+</span> Add Employee
           </button>
         </div>
 
@@ -231,8 +231,8 @@ export default function EmployeesPage() {
           <table className="w-full">
             <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">用户</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">角色</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">注册时间</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
@@ -271,7 +271,7 @@ export default function EmployeesPage() {
                         ? "bg-green-100 text-green-700" 
                         : "bg-red-100 text-red-700"
                     }`}>
-                      {employee.status === "active" ? "启用" : "禁用"}
+                      {employee.status === "active" ? "Active" : "Disabled"}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -287,7 +287,7 @@ export default function EmployeesPage() {
                             : "bg-green-100 text-green-700 hover:bg-green-200"
                         }`}
                       >
-                        {employee.status === "active" ? "禁用" : "启用"}
+                        {employee.status === "active" ? "Disable" : "Enable"}
                       </button>
                       <button
                         onClick={() => handleDeleteUser(employee._id)}
@@ -314,10 +314,10 @@ export default function EmployeesPage() {
       {showCreateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">添加新员工</h2>
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Add New Employee</h2>
             <form onSubmit={handleCreateEmployee} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">邮箱 *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
                 <input
                   type="email"
                   value={newEmail}
@@ -328,7 +328,7 @@ export default function EmployeesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">用户名 *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Username *</label>
                 <input
                   type="text"
                   value={newUsername}
@@ -339,7 +339,7 @@ export default function EmployeesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">头像 URL（可选）</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Avatar URL (optional)</label>
                 <input
                   type="url"
                   value={newAvatar}
@@ -349,7 +349,7 @@ export default function EmployeesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">角色</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                 <select
                   value={newRole}
                   onChange={(e) => setNewRole(e.target.value as any)}
@@ -366,13 +366,13 @@ export default function EmployeesPage() {
                   onClick={() => setShowCreateModal(false)}
                   className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
                 >
-                  取消
+                  Cancel
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
                 >
-                  创建
+                  Create
                 </button>
               </div>
             </form>
