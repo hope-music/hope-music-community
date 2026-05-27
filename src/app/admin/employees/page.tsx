@@ -21,13 +21,11 @@ const ROLE_COLORS: Record<string, string> = {
   member: "bg-gray-100 text-gray-700",
 };
 
-// Admin email - in production, this should come from your auth system
-const ADMIN_EMAIL = "admin@hopemusic.com";
-
 export default function EmployeesPage() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -90,7 +88,7 @@ export default function EmployeesPage() {
 
     try {
       const result = await createEmployeeFn({
-        callerEmail: ADMIN_EMAIL,
+        callerEmail: currentUserEmail,
         email: newEmail,
         username: newUsername,
         avatar: newAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${newUsername}`,
@@ -110,7 +108,7 @@ export default function EmployeesPage() {
   const handleToggleStatus = async (userId: string) => {
     try {
       const result = await toggleUserStatusFn({
-        callerEmail: ADMIN_EMAIL,
+        callerEmail: currentUserEmail,
         userId: userId as any,
       });
       setMessage({ type: "success", text: result.message });
@@ -122,7 +120,7 @@ export default function EmployeesPage() {
   const handleUpdateRole = async (userId: string, newRole: "super_admin" | "operator" | "member") => {
     try {
       const result = await updateUserRoleFn({
-        callerEmail: ADMIN_EMAIL,
+        callerEmail: currentUserEmail,
         userId: userId as any,
         newRole,
       });
@@ -136,7 +134,7 @@ export default function EmployeesPage() {
     if (!confirm("确定要删除该用户吗？此操作不可恢复。")) return;
     try {
       const result = await deleteUserFn({
-        callerEmail: ADMIN_EMAIL,
+        callerEmail: currentUserEmail,
         userId: userId as any,
       });
       setMessage({ type: "success", text: result.message });

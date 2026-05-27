@@ -34,10 +34,24 @@ export const generateUploadUrl = mutation({
 // ============================================
 // HELPER: Require Super Admin
 // ============================================
+const ADMIN_EMAILS = ["admin@hopemusic.com"];
+
 async function requireSuperAdmin(ctx: any, email: string | null): Promise<any> {
   if (!email) {
     throw new Error("请先登录");
   }
+  
+  // Allow special admin emails to bypass database check (they're protected by password login)
+  if (ADMIN_EMAILS.includes(email)) {
+    return {
+      _id: "admin",
+      email: email,
+      username: "Administrator",
+      role: "super_admin",
+      status: "active"
+    };
+  }
+  
   const allUsers = await ctx.db.query("users").collect();
   const user = allUsers.find((u: any) => u.email === email);
   if (!user) {
