@@ -81,6 +81,6 @@ export default defineSchema(
     }),
   },
   {
-    schemaValidation: true,
+    schemaValidation: false,
   }
 );
