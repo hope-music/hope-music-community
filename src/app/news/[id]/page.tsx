@@ -4,17 +4,8 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-
-interface NewsArticle {
-  id: string;
-  title: string;
-  coverImage: string;
-  content: string;
-  excerpt: string;
-  isPublished: boolean;
-  isFeatured: boolean;
-  createdAt: number;
-}
+import { useQuery } from "convex/react";
+import { api } from "@/lib/convex";
 
 interface Comment {
   id: string;
@@ -32,10 +23,40 @@ interface Reply {
   createdAt: number;
 }
 
+// Demo articles for fallback
+const DEMO_ARTICLES: Record<string, { id: string; title: string; coverImage: string; content: string; createdAt: number }> = {
+  "demo-1": {
+    id: "demo-1",
+    title: "Announcing the 2024 Global Musicals Gala line-up",
+    coverImage: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=1200",
+    content: `<p class="font-semibold text-lg text-gray-800">We are thrilled to officially announce the lineup for the 2024 Global Musicals Gala, featuring world-renowned performers and groundbreaking theatrical productions from across the globe.</p>
+    <p>This year's gala promises to be the most ambitious yet, bringing together award-winning composers, directors, and performers from Broadway, West End, and international stages. Audiences can expect exclusive previews of upcoming productions, live performances of classic musical numbers, and behind-the-scenes insights into the creative process.</p>
+    <p>"This Gala represents the pinnacle of musical theater excellence," noted the artistic director. "We've curated a program that celebrates both timeless classics and innovative new works that push the boundaries of what musical theater can achieve."</p>
+    <p>Stay tuned for detailed schedule announcements, ticket availability, and special VIP experiences. For group bookings and institutional partnerships, please reach out through our collaboration portals.</p>`,
+    createdAt: Date.now() - 86400000 * 2,
+  },
+  "demo-2": {
+    id: "demo-2",
+    title: "Hope Studio partners with industry leader for pro-audio workshop series",
+    coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200",
+    content: `<p class="font-semibold text-lg text-gray-800">We are excited to announce our new partnership with leading audio industry professionals for an exclusive workshop series.</p>
+    <p>Learn from the best in the industry with our comprehensive workshop program covering recording techniques, mixing fundamentals, mastering essentials, and live sound reinforcement.</p>
+    <p>These workshops are designed for aspiring audio engineers, music producers, and anyone looking to elevate their sound production skills to professional standards.</p>`,
+    createdAt: Date.now() - 86400000 * 5,
+  },
+  "demo-3": {
+    id: "demo-3",
+    title: "Artist Community Spotlight: Rising stars share their journey with HOPE",
+    coverImage: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200",
+    content: `<p class="font-semibold text-lg text-gray-800">Meet the talented artists who are shaping the future of music at HOPE Music Community.</p>
+    <p>Our community is home to exceptional musicians, producers, and performers who bring creativity and passion to every project.</p>
+    <p>Through our platform, artists have access to world-class facilities, mentorship from industry veterans, and opportunities to collaborate with fellow creatives.</p>`,
+    createdAt: Date.now() - 86400000 * 8,
+  },
+};
+
 export default function NewsDetailPage() {
   const params = useParams();
-  const [article, setArticle] = useState<NewsArticle | null>(null);
-  const [loading, setLoading] = useState(true);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState("");
   const [authorName, setAuthorName] = useState("");
@@ -43,82 +64,33 @@ export default function NewsDetailPage() {
   const [replyContent, setReplyContent] = useState("");
   const [replyAuthor, setReplyAuthor] = useState("");
 
+  const articleId = params.id as string;
+
+  // Query article from Convex
+  const convexArticle = useQuery(
+    api.admin.getNewsById,
+    articleId && !articleId.startsWith("demo-")
+      ? { id: articleId as any }
+      : "skip"
+  );
+
+  // Determine article data
+  const article = articleId.startsWith("demo-")
+    ? DEMO_ARTICLES[articleId] || null
+    : convexArticle || null;
+
+  const loading = !articleId || (!articleId.startsWith("demo-") && convexArticle === undefined);
+
+  // Load comments
   useEffect(() => {
-    const id = params.id as string;
-    
-    // Check if it's a demo article
-    if (id.startsWith("demo-")) {
-      const demoArticles: NewsArticle[] = [
-        {
-          id: "demo-1",
-          title: "Announcing the 2024 Global Musicals Gala line-up",
-          coverImage: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=1200",
-          content: `<p class="font-semibold text-lg text-gray-800">We are thrilled to officially announce the lineup for the 2024 Global Musicals Gala, featuring world-renowned performers and groundbreaking theatrical productions from across the globe.</p>
-          <p>This year's gala promises to be the most ambitious yet, bringing together award-winning composers, directors, and performers from Broadway, West End, and international stages. Audiences can expect exclusive previews of upcoming productions, live performances of classic musical numbers, and behind-the-scenes insights into the creative process.</p>
-          <p>"This Gala represents the pinnacle of musical theater excellence," noted the artistic director. "We've curated a program that celebrates both timeless classics and innovative new works that push the boundaries of what musical theater can achieve."</p>
-          <p>Stay tuned for detailed schedule announcements, ticket availability, and special VIP experiences. For group bookings and institutional partnerships, please reach out through our collaboration portals.</p>`,
-          excerpt: "Join us for the most spectacular musical event of the year.",
-          isPublished: true,
-          isFeatured: false,
-          createdAt: Date.now() - 86400000 * 2,
-        },
-        {
-          id: "demo-2",
-          title: "Hope Studio partners with industry leader for pro-audio workshop series",
-          coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200",
-          content: `<p class="font-semibold text-lg text-gray-800">We are excited to announce our new partnership with leading audio industry professionals for an exclusive workshop series.</p>
-          <p>Learn from the best in the industry with our comprehensive workshop program covering recording techniques, mixing fundamentals, mastering essentials, and live sound reinforcement.</p>
-          <p>These workshops are designed for aspiring audio engineers, music producers, and anyone looking to elevate their sound production skills to professional standards.</p>`,
-          excerpt: "Learn from the best in the industry with our new workshop partnership.",
-          isPublished: true,
-          isFeatured: false,
-          createdAt: Date.now() - 86400000 * 5,
-        },
-        {
-          id: "demo-3",
-          title: "Artist Community Spotlight: Rising stars share their journey with HOPE",
-          coverImage: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200",
-          content: `<p class="font-semibold text-lg text-gray-800">Meet the talented artists who are shaping the future of music at HOPE Music Community.</p>
-          <p>Our community is home to exceptional musicians, producers, and performers who bring creativity and passion to every project.</p>
-          <p>Through our platform, artists have access to world-class facilities, mentorship from industry veterans, and opportunities to collaborate with fellow creatives.</p>`,
-          excerpt: "Meet the talented artists who are shaping the future of music.",
-          isPublished: true,
-          isFeatured: false,
-          createdAt: Date.now() - 86400000 * 8,
-        },
-      ];
-      const found = demoArticles.find((a) => a.id === id);
-      setArticle(found || null);
-      setLoading(false);
-      
-      // Load comments for this news
+    if (articleId) {
       const stored = localStorage.getItem("news_comments");
       if (stored) {
         const allComments = JSON.parse(stored);
-        const newsComments = allComments[id] || [];
-        setComments(newsComments);
+        setComments(allComments[articleId] || []);
       }
-      return;
     }
-
-    // Load from localStorage
-    const stored = localStorage.getItem("admin_news");
-    if (stored) {
-      const data = JSON.parse(stored);
-      const found = data.find((a: NewsArticle) => a.id === id);
-      setArticle(found || null);
-    }
-    
-    // Load comments
-    const commentsStored = localStorage.getItem("news_comments");
-    if (commentsStored) {
-      const allComments = JSON.parse(commentsStored);
-      const newsComments = allComments[id] || [];
-      setComments(newsComments);
-    }
-    
-    setLoading(false);
-  }, [params.id]);
+  }, [articleId]);
 
   // Save comments
   const saveComments = (newsId: string, newComments: Comment[]) => {
@@ -175,7 +147,8 @@ export default function NewsDetailPage() {
     setReplyAuthor("");
   };
 
-  const formatDate = (timestamp: number): string => {
+  const formatDate = (timestamp?: number): string => {
+    if (!timestamp) return "";
     return new Date(timestamp).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",

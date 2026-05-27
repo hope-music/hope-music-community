@@ -37,21 +37,21 @@ export function NewsSection() {
       title: "Announcing the 2024 Global Musicals Gala line-up",
       date: "June 25, 2026",
       image: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=500",
-      href: "/news/1",
+      href: "/news/demo-1",
     },
     {
       id: "demo-2",
       title: "Hope Studio partners with industry leader for pro-audio workshop series",
       date: "June 25, 2026",
       image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=500",
-      href: "/news/2",
+      href: "/news/demo-2",
     },
     {
       id: "demo-3",
       title: "Artist Community Spotlight: Rising stars share their journey with HOPE",
       date: "June 25, 2026",
       image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500",
-      href: "/news/3",
+      href: "/news/demo-3",
     },
   ];
 

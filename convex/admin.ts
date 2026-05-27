@@ -631,6 +631,29 @@ export const getPublishedNews = query({
   },
 });
 
+// Get single news article by ID - no auth required
+export const getNewsById = query({
+  args: { id: v.id("news") },
+  handler: async (ctx, args) => {
+    const article = await ctx.db.get(args.id);
+    if (!article || article.isPublished !== true) {
+      return null;
+    }
+    return {
+      _id: article._id,
+      title: article.title ?? "",
+      coverImage: article.coverImage ?? article.image ?? "",
+      content: article.content ?? "",
+      excerpt: article.excerpt ?? "",
+      publishDate: article.publishDate ?? article.date,
+      authorName: article.authorName ?? article.author ?? "",
+      isPublished: article.isPublished ?? false,
+      isFeatured: article.isFeatured ?? false,
+      createdAt: article.createdAt ?? Date.now(),
+    };
+  },
+});
+
 // Admin-only query for full news management
 export const listNews = query({
   args: {
