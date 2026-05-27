@@ -21,28 +21,78 @@ const ALL_CATEGORIES = [
   { value: "hardware", label: "Hardware", icon: "🎛️" },
   { value: "music", label: "Music", icon: "🎵" },
   { value: "production", label: "Production", icon: "🎬" },
-  { value: "resources", label: "Resources", icon: "📚" },
   { value: "artical", label: "Article", icon: "📝" },
   { value: "others", label: "Others", icon: "💬" },
 ];
 
 // Placeholder posts data
 const PLACEHOLDER_POSTS = [
-  { id: "1", title: "ISAT Interaction 2023 v1.0.4 Released", author: "DevTeam", replies: 24, views: 1520, category: "software", createdAt: Date.now() - 3600000 * 2 },
-  { id: "2", title: "Best audio interfaces of 2026 — comprehensive review", author: "GearReviewer", replies: 89, views: 3240, category: "hardware", createdAt: Date.now() - 3600000 * 5 },
-  { id: "3", title: "Songwriting 101: Finding your unique melodic voice", author: "Songsmith", replies: 73, views: 2180, category: "music", createdAt: Date.now() - 3600000 * 12 },
-  { id: "4", title: "Lighting design fundamentals for live stage", author: "LightMaster", replies: 26, views: 890, category: "production", createdAt: Date.now() - 3600000 * 18 },
-  { id: "5", title: "Free sample packs 2026 collection", author: "SampleVault", replies: 145, views: 4520, category: "resources", createdAt: Date.now() - 3600000 * 24 },
-  { id: "6", title: "The rich history of musical theater", author: "TheaterBuff", replies: 94, views: 2890, category: "artical", createdAt: Date.now() - 3600000 * 36 },
-  { id: "7", title: "Community event calendar — upcoming meetups", author: "EventLead", replies: 45, views: 1230, category: "others", createdAt: Date.now() - 3600000 * 48 },
-  { id: "8", title: "MIDI controller mapping tutorial for live performance", author: "MIDI_Master", replies: 42, views: 1560, category: "software", createdAt: Date.now() - 3600000 * 60 },
-  { id: "9", title: "Monitor speaker placement guide", author: "AcousticPro", replies: 35, views: 980, category: "hardware", createdAt: Date.now() - 3600000 * 72 },
-  { id: "10", title: "Understanding modal scales beyond major and minor", author: "TheoryNerd", replies: 55, views: 1890, category: "music", createdAt: Date.now() - 3600000 * 84 },
-  { id: "11", title: "Stage rigging safety standards", author: "SafetyOfficer", replies: 47, views: 1120, category: "production", createdAt: Date.now() - 3600000 * 96 },
-  { id: "12", title: "DAW keyboard shortcuts cheat sheet", author: "ShortcutGuru", replies: 67, views: 2340, category: "resources", createdAt: Date.now() - 3600000 * 108 },
-  { id: "13", title: "The 10 most influential composers of the 21st century", author: "MusicScholar", replies: 118, views: 3890, category: "artical", createdAt: Date.now() - 3600000 * 120 },
-  { id: "14", title: "Introduce yourself to the Hope Music Community!", author: "NewMember", replies: 203, views: 5670, category: "others", createdAt: Date.now() - 3600000 * 132 },
-  { id: "15", title: "Best free VST plugins for orchestral composition", author: "OrchestraFan", replies: 67, views: 2340, category: "software", createdAt: Date.now() - 3600000 * 144 },
+  // Software (10)
+  { id: "ph-soft-1", title: "ISAT Interaction 2023 v1.0.4 Released", author: "DevTeam", replies: 24, views: 1520, category: "software", createdAt: Date.now() - 3600000 * 2 },
+  { id: "ph-soft-2", title: "How to optimize latent settings in DAW Soundworks", author: "AudioPro", replies: 18, views: 890, category: "software", createdAt: Date.now() - 3600000 * 5 },
+  { id: "ph-soft-3", title: "MIDI controller mapping tutorial for live performance", author: "MIDI_Master", replies: 42, views: 1560, category: "software", createdAt: Date.now() - 3600000 * 12 },
+  { id: "ph-soft-4", title: "Best free VST plugins for orchestral composition", author: "OrchestraFan", replies: 67, views: 2340, category: "software", createdAt: Date.now() - 3600000 * 24 },
+  { id: "ph-soft-5", title: "Audio interface latency troubleshooting guide", author: "StudioGuru", replies: 31, views: 1120, category: "software", createdAt: Date.now() - 3600000 * 36 },
+  { id: "ph-soft-6", title: "Setting up multi-monitor workspace for mixing", author: "MixEngineer", replies: 15, views: 780, category: "software", createdAt: Date.now() - 3600000 * 48 },
+  { id: "ph-soft-7", title: "Cloud collaboration tools for remote music production", author: "RemoteBeat", replies: 28, views: 1450, category: "software", createdAt: Date.now() - 3600000 * 60 },
+  { id: "ph-soft-8", title: "Automating reverb sends with sidechain compression", author: "FXWizard", replies: 19, views: 920, category: "software", createdAt: Date.now() - 3600000 * 72 },
+  { id: "ph-soft-9", title: "Exporting stems correctly for film scoring projects", author: "FilmScore", replies: 36, views: 1680, category: "software", createdAt: Date.now() - 3600000 * 84 },
+  { id: "ph-soft-10", title: "Building a custom macro pad for live DJ sets", author: "DJLIVE", replies: 22, views: 1050, category: "software", createdAt: Date.now() - 3600000 * 96 },
+  // Hardware (10)
+  { id: "ph-hard-1", title: "Best audio interfaces of 2026 — comprehensive comparison", author: "GearReviewer", replies: 89, views: 3240, category: "hardware", createdAt: Date.now() - 3600000 * 3 },
+  { id: "ph-hard-2", title: "Monitor speaker placement guide — acoustics for small rooms", author: "AcousticPro", replies: 45, views: 1980, category: "hardware", createdAt: Date.now() - 3600000 * 8 },
+  { id: "ph-hard-3", title: "Understanding microphone polar patterns", author: "MicExpert", replies: 33, views: 1420, category: "hardware", createdAt: Date.now() - 3600000 * 20 },
+  { id: "ph-hard-4", title: "DI box explained: active vs passive", author: "LiveSound", replies: 27, views: 1180, category: "hardware", createdAt: Date.now() - 3600000 * 32 },
+  { id: "ph-hard-5", title: "Audio cabling basics — balanced vs unbalanced", author: "CableKing", replies: 19, views: 890, category: "hardware", createdAt: Date.now() - 3600000 * 44 },
+  { id: "ph-hard-6", title: "DIY acoustic treatment on a budget", author: "BudgetStudio", replies: 62, views: 2560, category: "hardware", createdAt: Date.now() - 3600000 * 56 },
+  { id: "ph-hard-7", title: "Headphone amplifier pairing guide", author: "Audiophile", replies: 38, views: 1650, category: "hardware", createdAt: Date.now() - 3600000 * 68 },
+  { id: "ph-hard-8", title: "How to choose the right MIDI keyboard", author: "KeysPlayer", replies: 51, views: 2180, category: "hardware", createdAt: Date.now() - 3600000 * 80 },
+  { id: "ph-hard-9", title: "Studio furniture and desk setup essentials", author: "StudioBuilder", replies: 29, views: 1340, category: "hardware", createdAt: Date.now() - 3600000 * 92 },
+  { id: "ph-hard-10", title: "Power conditioning and surge protection guide", author: "SafetyFirst", replies: 16, views: 720, category: "hardware", createdAt: Date.now() - 3600000 * 104 },
+  // Music (10)
+  { id: "ph-music-1", title: "Songwriting 101: Finding your unique melodic voice", author: "Songsmith", replies: 73, views: 2890, category: "music", createdAt: Date.now() - 3600000 * 4 },
+  { id: "ph-music-2", title: "Orchestral arrangement tips for small ensembles", author: "Arranger", replies: 41, views: 1780, category: "music", createdAt: Date.now() - 3600000 * 16 },
+  { id: "ph-music-3", title: "Understanding modal scales beyond major and minor", author: "TheoryNerd", replies: 55, views: 2340, category: "music", createdAt: Date.now() - 3600000 * 28 },
+  { id: "ph-music-4", title: "Music theory for producers", author: "BeatMaker", replies: 88, views: 3450, category: "music", createdAt: Date.now() - 3600000 * 40 },
+  { id: "ph-music-5", title: "Creating emotional chord progressions", author: "Composer", replies: 64, views: 2670, category: "music", createdAt: Date.now() - 3600000 * 52 },
+  { id: "ph-music-6", title: "Rhythm and groove fundamentals", author: "Drummer", replies: 37, views: 1560, category: "music", createdAt: Date.now() - 3600000 * 64 },
+  { id: "ph-music-7", title: "Melody writing techniques", author: "Melodist", replies: 49, views: 2040, category: "music", createdAt: Date.now() - 3600000 * 76 },
+  { id: "ph-music-8", title: "Harmonic color — using extended chords", author: "JazzCat", replies: 42, views: 1890, category: "music", createdAt: Date.now() - 3600000 * 88 },
+  { id: "ph-music-9", title: "Arranging for different ensembles", author: "EnsembleLead", replies: 31, views: 1420, category: "music", createdAt: Date.now() - 3600000 * 100 },
+  { id: "ph-music-10", title: "Music production workflow optimization", author: "ProducerX", replies: 58, views: 2450, category: "music", createdAt: Date.now() - 3600000 * 112 },
+  // Production (10)
+  { id: "ph-prod-1", title: "Lighting design fundamentals for live stage", author: "LightMaster", replies: 26, views: 1120, category: "production", createdAt: Date.now() - 3600000 * 6 },
+  { id: "ph-prod-2", title: "Sound reinforcement setup for live theater", author: "SoundTech", replies: 34, views: 1450, category: "production", createdAt: Date.now() - 3600000 * 18 },
+  { id: "ph-prod-3", title: "Stage rigging safety standards", author: "SafetyOfficer", replies: 47, views: 1980, category: "production", createdAt: Date.now() - 3600000 * 30 },
+  { id: "ph-prod-4", title: "Projection mapping techniques", author: "VisualArtist", replies: 39, views: 1670, category: "production", createdAt: Date.now() - 3600000 * 42 },
+  { id: "ph-prod-5", title: "Set design and construction on a budget", author: "SetBuilder", replies: 28, views: 1220, category: "production", createdAt: Date.now() - 3600000 * 54 },
+  { id: "ph-prod-6", title: "AV system integration for venues", author: "AVIntegrator", replies: 21, views: 980, category: "production", createdAt: Date.now() - 3600000 * 66 },
+  { id: "ph-prod-7", title: "Backstage communication protocols", author: "StageManager", replies: 15, views: 720, category: "production", createdAt: Date.now() - 3600000 * 78 },
+  { id: "ph-prod-8", title: "Pyrotechnics and special effects safety", author: "FXTech", replies: 33, views: 1420, category: "production", createdAt: Date.now() - 3600000 * 90 },
+  { id: "ph-prod-9", title: "Live mixing techniques for bands", author: "LiveMixer", replies: 52, views: 2180, category: "production", createdAt: Date.now() - 3600000 * 102 },
+  { id: "ph-prod-10", title: "Stage management best practices", author: "ProManager", replies: 19, views: 890, category: "production", createdAt: Date.now() - 3600000 * 114 },
+  // Article (10)
+  { id: "ph-art-1", title: "The rich history of musical theater", author: "TheaterBuff", replies: 94, views: 3560, category: "artical", createdAt: Date.now() - 3600000 * 7 },
+  { id: "ph-art-2", title: "The evolution of recording technology", author: "HistoryNerd", replies: 71, views: 2780, category: "artical", createdAt: Date.now() - 3600000 * 19 },
+  { id: "ph-art-3", title: "The 10 most influential composers of the 21st century", author: "MusicScholar", replies: 118, views: 4560, category: "artical", createdAt: Date.now() - 3600000 * 31 },
+  { id: "ph-art-4", title: "Psychoacoustics: how the brain processes music", author: "ScienceGuy", replies: 63, views: 2450, category: "artical", createdAt: Date.now() - 3600000 * 43 },
+  { id: "ph-art-5", title: "Music therapy research — evidence-based practice", author: "Therapist", replies: 45, views: 1890, category: "artical", createdAt: Date.now() - 3600000 * 55 },
+  { id: "ph-art-6", title: "Copyright law for independent musicians", author: "LegalEagle", replies: 82, views: 3240, category: "artical", createdAt: Date.now() - 3600000 * 67 },
+  { id: "ph-art-7", title: "The streaming era — understanding music economics", author: "EconMajor", replies: 97, views: 3780, category: "artical", createdAt: Date.now() - 3600000 * 79 },
+  { id: "ph-art-8", title: "AI in music composition", author: "AITech", replies: 156, views: 5890, category: "artical", createdAt: Date.now() - 3600000 * 91 },
+  { id: "ph-art-9", title: "The future of live music performances", author: "Futurist", replies: 74, views: 2890, category: "artical", createdAt: Date.now() - 3600000 * 103 },
+  { id: "ph-art-10", title: "Music education trends and innovations", author: "EduExpert", replies: 38, views: 1560, category: "artical", createdAt: Date.now() - 3600000 * 115 },
+  // Others (10)
+  { id: "ph-oth-1", title: "Community guidelines — keeping our forum respectful", author: "Admin", replies: 12, views: 890, category: "others", createdAt: Date.now() - 3600000 * 168 },
+  { id: "ph-oth-2", title: "Community event calendar — upcoming meetups", author: "EventLead", replies: 45, views: 1890, category: "others", createdAt: Date.now() - 3600000 * 72 },
+  { id: "ph-oth-3", title: "Introduce yourself to the Hope Music Community!", author: "NewMember", replies: 203, views: 6780, category: "others", createdAt: Date.now() - 3600000 * 24 },
+  { id: "ph-oth-4", title: "Resources and tutorials master list", author: "Librarian", replies: 89, views: 3450, category: "others", createdAt: Date.now() - 3600000 * 48 },
+  { id: "ph-oth-5", title: "Collaboration opportunities", author: "CollabHub", replies: 67, views: 2560, category: "others", createdAt: Date.now() - 3600000 * 36 },
+  { id: "ph-oth-6", title: "Gear marketplace — buy, sell, and trade", author: "MarketMaster", replies: 134, views: 4890, category: "others", createdAt: Date.now() - 3600000 * 12 },
+  { id: "ph-oth-7", title: "Feedback welcome — share your thoughts", author: "FeedbackBot", replies: 56, views: 2180, category: "others", createdAt: Date.now() - 3600000 * 60 },
+  { id: "ph-oth-8", title: "Support and help desk", author: "SupportTeam", replies: 78, views: 2890, category: "others", createdAt: Date.now() - 3600000 * 18 },
+  { id: "ph-oth-9", title: "Weekly listening sessions schedule", author: "DJSchedule", replies: 34, views: 1450, category: "others", createdAt: Date.now() - 3600000 * 84 },
+  { id: "ph-oth-10", title: "Feature requests and suggestions board", author: "FeatureReq", replies: 92, views: 3560, category: "others", createdAt: Date.now() - 3600000 * 96 },
 ];
 
 interface PageProps {
@@ -83,7 +133,7 @@ export default function InteractionCategoryPage({ params }: PageProps) {
   const allPosts = useQuery(api.admin.listAllPosts) as Post[] | undefined;
 
   useEffect(() => {
-    if (allPosts !== undefined) {
+    if (allPosts && allPosts.length > 0) {
       const filtered = currentCategory
         ? allPosts.filter((p: Post) => p.category === currentCategory)
         : allPosts;
@@ -126,7 +176,7 @@ export default function InteractionCategoryPage({ params }: PageProps) {
 
   const sortedPosts = [...filteredPosts].sort((a, b) => {
     if (sortBy === "popular") {
-      return b.replies - a.replies;
+      return (b.replies || 0) - (a.replies || 0);
     }
     return b.createdAt - a.createdAt;
   });
@@ -276,9 +326,8 @@ export default function InteractionCategoryPage({ params }: PageProps) {
             </div>
           </aside>
 
-          {/* Main Content - Post List */}
+          {/* Main Content - Reddit-style Card List */}
           <div className="flex-1 min-w-0">
-            {/* Card-style Post List */}
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {sortedPosts.length === 0 ? (
                 <div className="p-12 text-center">
@@ -293,47 +342,44 @@ export default function InteractionCategoryPage({ params }: PageProps) {
                       href={`/interaction/${post.category}/${post.id}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`block px-4 py-4 hover:bg-amber-50/30 transition-colors ${
+                      className={`block px-4 py-4 hover:bg-gray-50 transition-colors ${
                         index !== sortedPosts.length - 1 ? "border-b border-gray-100" : ""
                       }`}
                     >
                       <div className="flex items-start gap-4">
-                        {/* Author Avatar */}
-                        <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-[#D96A32] to-[#C8102E] rounded-full flex items-center justify-center text-white font-bold text-sm">
-                          {(post.author as string).charAt(0).toUpperCase()}
-                        </div>
+                        {/* Author Avatar - Real photo style */}
+                        <img
+                          src={`https://i.pravatar.cc/80?u=${encodeURIComponent(post.author as string)}`}
+                          alt={post.author as string}
+                          className="flex-shrink-0 w-10 h-10 rounded-full"
+                        />
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 text-gray-600 text-xs rounded-full">
-                              <span>{catInfo.icon}</span>
-                              <span>{catInfo.label}</span>
-                            </span>
-                          </div>
-                          <h3 className="text-base font-medium text-gray-900 hover:text-[#D96A32] line-clamp-1 mb-1">
+                          <h3 className="text-base font-medium text-gray-900 hover:text-[#D96A32] line-clamp-2 mb-1">
                             {post.title}
                           </h3>
-                          <div className="flex items-center gap-4 text-xs text-gray-500">
-                            <span className="font-medium">{post.author}</span>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span className="font-medium text-gray-600">{post.author}</span>
                             <span>•</span>
-                            <span>{formatTimeAgo(post.createdAt)} ago</span>
+                            <span>{formatTimeAgo(post.createdAt)}</span>
                           </div>
                         </div>
 
-                        {/* Stats - Right Side with Green Badges */}
-                        <div className="flex-shrink-0 flex items-center gap-4">
-                          <div className="text-center">
-                            <div className="flex items-center justify-center px-2.5 py-1.5 bg-green-100 rounded-lg mb-1">
-                              <span className="text-sm font-medium text-green-700">{post.replies}</span>
-                            </div>
-                            <span className="text-xs text-gray-500">replies</span>
+                        {/* Stats - Right Side */}
+                        <div className="flex-shrink-0 flex flex-col items-end gap-1">
+                          <div className="flex items-center gap-1 px-2 py-1 bg-green-100 rounded-lg">
+                            <span className="text-xs font-medium text-green-700">{post.replies || 0}</span>
+                            <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
                           </div>
-                          <div className="text-center">
-                            <div className="flex items-center justify-center px-2.5 py-1.5 bg-green-100 rounded-lg mb-1">
-                              <span className="text-sm font-medium text-green-700">{post.views}</span>
-                            </div>
-                            <span className="text-xs text-gray-500">views</span>
+                          <div className="flex items-center gap-1 px-2 py-0.5">
+                            <span className="text-xs text-gray-400">{post.views || 0}</span>
+                            <svg className="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
                           </div>
                         </div>
                       </div>
