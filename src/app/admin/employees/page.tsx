@@ -23,37 +23,30 @@ const ROLE_COLORS: Record<string, string> = {
 
 export default function EmployeesPage() {
   const router = useRouter();
-  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const [newEmail, setNewEmail] = useState("");
   const [newUsername, setNewUsername] = useState("");
   const [newAvatar, setNewAvatar] = useState("");
   const [newRole, setNewRole] = useState<"super_admin" | "operator" | "member">("member");
 
-  // Get current user email
+  // Client-side check
   useEffect(() => {
+    setIsClient(true);
     const email = localStorage.getItem("user_email");
-    setCurrentUserEmail(email);
+    if (email) {
+      setCurrentUserEmail(email);
+    }
   }, []);
 
-  // Query employees - skip if no email
-  const queryArgs = currentUserEmail ? { callerEmail: currentUserEmail } : "skip";
+  // Query employees
   const employeesResult = useQuery(
     api.admin.listEmployees,
-    queryArgs
+    isClient && currentUserEmail ? { callerEmail: currentUserEmail } : undefined
   );
-
-  // Handle employees result
-  useEffect(() => {
-    if (employeesResult === undefined) return;
-    if (typeof employeesResult === "object" && !Array.isArray(employeesResult)) {
-      // This is an error object from Convex
-      setError(employeesResult.message || "无法加载员工列表");
-    }
-  }, [employeesResult]);
 
   // Mutations
   const createEmployeeFn = useMutation(api.admin.createEmployee);
@@ -78,7 +71,7 @@ export default function EmployeesPage() {
 
     try {
       const result = await createEmployeeFn({
-        callerEmail: currentUserEmail!,
+        callerEmail: currentUserEmail,
         email: newEmail,
         username: newUsername,
         avatar: newAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${newUsername}`,
@@ -98,7 +91,7 @@ export default function EmployeesPage() {
   const handleToggleStatus = async (userId: string) => {
     try {
       const result = await toggleUserStatusFn({
-        callerEmail: currentUserEmail!,
+        callerEmail: currentUserEmail,
         userId: userId as any,
       });
       setMessage({ type: "success", text: result.message });
@@ -110,7 +103,7 @@ export default function EmployeesPage() {
   const handleUpdateRole = async (userId: string, newRole: "super_admin" | "operator" | "member") => {
     try {
       const result = await updateUserRoleFn({
-        callerEmail: currentUserEmail!,
+        callerEmail: currentUserEmail,
         userId: userId as any,
         newRole,
       });
@@ -124,7 +117,7 @@ export default function EmployeesPage() {
     if (!confirm("确定要删除该用户吗？此操作不可恢复。")) return;
     try {
       const result = await deleteUserFn({
-        callerEmail: currentUserEmail!,
+        callerEmail: currentUserEmail,
         userId: userId as any,
       });
       setMessage({ type: "success", text: result.message });
@@ -141,8 +134,8 @@ export default function EmployeesPage() {
     });
   };
 
-  // Loading state
-  if (currentUserEmail === null || employeesResult === undefined) {
+  // Show loading if not client-side yet
+  if (!isClient || !currentUserEmail) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
@@ -153,13 +146,26 @@ export default function EmployeesPage() {
     );
   }
 
-  // Error state
-  if (error || (employeesResult && typeof employeesResult === "object" && !Array.isArray(employeesResult))) {
+  // Handle Convex query result
+  if (employeesResult === undefined) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-500">加载中...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if it's an error object
+  if (typeof employeesResult === "object" && employeesResult !== null && !Array.isArray(employeesResult)) {
+    const errorObj = employeesResult as { message?: string };
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center p-8 bg-red-50 rounded-lg max-w-md">
           <h2 className="text-xl font-bold text-red-600 mb-2">权限不足</h2>
-          <p className="text-gray-600 mb-4">{error || "您没有权限访问此页面"}</p>
+          <p className="text-gray-600 mb-4">{errorObj.message || "您没有权限访问此页面"}</p>
           <button
             onClick={() => router.push("/")}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
