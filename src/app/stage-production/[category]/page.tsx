@@ -51,7 +51,7 @@ export default function StageProductionCategoryPage({ params }: { params: Promis
         {loading ? <div className="py-20 text-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div></div> : items.length === 0 ? <div className="py-20 text-center text-gray-500"><p>No {categoryName.toLowerCase()} items yet.</p><Link href="/stage-production" className="mt-4 inline-block text-[#D96A32] hover:underline">← Back</Link></div> : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
-              <Link key={item.id} href={`/stage-production/${item.category}/${item.id}`} className="group flex h-full flex-col overflow-hidden rounded-xl border border-hmc-placeholder-border bg-white shadow-sm hover:shadow-md">
+              <Link key={item.id} href={`/stage-production/${item.category}/${item.id}`} target="_blank" rel="noopener noreferrer" className="group flex h-full flex-col overflow-hidden rounded-xl border border-hmc-placeholder-border bg-white shadow-sm hover:shadow-md">
                 <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">{item.coverImage ? <img src={item.coverImage} alt={item.title} className="h-full w-full object-cover transition-transform group-hover:scale-105" /> : <div className="flex h-full items-center justify-center bg-gray-200"><span className="text-gray-400">No Image</span></div>}</div>
                 <div className="flex flex-1 flex-col gap-2 p-4">
                   <h3 className="text-sm font-semibold text-hmc-text group-hover:text-[#C8102E]">{item.title}</h3>
