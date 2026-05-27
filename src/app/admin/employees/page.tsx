@@ -147,7 +147,7 @@ export default function EmployeesPage() {
   }
 
   // Handle Convex query result
-  if (employeesResult === undefined) {
+  if (employeesResult === undefined || employeesResult === null) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
@@ -159,7 +159,7 @@ export default function EmployeesPage() {
   }
 
   // Check if it's an error object
-  if (typeof employeesResult === "object" && employeesResult !== null && !Array.isArray(employeesResult)) {
+  if (typeof employeesResult === "object" && !Array.isArray(employeesResult)) {
     const errorObj = employeesResult as { message?: string };
     return (
       <div className="flex min-h-[60vh] items-center justify-center">

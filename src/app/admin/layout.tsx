@@ -133,10 +133,10 @@ export default function AdminLayout({
               </nav>
             </div>
             <div className="flex items-center gap-4">
-              {currentUser && (
+              {currentUser && currentUser !== null && (
                 <div className="flex items-center gap-2 text-sm text-gray-600">
                   <img
-                    src={currentUser.avatar || "https://api.dicebear.com/7.x/avataaars/svg?seed=" + currentUser.username}
+                    src={currentUser.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser.username}`}
                     alt={currentUser.username}
                     className="w-8 h-8 rounded-full bg-gray-200"
                   />
