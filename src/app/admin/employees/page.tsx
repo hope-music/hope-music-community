@@ -157,8 +157,8 @@ export default function EmployeesPage() {
     );
   }
 
-  // Show access denied if not admin
-  if (currentUserEmail && !employees) {
+  // Show access denied if not admin (employees query threw error)
+  if (!Array.isArray(employees)) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center p-8 bg-red-50 rounded-lg">
