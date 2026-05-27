@@ -61,13 +61,19 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
   const handleLogin = () => {
     setError("");
     
-    if (!username.trim()) {
-      setError("Please enter your username");
+    if (!username.trim() && !email.trim()) {
+      setError("Please enter your username or email");
       return;
     }
 
     const users = getUsers();
-    const user = users.find(u => u.username.toLowerCase() === username.trim().toLowerCase());
+    const input = username.trim() || email.trim().toLowerCase();
+    
+    // Find user by username or email (case-insensitive)
+    const user = users.find(u => 
+      u.username.toLowerCase() === input.toLowerCase() || 
+      u.email.toLowerCase() === input.toLowerCase()
+    );
     
     if (!user) {
       setError("User not found. Please register first.");
@@ -147,12 +153,12 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
             <h2 className="mb-4 text-xl font-semibold text-gray-800">Welcome Back</h2>
             <div className="space-y-4">
               <div>
-                <label className="mb-1 block text-sm text-gray-600">Username</label>
+                <label className="mb-1 block text-sm text-gray-600">Username or Email</label>
                 <input
                   type="text"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  placeholder="Enter your username"
+                  placeholder="Enter your username or email"
                   className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-[#D96A32] focus:outline-none focus:ring-1 focus:ring-[#D96A32]"
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 />
