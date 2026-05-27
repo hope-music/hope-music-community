@@ -36,7 +36,7 @@ const PLACEHOLDER_POSTS = [
   { id: "6", title: "The rich history of musical theater", author: "TheaterBuff", replies: 94, views: 2890, category: "artical", createdAt: Date.now() - 3600000 * 36 },
   { id: "7", title: "Community event calendar — upcoming meetups", author: "EventLead", replies: 45, views: 1230, category: "others", createdAt: Date.now() - 3600000 * 48 },
   { id: "8", title: "MIDI controller mapping tutorial for live performance", author: "MIDI_Master", replies: 42, views: 1560, category: "software", createdAt: Date.now() - 3600000 * 60 },
-  { id: "9", title: "Monitor speaker placement guide — acoustics for small rooms", author: "AcousticPro", replies: 35, views: 980, category: "hardware", createdAt: Date.now() - 3600000 * 72 },
+  { id: "9", title: "Monitor speaker placement guide", author: "AcousticPro", replies: 35, views: 980, category: "hardware", createdAt: Date.now() - 3600000 * 72 },
   { id: "10", title: "Understanding modal scales beyond major and minor", author: "TheoryNerd", replies: 55, views: 1890, category: "music", createdAt: Date.now() - 3600000 * 84 },
   { id: "11", title: "Stage rigging safety standards", author: "SafetyOfficer", replies: 47, views: 1120, category: "production", createdAt: Date.now() - 3600000 * 96 },
   { id: "12", title: "DAW keyboard shortcuts cheat sheet", author: "ShortcutGuru", replies: 67, views: 2340, category: "resources", createdAt: Date.now() - 3600000 * 108 },
@@ -61,14 +61,13 @@ function formatTimeAgo(timestamp: number): string {
   return `${Math.floor(days / 7)}w`;
 }
 
-function getCategoryInfo(value: string) {
-  return ALL_CATEGORIES.find(c => c.value === value) || { value, label: value, icon: "📌" };
-}
-
 export default function InteractionCategoryPage({ params }: PageProps) {
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [sortBy, setSortBy] = useState<"latest" | "popular">("latest");
+  const [timeFilter, setTimeFilter] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeTab, setActiveTab] = useState("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -99,7 +98,6 @@ export default function InteractionCategoryPage({ params }: PageProps) {
         createdAt: p.createdAt || Date.now(),
       })));
     } else {
-      // Use placeholder posts filtered by category
       const filtered = currentCategory
         ? PLACEHOLDER_POSTS.filter(p => p.category === currentCategory)
         : PLACEHOLDER_POSTS;
@@ -107,8 +105,26 @@ export default function InteractionCategoryPage({ params }: PageProps) {
     }
   }, [allPosts, currentCategory]);
 
-  // Sort posts
-  const sortedPosts = [...posts].sort((a, b) => {
+  // Filter and sort posts
+  const filteredPosts = posts.filter(post => {
+    if (searchQuery && !post.title.toLowerCase().includes(searchQuery.toLowerCase())) {
+      return false;
+    }
+    if (timeFilter !== "all") {
+      const now = Date.now();
+      const age = now - post.createdAt;
+      const day = 24 * 3600000;
+      switch (timeFilter) {
+        case "today": if (age > day) return false; break;
+        case "week": if (age > 7 * day) return false; break;
+        case "month": if (age > 30 * day) return false; break;
+        case "year": if (age > 365 * day) return false; break;
+      }
+    }
+    return true;
+  });
+
+  const sortedPosts = [...filteredPosts].sort((a, b) => {
     if (sortBy === "popular") {
       return b.replies - a.replies;
     }
@@ -123,64 +139,106 @@ export default function InteractionCategoryPage({ params }: PageProps) {
     );
   }
 
-  const currentCategoryInfo = currentCategory ? getCategoryInfo(currentCategory) : null;
+  const currentCategoryInfo = currentCategory ? ALL_CATEGORIES.find(c => c.value === currentCategory) : null;
+  const currentCategoryLabel = currentCategoryInfo?.label?.toUpperCase() || "INTERACTION";
 
   return (
     <main className="min-h-screen bg-gray-100">
       {/* Top Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 pt-6">
+          <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-3">
-              {currentCategoryInfo && (
-                <>
-                  <span className="text-2xl">{currentCategoryInfo.icon}</span>
-                  <div>
-                    <h1 className="text-xl font-bold text-gray-900">{currentCategoryInfo.label}</h1>
-                    <p className="text-sm text-gray-500">{posts.length} topics</p>
-                  </div>
-                </>
-              )}
-              {!currentCategory && (
-                <>
-                  <span className="text-2xl">💬</span>
-                  <div>
-                    <h1 className="text-xl font-bold text-gray-900">Interaction</h1>
-                    <p className="text-sm text-gray-500">{posts.length} topics</p>
-                  </div>
-                </>
-              )}
+              <Link href="/interaction" className="text-gray-400 hover:text-gray-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </Link>
+              <h1 className="text-2xl font-bold text-gray-900">{currentCategoryLabel}</h1>
             </div>
-            <div className="flex items-center gap-3">
-              {/* Sort buttons */}
-              <div className="flex bg-gray-100 rounded-lg p-1">
-                <button
-                  onClick={() => setSortBy("latest")}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    sortBy === "latest"
-                      ? "bg-white text-[#D96A32] shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Latest
-                </button>
-                <button
-                  onClick={() => setSortBy("popular")}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    sortBy === "popular"
-                      ? "bg-white text-[#D96A32] shadow-sm"
-                      : "text-gray-600 hover:text-gray-900"
-                  }`}
-                >
-                  Popular
-                </button>
-              </div>
+            <div className="text-sm text-gray-500">
+              45,987 Members | {posts.length} Topics
             </div>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex gap-1 border-b border-gray-200 -mb-px">
+            {["All Topics", "By Category", "Latest"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab.toLowerCase().replace(" ", "-"))}
+                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                  activeTab === tab.toLowerCase().replace(" ", "-")
+                    ? "border-[#D96A32] text-[#D96A32]"
+                    : "border-transparent text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
+      {/* Toolbar */}
+      <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="flex items-center gap-3">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <input
+              type="text"
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none"
+            />
+            <svg className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          {/* Sort By */}
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as "latest" | "popular")}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none"
+          >
+            <option value="latest">Latest</option>
+            <option value="popular">Most Popular</option>
+          </select>
+
+          {/* Time Filter */}
+          <select
+            value={timeFilter}
+            onChange={(e) => setTimeFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none"
+          >
+            <option value="all">All Time</option>
+            <option value="today">Today</option>
+            <option value="week">This Week</option>
+            <option value="month">This Month</option>
+            <option value="year">This Year</option>
+          </select>
+
+          {/* Filter Button */}
+          <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+            Filter
+          </button>
+
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* New Topic Button */}
+          <button className="px-4 py-2 bg-[#D96A32] text-white rounded-lg text-sm font-medium hover:bg-[#c45a28] transition-colors flex items-center gap-2">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            New Topic
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 pb-8">
         <div className="flex gap-6">
           {/* Left Sidebar - Categories */}
           <aside className="w-56 shrink-0">
@@ -220,15 +278,15 @@ export default function InteractionCategoryPage({ params }: PageProps) {
 
           {/* Main Content - Post List */}
           <div className="flex-1 min-w-0">
-            {/* Post List */}
+            {/* Card-style Post List */}
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {sortedPosts.length === 0 ? (
                 <div className="p-12 text-center">
-                  <p className="text-gray-500">No topics yet. Be the first to start a discussion!</p>
+                  <p className="text-gray-500">No topics found. Be the first to start a discussion!</p>
                 </div>
               ) : (
                 sortedPosts.map((post, index) => {
-                  const catInfo = getCategoryInfo(post.category);
+                  const catInfo = ALL_CATEGORIES.find(c => c.value === post.category) || { value: post.category, label: post.category, icon: "📌" };
                   return (
                     <Link
                       key={post.id}
@@ -263,19 +321,19 @@ export default function InteractionCategoryPage({ params }: PageProps) {
                           </div>
                         </div>
 
-                        {/* Stats */}
-                        <div className="flex-shrink-0 flex items-center gap-6 text-sm">
+                        {/* Stats - Right Side with Green Badges */}
+                        <div className="flex-shrink-0 flex items-center gap-4">
                           <div className="text-center">
-                            <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg mb-1">
-                              <span className="text-lg">💬</span>
+                            <div className="flex items-center justify-center px-2.5 py-1.5 bg-green-100 rounded-lg mb-1">
+                              <span className="text-sm font-medium text-green-700">{post.replies}</span>
                             </div>
-                            <span className="text-xs text-gray-500">{post.replies}</span>
+                            <span className="text-xs text-gray-500">replies</span>
                           </div>
-                          <div className="text-center hidden sm:block">
-                            <div className="flex items-center justify-center w-10 h-10 bg-gray-100 rounded-lg mb-1">
-                              <span className="text-lg">👁</span>
+                          <div className="text-center">
+                            <div className="flex items-center justify-center px-2.5 py-1.5 bg-green-100 rounded-lg mb-1">
+                              <span className="text-sm font-medium text-green-700">{post.views}</span>
                             </div>
-                            <span className="text-xs text-gray-500">{post.views}</span>
+                            <span className="text-xs text-gray-500">views</span>
                           </div>
                         </div>
                       </div>
@@ -285,7 +343,7 @@ export default function InteractionCategoryPage({ params }: PageProps) {
               )}
             </div>
 
-            {/* Pagination placeholder */}
+            {/* Pagination */}
             {sortedPosts.length > 0 && (
               <div className="mt-4 flex justify-center">
                 <div className="flex items-center gap-2">
