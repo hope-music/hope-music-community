@@ -42,12 +42,22 @@ export default function EmployeesPage() {
     // Check admin login status from sessionStorage
     const loggedIn = sessionStorage.getItem("adminLoggedIn") === "true";
     setIsLoggedIn(loggedIn);
+    // Also get user email from localStorage
+    const userData = localStorage.getItem("user_data");
+    if (userData) {
+      try {
+        const user = JSON.parse(userData);
+        setCurrentUserEmail(user.email);
+      } catch (e) {
+        // ignore parse errors
+      }
+    }
   }, []);
 
-  // Query employees - use admin email directly for RBAC
+  // Query employees
   const employeesResult = useQuery(
     api.admin.listEmployees,
-    isClient && isLoggedIn ? { callerEmail: ADMIN_EMAIL } : "skip"
+    isClient && isLoggedIn && currentUserEmail ? { callerEmail: currentUserEmail } : "skip"
   );
 
   // Mutations

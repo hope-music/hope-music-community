@@ -24,6 +24,14 @@ export default function AdminLoginPage() {
 
     if (password === CORRECT_PASSWORD) {
       sessionStorage.setItem("adminLoggedIn", "true");
+      // Also set user info for RBAC system
+      localStorage.setItem("user_email", "admin@hopemusic.com");
+      localStorage.setItem("user_data", JSON.stringify({
+        email: "admin@hopemusic.com",
+        username: "Administrator",
+        role: "super_admin",
+        status: "active"
+      }));
       router.push("/admin/dashboard");
     } else {
       setError("Incorrect password");

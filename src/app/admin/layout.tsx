@@ -44,6 +44,8 @@ export default function AdminLayout({
 
   const handleLogout = () => {
     sessionStorage.removeItem("adminLoggedIn");
+    localStorage.removeItem("user_email");
+    localStorage.removeItem("user_data");
     router.push("/admin/login");
   };
 
