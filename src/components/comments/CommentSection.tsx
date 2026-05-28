@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface Comment {
   id: string;
@@ -64,6 +64,7 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     const userData = localStorage.getItem("hmc_current_user");
@@ -87,7 +88,12 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
 
   const handleSubmitComment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newComment.trim() || !currentUser) return;
+    if (!newComment.trim()) return;
+
+    if (!currentUser) {
+      router.push("/login");
+      return;
+    }
 
     setSubmitting(true);
 
@@ -101,16 +107,21 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
       replies: [],
     };
 
-    const newComments = [comment, ...comments];
-    setComments(newComments);
-    saveComments(newComments);
+    const updatedComments = [comment, ...comments];
+    setComments(updatedComments);
+    saveComments(updatedComments);
     setNewComment("");
     setSubmitting(false);
   };
 
   const handleSubmitReply = (e: React.FormEvent, parentId: string) => {
     e.preventDefault();
-    if (!replyContent.trim() || !currentUser) return;
+    if (!replyContent.trim()) return;
+
+    if (!currentUser) {
+      router.push("/login");
+      return;
+    }
 
     setSubmitting(true);
 
@@ -124,15 +135,15 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
       replies: [],
     };
 
-    const newComments = comments.map((c) => {
+    const updatedComments = comments.map((c) => {
       if (c.id === parentId) {
         return { ...c, replies: [...c.replies, reply] };
       }
       return c;
     });
 
-    setComments(newComments);
-    saveComments(newComments);
+    setComments(updatedComments);
+    saveComments(updatedComments);
     setReplyContent("");
     setReplyingTo(null);
     setSubmitting(false);
@@ -156,7 +167,7 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
               <span className="text-xs text-gray-400">{formatTime(comment.createdAt)}</span>
             </div>
             <p className="text-gray-700 text-sm mb-2">{comment.content}</p>
-            {currentUser && !isReply && (
+            {!isReply && (
               <button
                 onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
                 className="text-xs text-[#D96A32] hover:text-[#c45a28] font-medium"
@@ -211,8 +222,9 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
         Comments ({comments.length})
       </h2>
 
-      {currentUser ? (
-        <form onSubmit={handleSubmitComment} className="mb-8 bg-gray-50 rounded-xl p-5">
+      {/* Comment Input - Always visible */}
+      <form onSubmit={handleSubmitComment} className="mb-8 bg-gray-50 rounded-xl p-5">
+        {currentUser ? (
           <div className="flex gap-3">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0"
@@ -240,26 +252,28 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
               </div>
             </div>
           </div>
-        </form>
-      ) : (
-        <div className="mb-8 bg-gray-50 rounded-xl p-6 text-center">
-          <p className="text-gray-600 mb-3">Sign in to join the conversation</p>
-          <div className="flex justify-center gap-3">
-            <Link
-              href="/login"
-              className="px-5 py-2 text-sm font-medium text-[#D96A32] border border-[#D96A32] rounded-full hover:bg-[#D96A32]/10 transition-colors"
+        ) : (
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            placeholder="Write a comment..."
+            rows={3}
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#D96A32] resize-none"
+            required
+          />
+        )}
+        {!currentUser && (
+          <div className="flex justify-end mt-3">
+            <button
+              type="submit"
+              disabled={submitting || !newComment.trim()}
+              className="px-5 py-2 bg-[#D96A32] text-white text-sm font-medium rounded-full hover:bg-[#c45a28] disabled:opacity-50 transition-colors"
             >
-              Log In
-            </Link>
-            <Link
-              href="/login"
-              className="px-5 py-2 text-sm font-medium text-white bg-[#D96A32] rounded-full hover:bg-[#c45a28] transition-colors"
-            >
-              Sign Up
-            </Link>
+              Post Comment
+            </button>
           </div>
-        </div>
-      )}
+        )}
+      </form>
 
       <div className="space-y-4">
         {comments.length === 0 ? (
