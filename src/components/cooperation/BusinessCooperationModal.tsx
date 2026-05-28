@@ -200,7 +200,7 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 ${
+                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 cursor-pointer ${
                       errors.country ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
                     } ${!formData.country ? "text-gray-400" : "text-gray-900"}`}
                   >
