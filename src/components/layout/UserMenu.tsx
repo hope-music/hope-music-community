@@ -45,20 +45,15 @@ export function UserMenu() {
 
   if (!currentUser) {
     return (
-      <div className="flex items-center gap-2">
-        <Link
-          href="/login"
-          className="rounded-md bg-white/10 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-white/20"
-        >
-          Log In
-        </Link>
-        <Link
-          href="/registration"
-          className="rounded-md bg-[#D96A32] px-3 py-1.5 text-xs font-medium text-white transition hover:bg-[#c45a28]"
-        >
-          Sign Up
-        </Link>
-      </div>
+      <Link
+        href="/login"
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 text-white transition hover:bg-white/30"
+        title="Sign In"
+      >
+        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+          <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+        </svg>
+      </Link>
     );
   }
 
