@@ -27,19 +27,6 @@ const COUNTRIES = [
   { value: "other", label: "Other" },
 ];
 
-const PROJECT_TYPES = [
-  { value: "", label: "Select project type" },
-  { value: "recording", label: "Recording & Production" },
-  { value: "performance", label: "Live Performance" },
-  { value: "tour", label: "Tour Management" },
-  { value: "event", label: "Event Planning" },
-  { value: "licensing", label: "Music Licensing" },
-  { value: "distribution", label: "Distribution" },
-  { value: "marketing", label: "Marketing & Promotion" },
-  { value: "consulting", label: "Music Consulting" },
-  { value: "other", label: "Other" },
-];
-
 interface BusinessCooperationModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -91,7 +78,8 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Invalid email address";
     }
-    if (!formData.projectType) newErrors.projectType = "Please select project type";
+    if (!formData.projectType.trim()) newErrors.projectType = "Project type is required";
+    if (!formData.message.trim()) newErrors.message = "Cooperation details is required";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -262,36 +250,37 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
                 {/* Project Type */}
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Cooperation Type <span className="text-red-500">*</span>
+                    Project Type <span className="text-red-500">*</span>
                   </label>
-                  <select
+                  <input
+                    type="text"
                     name="projectType"
                     value={formData.projectType}
                     onChange={handleChange}
+                    placeholder="e.g. Live performance, Music production, Tour management..."
                     className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 ${
                       errors.projectType ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
-                    } ${!formData.projectType ? "text-gray-400" : "text-gray-900"}`}
-                  >
-                    {PROJECT_TYPES.map(p => (
-                      <option key={p.value} value={p.value}>{p.label}</option>
-                    ))}
-                  </select>
+                    }`}
+                  />
                   {errors.projectType && <p className="mt-1 text-xs text-red-500">{errors.projectType}</p>}
                 </div>
 
                 {/* Message */}
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">
-                    Cooperation Details <span className="text-gray-400">(Optional)</span>
+                    Cooperation Details <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
-                    placeholder="Tell us about your project..."
+                    placeholder="Tell us about your planning project with us..."
                     rows={3}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-[#D96A32] focus:ring-2 focus:ring-[#D96A32]/20 resize-none"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 resize-none ${
+                      errors.message ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                    }`}
                   />
+                  {errors.message && <p className="mt-1 text-xs text-red-500">{errors.message}</p>}
                 </div>
 
                 {/* Submit */}
