@@ -6,22 +6,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useQuery } from "convex/react";
 import { api } from "@/lib/convex";
-
-interface Comment {
-  id: string;
-  newsId: string;
-  authorName: string;
-  content: string;
-  createdAt: number;
-  replies: Reply[];
-}
-
-interface Reply {
-  id: string;
-  authorName: string;
-  content: string;
-  createdAt: number;
-}
+import { CommentSection } from "@/components/comments/CommentSection";
 
 // Demo articles for fallback
 const DEMO_ARTICLES: Record<string, { id: string; title: string; coverImage: string; content: string; createdAt: number }> = {
@@ -57,13 +42,6 @@ const DEMO_ARTICLES: Record<string, { id: string; title: string; coverImage: str
 
 export default function NewsDetailPage() {
   const params = useParams();
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState("");
-  const [authorName, setAuthorName] = useState("");
-  const [replyingTo, setReplyingTo] = useState<string | null>(null);
-  const [replyContent, setReplyContent] = useState("");
-  const [replyAuthor, setReplyAuthor] = useState("");
-
   const articleId = params.id as string;
 
   // Query article from Convex
@@ -81,72 +59,6 @@ export default function NewsDetailPage() {
 
   const loading = !articleId || (!articleId.startsWith("demo-") && convexArticle === undefined);
 
-  // Load comments
-  useEffect(() => {
-    if (articleId) {
-      const stored = localStorage.getItem("news_comments");
-      if (stored) {
-        const allComments = JSON.parse(stored);
-        setComments(allComments[articleId] || []);
-      }
-    }
-  }, [articleId]);
-
-  // Save comments
-  const saveComments = (newsId: string, newComments: Comment[]) => {
-    const stored = localStorage.getItem("news_comments");
-    const allComments = stored ? JSON.parse(stored) : {};
-    allComments[newsId] = newComments;
-    localStorage.setItem("news_comments", JSON.stringify(allComments));
-    setComments(newComments);
-  };
-
-  // Submit comment
-  const handleSubmitComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!authorName.trim() || !newComment.trim()) return;
-    if (!article) return;
-
-    const comment: Comment = {
-      id: Date.now().toString(),
-      newsId: article.id,
-      authorName: authorName.trim(),
-      content: newComment.trim(),
-      createdAt: Date.now(),
-      replies: [],
-    };
-
-    const updated = [comment, ...comments];
-    saveComments(article.id, updated);
-    setNewComment("");
-  };
-
-  // Submit reply
-  const handleSubmitReply = (e: React.FormEvent, commentId: string) => {
-    e.preventDefault();
-    if (!replyAuthor.trim() || !replyContent.trim()) return;
-    if (!article) return;
-
-    const reply: Reply = {
-      id: Date.now().toString(),
-      authorName: replyAuthor.trim(),
-      content: replyContent.trim(),
-      createdAt: Date.now(),
-    };
-
-    const updated = comments.map((c) => {
-      if (c.id === commentId) {
-        return { ...c, replies: [...c.replies, reply] };
-      }
-      return c;
-    });
-
-    saveComments(article.id, updated);
-    setReplyingTo(null);
-    setReplyContent("");
-    setReplyAuthor("");
-  };
-
   const formatDate = (timestamp?: number): string => {
     if (!timestamp) return "";
     return new Date(timestamp).toLocaleDateString("en-US", {
@@ -154,10 +66,6 @@ export default function NewsDetailPage() {
       month: "long",
       day: "numeric",
     });
-  };
-
-  const formatTime = (timestamp: number): string => {
-    return new Date(timestamp).toLocaleString();
   };
 
   if (loading) {
@@ -233,144 +141,8 @@ export default function NewsDetailPage() {
       </article>
 
       {/* Comments Section */}
-      <div className="max-w-4xl mx-auto px-4 py-12 border-t border-gray-200">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">
-          Comments ({comments.length})
-        </h2>
-
-        {/* Comment Form */}
-        <form onSubmit={handleSubmitComment} className="mb-10 bg-gray-50 rounded-xl p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Leave a Comment</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Your Name</label>
-              <input
-                type="text"
-                value={authorName}
-                onChange={(e) => setAuthorName(e.target.value)}
-                placeholder="Enter your name"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Your Comment</label>
-              <textarea
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Write your comment here..."
-                rows={4}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none resize-none"
-                required
-              />
-            </div>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-[#D96A32] text-white font-medium rounded-lg hover:bg-[#c45a28] transition-colors"
-            >
-              Post Comment
-            </button>
-          </div>
-        </form>
-
-        {/* Comments List */}
-        <div className="space-y-6">
-          {comments.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">
-              No comments yet. Be the first to leave a comment!
-            </p>
-          ) : (
-            comments.map((comment) => (
-              <div key={comment.id} className="border-b border-gray-100 pb-6">
-                {/* Main Comment */}
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0 w-10 h-10 bg-[#D96A32] rounded-full flex items-center justify-center text-white font-bold">
-                    {comment.authorName.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="font-semibold text-gray-900">{comment.authorName}</span>
-                      <span className="text-sm text-gray-400">{formatTime(comment.createdAt)}</span>
-                    </div>
-                    <p className="text-gray-700 mb-2">{comment.content}</p>
-                    <button
-                      onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                      className="text-sm text-[#D96A32] hover:text-[#c45a28] font-medium"
-                    >
-                      Reply
-                    </button>
-
-                    {/* Reply Form */}
-                    {replyingTo === comment.id && (
-                      <form
-                        onSubmit={(e) => handleSubmitReply(e, comment.id)}
-                        className="mt-4 bg-gray-50 rounded-lg p-4 space-y-3"
-                      >
-                        <div className="flex gap-2">
-                          <input
-                            type="text"
-                            value={replyAuthor}
-                            onChange={(e) => setReplyAuthor(e.target.value)}
-                            placeholder="Your name"
-                            className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none"
-                            required
-                          />
-                        </div>
-                        <textarea
-                          value={replyContent}
-                          onChange={(e) => setReplyContent(e.target.value)}
-                          placeholder="Write your reply..."
-                          rows={2}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none resize-none"
-                          required
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            type="submit"
-                            className="px-4 py-1.5 bg-[#D96A32] text-white text-sm font-medium rounded-lg hover:bg-[#c45a28] transition-colors"
-                          >
-                            Post Reply
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setReplyingTo(null);
-                              setReplyContent("");
-                              setReplyAuthor("");
-                            }}
-                            className="px-4 py-1.5 bg-gray-200 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-300 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </form>
-                    )}
-
-                    {/* Replies */}
-                    {comment.replies.length > 0 && (
-                      <div className="mt-4 space-y-4 pl-4 border-l-2 border-gray-200">
-                        {comment.replies.map((reply) => (
-                          <div key={reply.id} className="flex gap-3">
-                            <div className="flex-shrink-0 w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center text-white font-bold text-sm">
-                              {reply.authorName.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-semibold text-gray-900 text-sm">{reply.authorName}</span>
-                                <span className="text-xs text-gray-400">{formatTime(reply.createdAt)}</span>
-                              </div>
-                              <p className="text-gray-700 text-sm">{reply.content}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+      <div className="max-w-4xl mx-auto px-4 py-12">
+        <CommentSection pageId={article.id} storageKey="news_comments" />
       </div>
     </main>
   );
