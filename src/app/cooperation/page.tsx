@@ -56,6 +56,7 @@ export default function CooperationPage() {
     email: "",
     socialMedia: "",
     musicCategory: "",
+    message: "",
   });
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -78,8 +79,6 @@ export default function CooperationPage() {
     
     if (!formData.phone.trim()) {
       newErrors.phone = "Phone is required";
-    } else if (!/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
-      newErrors.phone = "Invalid phone number";
     }
     
     if (!formData.email.trim()) {
@@ -127,6 +126,20 @@ export default function CooperationPage() {
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      gender: "",
+      country: "",
+      phone: "",
+      email: "",
+      socialMedia: "",
+      musicCategory: "",
+      message: "",
+    });
+    setSubmitted(false);
+  };
+
   if (submitted) {
     return (
       <main className="min-h-screen bg-white">
@@ -150,18 +163,7 @@ export default function CooperationPage() {
               Back to Home
             </Link>
             <button
-              onClick={() => {
-                setSubmitted(false);
-                setFormData({
-                  name: "",
-                  gender: "",
-                  country: "",
-                  phone: "",
-                  email: "",
-                  socialMedia: "",
-                  musicCategory: "",
-                });
-              }}
+              onClick={resetForm}
               className="rounded-full border-2 border-[#D96A32] px-6 py-3 font-medium text-[#D96A32] transition hover:bg-[#D96A32]/10"
             >
               Submit Another
@@ -351,6 +353,22 @@ export default function CooperationPage() {
                 ))}
               </select>
               {errors.musicCategory && <p className="mt-1 text-sm text-red-500">{errors.musicCategory}</p>}
+            </div>
+
+            {/* Message */}
+            <div>
+              <label htmlFor="message" className="mb-2 block text-sm font-medium text-gray-700">
+                Message <span className="text-gray-400">(Optional)</span>
+              </label>
+              <textarea
+                id="message"
+                name="message"
+                value={formData.message}
+                onChange={handleChange}
+                placeholder="Tell us about yourself and your music..."
+                rows={4}
+                className="w-full rounded-lg border border-gray-300 px-4 py-3 outline-none transition focus:border-[#D96A32] focus:ring-2 focus:ring-[#D96A32]/20 resize-none"
+              />
             </div>
 
             {/* Submit Button */}
