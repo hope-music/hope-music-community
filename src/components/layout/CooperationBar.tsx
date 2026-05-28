@@ -1,12 +1,11 @@
 "use client";
 
-import Link from "next/link";
-
 type CooperationBarProps = {
   isSubPage?: boolean;
+  onCooperationClick?: () => void;
 };
 
-export function CooperationBar({ isSubPage = false }: CooperationBarProps) {
+export function CooperationBar({ isSubPage = false, onCooperationClick }: CooperationBarProps) {
   if (isSubPage) {
     return (
       <div className="h-[3px] w-full bg-[#D96A32]" />
@@ -28,13 +27,13 @@ export function CooperationBar({ isSubPage = false }: CooperationBarProps) {
               className="h-4 w-px shrink-0"
               style={{ backgroundColor: "#D96A32" }}
             />
-            <Link
-              href="/cooperation"
+            <button
+              onClick={onCooperationClick}
               className="shrink-0 text-[11px] font-medium transition-colors hover:text-[#D96A32]"
               style={{ color: "#333333" }}
             >
               WELCOME TO OUR MUSICAL PERFORMANCE TEAM
-            </Link>
+            </button>
           </div>
           <a
             href="#"
