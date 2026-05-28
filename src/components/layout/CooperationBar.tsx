@@ -3,9 +3,10 @@
 type CooperationBarProps = {
   isSubPage?: boolean;
   onCooperationClick?: () => void;
+  onBusinessClick?: () => void;
 };
 
-export function CooperationBar({ isSubPage = false, onCooperationClick }: CooperationBarProps) {
+export function CooperationBar({ isSubPage = false, onCooperationClick, onBusinessClick }: CooperationBarProps) {
   if (isSubPage) {
     return (
       <div className="h-[3px] w-full bg-[#D96A32]" />
@@ -35,13 +36,13 @@ export function CooperationBar({ isSubPage = false, onCooperationClick }: Cooper
               WELCOME TO OUR MUSICAL PERFORMANCE TEAM
             </button>
           </div>
-          <a
-            href="#"
+          <button
+            onClick={onBusinessClick}
             className="shrink-0 text-[11px] font-medium transition-colors hover:text-[#D96A32]"
             style={{ color: "#333333" }}
           >
             WE LOOK FORWARD TO COOPERATING WITH YOU ON ALL TYPES OF MUSIC BUSINESS PROJECTS
-          </a>
+          </button>
         </div>
       </div>
     </div>

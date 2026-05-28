@@ -4,6 +4,7 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import { CooperationBar } from "@/components/layout/CooperationBar";
 import { CooperationModal } from "@/components/cooperation/CooperationModal";
+import { BusinessCooperationModal } from "@/components/cooperation/BusinessCooperationModal";
 import { MainNav } from "@/components/layout/MainNav";
 import { SubNav } from "@/components/layout/SubNav";
 import { TopBar } from "@/components/layout/TopBar";
@@ -12,6 +13,7 @@ export function SiteHeader() {
   const pathname = usePathname();
   const isHomePage = pathname === "/";
   const [showCooperationModal, setShowCooperationModal] = useState(false);
+  const [showBusinessModal, setShowBusinessModal] = useState(false);
 
   return (
     <>
@@ -21,12 +23,17 @@ export function SiteHeader() {
         <SubNav />
         <CooperationBar 
           isSubPage={!isHomePage} 
-          onCooperationClick={() => setShowCooperationModal(true)} 
+          onCooperationClick={() => setShowCooperationModal(true)}
+          onBusinessClick={() => setShowBusinessModal(true)}
         />
       </header>
       <CooperationModal 
         isOpen={showCooperationModal} 
         onClose={() => setShowCooperationModal(false)} 
+      />
+      <BusinessCooperationModal 
+        isOpen={showBusinessModal} 
+        onClose={() => setShowBusinessModal(false)} 
       />
     </>
   );
