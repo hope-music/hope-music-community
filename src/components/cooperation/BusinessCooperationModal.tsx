@@ -274,7 +274,7 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
-                    placeholder="Tell us about your planning project with us..."
+                    placeholder="Tell us about your cooperation proposal..."
                     rows={3}
                     className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 resize-none ${
                       errors.message ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
