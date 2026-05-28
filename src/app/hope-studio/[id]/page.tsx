@@ -4,6 +4,7 @@ import { use } from "react";
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { CommentSection } from "@/components/comments/CommentSection";
 
 interface ContentItem {
   id: string;
@@ -97,6 +98,11 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
           </Link>
         </div>
       </article>
+
+      {/* Comments Section */}
+      <div className="mx-auto max-w-4xl px-4 pb-12">
+        <CommentSection pageId={`hope-studio-${id}`} storageKey="hope_studio_comments" />
+      </div>
     </main>
   );
 }
