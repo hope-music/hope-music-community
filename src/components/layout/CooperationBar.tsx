@@ -1,3 +1,7 @@
+"use client";
+
+import Link from "next/link";
+
 type CooperationBarProps = {
   isSubPage?: boolean;
 };
@@ -24,13 +28,13 @@ export function CooperationBar({ isSubPage = false }: CooperationBarProps) {
               className="h-4 w-px shrink-0"
               style={{ backgroundColor: "#D96A32" }}
             />
-            <a
-              href="#"
+            <Link
+              href="/cooperation"
               className="shrink-0 text-[11px] font-medium transition-colors hover:text-[#D96A32]"
               style={{ color: "#333333" }}
             >
               WELCOME TO OUR MUSICAL PERFORMANCE TEAM
-            </a>
+            </Link>
           </div>
           <a
             href="#"
