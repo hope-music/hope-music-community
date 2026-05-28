@@ -30,7 +30,7 @@ export function CooperationBar({ isSubPage = false, onCooperationClick, onBusine
             />
             <button
               onClick={onCooperationClick}
-              className="shrink-0 text-[11px] font-medium transition-colors hover:text-[#D96A32]"
+              className="shrink-0 text-[11px] font-medium transition-colors hover:text-[#D96A32] cursor-pointer"
               style={{ color: "#333333" }}
             >
               WELCOME TO OUR MUSICAL PERFORMANCE TEAM
@@ -38,7 +38,7 @@ export function CooperationBar({ isSubPage = false, onCooperationClick, onBusine
           </div>
           <button
             onClick={onBusinessClick}
-            className="shrink-0 text-[11px] font-medium transition-colors hover:text-[#D96A32]"
+            className="shrink-0 text-[11px] font-medium transition-colors hover:text-[#D96A32] cursor-pointer"
             style={{ color: "#333333" }}
           >
             WE LOOK FORWARD TO COOPERATING WITH YOU ON ALL TYPES OF MUSIC BUSINESS PROJECTS
