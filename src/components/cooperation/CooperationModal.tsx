@@ -158,7 +158,8 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
       <div ref={modalRef} className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
-        {submitted ? (
+        {/* Colorful header bar */}
+        <div className="h-2 rounded-t-2xl bg-gradient-to-r from-[#D96A32] via-[#E8854A] to-[#F0A068]" />
           <div className="p-8 text-center">
             <div className="mb-4 flex justify-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-green-100">
