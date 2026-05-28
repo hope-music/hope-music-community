@@ -87,10 +87,7 @@ export function MainNav() {
         </ul>
 
         <div className="ml-4 shrink-0 lg:ml-6">
-          <div className="flex items-center gap-3">
-            <NavSearchGroup />
-            <UserMenu />
-          </div>
+          <NavSearchGroup />
         </div>
       </HeaderContainer>
     </nav>
