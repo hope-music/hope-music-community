@@ -166,8 +166,11 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
 
     localStorage.setItem("hmc_current_user", JSON.stringify(user));
     onClose();
-    router.refresh();
-    window.location.reload();
+    // Use setTimeout to allow the modal to close first, then refresh
+    setTimeout(() => {
+      router.refresh();
+      window.location.reload();
+    }, 100);
   };
 
   const handleRegister = () => {
@@ -217,8 +220,11 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
     saveUsers(users);
     localStorage.setItem("hmc_current_user", JSON.stringify(newUser));
     onClose();
-    router.refresh();
-    window.location.reload();
+    // Use setTimeout to allow the modal to close first, then refresh
+    setTimeout(() => {
+      router.refresh();
+      window.location.reload();
+    }, 100);
   };
 
   const renderAvatar = (avatar: typeof ALL_AVATARS[0], isSelected: boolean) => {
