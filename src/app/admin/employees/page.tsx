@@ -113,7 +113,7 @@ export default function EmployeesPage() {
       });
       setMessage({ type: "success", text: result.message });
     } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "操作失败" });
+      setMessage({ type: "error", text: err.message || "Operation failed" });
     }
   };
 
@@ -126,7 +126,7 @@ export default function EmployeesPage() {
       });
       setMessage({ type: "success", text: result.message });
     } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "操作失败" });
+      setMessage({ type: "error", text: err.message || "Operation failed" });
     }
   };
 
@@ -139,7 +139,7 @@ export default function EmployeesPage() {
       });
       setMessage({ type: "success", text: result.message });
     } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "删除失败" });
+      setMessage({ type: "error", text: err.message || "Delete failed" });
     }
   };
 
@@ -157,7 +157,7 @@ export default function EmployeesPage() {
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-500">加载中...</p>
+          <p className="mt-4 text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -169,7 +169,7 @@ export default function EmployeesPage() {
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center">
           <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-500">加载中...</p>
+          <p className="mt-4 text-gray-500">Loading...</p>
         </div>
       </div>
     );
@@ -181,13 +181,13 @@ export default function EmployeesPage() {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
         <div className="text-center p-8 bg-red-50 rounded-lg max-w-md">
-          <h2 className="text-xl font-bold text-red-600 mb-2">权限不足</h2>
-          <p className="text-gray-600 mb-4">{errorObj.message || "您没有权限访问此页面"}</p>
+          <h2 className="text-xl font-bold text-red-600 mb-2">Access Denied</h2>
+          <p className="text-gray-600 mb-4">{errorObj.message || "You do not have permission to access this page"}</p>
           <button
             onClick={() => router.push("/")}
             className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
-            返回首页
+            Back to Home
           </button>
         </div>
       </div>
@@ -206,7 +206,7 @@ export default function EmployeesPage() {
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Employee Management</h1>
             <p className="text-gray-500 mt-1">
-              共 {employees.length} 人 | 
+              Total {employees.length} | 
               <span className="text-green-600"> Active {activeCount}</span> |
               <span className="text-red-500"> Disabled {disabledCount}</span>
             </p>
@@ -233,9 +233,9 @@ export default function EmployeesPage() {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">状态</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">注册时间</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">操作</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Registered</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -293,7 +293,7 @@ export default function EmployeesPage() {
                         onClick={() => handleDeleteUser(employee._id)}
                         className="px-3 py-1 rounded text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200"
                       >
-                        删除
+                        Delete
                       </button>
                     </div>
                   </td>
@@ -304,7 +304,7 @@ export default function EmployeesPage() {
 
           {employees.length === 0 && (
             <div className="text-center py-12 text-gray-500">
-              暂无员工数据
+              No employee data
             </div>
           )}
         </div>
