@@ -250,20 +250,12 @@ export default function AdminInteractionPage() {
   const banUser = useMutation(api.admin.banUser);
   const unbanUser = useMutation(api.admin.unbanUser);
 
-  // Load data from localStorage after mount
+  // Load data - always use default posts, ignore old localStorage data
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("admin_interaction");
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setItems(parsed);
-          }
-        } catch (e) {
-          console.error("Failed to parse stored data", e);
-        }
-      }
+      // Always use default posts for consistency with frontend
+      const defaultPosts = getDefaultInteractionPosts();
+      setItems(defaultPosts);
       setIsInitialized(true);
     }
   }, []);
