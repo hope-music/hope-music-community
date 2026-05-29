@@ -142,7 +142,12 @@ export default function NewsDetailPage() {
 
       {/* Comments Section */}
       <div className="max-w-4xl mx-auto px-4 py-12">
-        <CommentSection pageId={article.id} storageKey="news_comments" />
+        <CommentSection
+          pageId={`news-${article.id}`}
+          storageKey="news_comments"
+          bannedUsersKey="news_banned_users"
+          title="News"
+        />
       </div>
     </main>
   );

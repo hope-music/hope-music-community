@@ -17,9 +17,16 @@ interface Post {
 interface Comment {
   id: string;
   authorName: string;
+  authorEmail: string;
+  authorAvatar: string;
   content: string;
   createdAt: number;
   replies: Comment[];
+}
+
+interface BanEntry {
+  email: string;
+  expiresAt: number | null;
 }
 
 const CATEGORIES = [
@@ -30,6 +37,49 @@ const CATEGORIES = [
   { value: "artical", label: "Article" },
   { value: "others", label: "Others" },
 ];
+
+// Default comments
+const DEFAULT_COMMENTS: Comment[] = [
+  {
+    id: "placeholder_1",
+    authorName: "Sarah Johnson",
+    authorEmail: "sarah@example.com",
+    authorAvatar: "avatar2",
+    content: "Great post! This is exactly what I was looking for.",
+    createdAt: Date.now() - 86400000 * 3,
+    replies: [
+      {
+        id: "placeholder_1_reply",
+        authorName: "Mike Chen",
+        authorEmail: "mike@example.com",
+        authorAvatar: "avatar4",
+        content: "I agree! Very helpful information.",
+        createdAt: Date.now() - 86400000 * 2,
+        replies: [],
+      },
+    ],
+  },
+  {
+    id: "placeholder_2",
+    authorName: "Emily Davis",
+    authorEmail: "emily@example.com",
+    authorAvatar: "avatar5",
+    content: "Thanks for sharing this! Really appreciate it.",
+    createdAt: Date.now() - 86400000 * 5,
+    replies: [],
+  },
+  {
+    id: "placeholder_3",
+    authorName: "Alex Thompson",
+    authorEmail: "alex@example.com",
+    authorAvatar: "avatar8",
+    content: "This is interesting. Looking forward to more posts like this.",
+    createdAt: Date.now() - 86400000 * 7,
+    replies: [],
+  },
+];
+
+const BANNED_USERS_KEY = "interaction_banned_users";
 
 const DEMO_POSTS: Record<string, { title: string; content: string; author: string; createdAt: number }> = {
   "ph-soft-1": {
@@ -102,6 +152,28 @@ export default function InteractionDetailPage({ params }: PageProps) {
   const [votes, setVotes] = useState(0);
   const [userVote, setUserVote] = useState<1 | -1 | 0>(0);
   const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isBanned, setIsBanned] = useState(false);
+  const [banExpiry, setBanExpiry] = useState<string | null>(null);
+
+  // Check if user is banned
+  const checkBanStatus = (email: string, bannedData: BanEntry[]): boolean => {
+    const now = Date.now();
+    const ban = bannedData.find(b => b.email === email);
+    if (!ban) return false;
+    if (ban.expiresAt === null) return true;
+    if (ban.expiresAt > now) {
+      const remaining = ban.expiresAt - now;
+      const hours = Math.floor(remaining / (1000 * 60 * 60));
+      const days = Math.floor(hours / 24);
+      if (days > 0) {
+        setBanExpiry(`${days} day${days > 1 ? 's' : ''}`);
+      } else {
+        setBanExpiry(`${hours} hour${hours > 1 ? 's' : ''}`);
+      }
+      return true;
+    }
+    return false;
+  };
 
   useEffect(() => {
     async function loadParams() {
@@ -172,7 +244,10 @@ export default function InteractionDetailPage({ params }: PageProps) {
     const stored = localStorage.getItem("interaction_comments");
     if (stored) {
       const allComments = JSON.parse(stored);
-      setComments(allComments[postId] || []);
+      const pageComments = allComments[postId] || [];
+      setComments(pageComments.length > 0 ? pageComments : DEFAULT_COMMENTS);
+    } else {
+      setComments(DEFAULT_COMMENTS);
     }
   }, [postId]);
 
@@ -188,9 +263,16 @@ export default function InteractionDetailPage({ params }: PageProps) {
     e.preventDefault();
     if (!authorName.trim() || !newComment.trim()) return;
 
+    if (isBanned) {
+      alert("You have been banned from commenting.");
+      return;
+    }
+
     const comment: Comment = {
       id: Date.now().toString(),
       authorName: authorName.trim(),
+      authorEmail: currentUser?.email || `${authorName.trim()}@example.com`,
+      authorAvatar: currentUser?.avatar || "avatar1",
       content: newComment.trim(),
       createdAt: Date.now(),
       replies: [],
@@ -204,9 +286,16 @@ export default function InteractionDetailPage({ params }: PageProps) {
     e.preventDefault();
     if (!replyAuthor.trim() || !replyContent.trim()) return;
 
+    if (isBanned) {
+      alert("You have been banned from commenting.");
+      return;
+    }
+
     const reply: Comment = {
       id: Date.now().toString(),
       authorName: replyAuthor.trim(),
+      authorEmail: `${replyAuthor.trim()}@example.com`,
+      authorAvatar: "avatar1",
       content: replyContent.trim(),
       createdAt: Date.now(),
       replies: [],
@@ -335,7 +424,15 @@ export default function InteractionDetailPage({ params }: PageProps) {
 
             {/* Comment Form */}
             <div className="bg-white rounded-lg border border-gray-200 p-4 mb-4">
-              {currentUser ? (
+              {isBanned ? (
+                <div className="text-center py-4">
+                  <p className="text-red-600 font-medium">
+                    {banExpiry
+                      ? `You are banned from commenting (${banExpiry} remaining)`
+                      : "You have been permanently banned from commenting."}
+                  </p>
+                </div>
+              ) : currentUser ? (
                 <div>
                   <p className="text-sm text-gray-500 mb-3">
                     Comment as <span className="font-semibold text-gray-700">{currentUser.username}</span>

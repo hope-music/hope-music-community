@@ -62,7 +62,12 @@ export default function StageProductionDetailPage() {
       </article>
       <div className="max-w-4xl mx-auto px-4 py-12">
         {pageId && (
-          <CommentSection pageId={pageId} storageKey="stage_production_comments" />
+          <CommentSection
+            pageId={pageId}
+            storageKey="stage_production_comments"
+            bannedUsersKey="stage_production_banned_users"
+            title="Stage Production"
+          />
         )}
       </div>
     </main>

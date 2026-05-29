@@ -17,6 +17,8 @@ interface CommentSectionProps {
   pageId: string;
   storageKey: string;
   bannedUsersKey?: string;
+  defaultComments?: Comment[];
+  title?: string;
 }
 
 // Default placeholder comments
@@ -99,7 +101,7 @@ function getAvatarEmoji(avatarId: string): { emoji: string; color: string } {
   return avatars[avatarId] || { emoji: "👤", color: "#6B7280" };
 }
 
-export function CommentSection({ pageId, storageKey, bannedUsersKey }: CommentSectionProps) {
+export function CommentSection({ pageId, storageKey, bannedUsersKey, defaultComments, title }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const [newComment, setNewComment] = useState("");
@@ -151,9 +153,9 @@ export function CommentSection({ pageId, storageKey, bannedUsersKey }: CommentSe
     if (stored) {
       const allComments = JSON.parse(stored);
       const pageComments = allComments[pageId] || [];
-      setComments(pageComments.length > 0 ? pageComments : DEFAULT_COMMENTS);
+      setComments(pageComments.length > 0 ? pageComments : (defaultComments || []));
     } else {
-      setComments(DEFAULT_COMMENTS);
+      setComments(defaultComments || []);
     }
   }, [pageId, storageKey, bannedUsersKey]);
 

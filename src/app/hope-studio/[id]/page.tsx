@@ -101,7 +101,12 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
 
       {/* Comments Section */}
       <div className="mx-auto max-w-4xl px-4 pb-12">
-        <CommentSection pageId={`hope-studio-${id}`} storageKey="hope_studio_comments" />
+        <CommentSection
+          pageId={`hope-studio-${id}`}
+          storageKey="hope_studio_comments"
+          bannedUsersKey="hope_studio_banned_users"
+          title="Hope Studio"
+        />
       </div>
     </main>
   );

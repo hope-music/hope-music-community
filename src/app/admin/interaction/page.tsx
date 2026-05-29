@@ -75,6 +75,65 @@ interface Interaction {
   updatedAt: number;
 }
 
+interface Comment {
+  id: string;
+  authorName: string;
+  authorEmail: string;
+  authorAvatar: string;
+  content: string;
+  createdAt: number;
+  replies: Comment[];
+}
+
+interface BanEntry {
+  email: string;
+  expiresAt: number | null;
+}
+
+// Default comments
+const DEFAULT_COMMENTS: Comment[] = [
+  {
+    id: "placeholder_1",
+    authorName: "Sarah Johnson",
+    authorEmail: "sarah@example.com",
+    authorAvatar: "avatar2",
+    content: "Great discussion! Very informative.",
+    createdAt: Date.now() - 86400000 * 3,
+    replies: [
+      {
+        id: "placeholder_1_reply",
+        authorName: "Mike Chen",
+        authorEmail: "mike@example.com",
+        authorAvatar: "avatar4",
+        content: "I agree! Thanks for sharing.",
+        createdAt: Date.now() - 86400000 * 2,
+        replies: [],
+      },
+    ],
+  },
+  {
+    id: "placeholder_2",
+    authorName: "Emily Davis",
+    authorEmail: "emily@example.com",
+    authorAvatar: "avatar5",
+    content: "This is exactly what I needed. Bookmarking for later!",
+    createdAt: Date.now() - 86400000 * 5,
+    replies: [],
+  },
+  {
+    id: "placeholder_3",
+    authorName: "Alex Thompson",
+    authorEmail: "alex@example.com",
+    authorAvatar: "avatar8",
+    content: "Looking forward to more content like this.",
+    createdAt: Date.now() - 86400000 * 7,
+    replies: [],
+  },
+];
+
+const COMMENTS_STORAGE_KEY = "interaction_comments";
+const BANNED_USERS_KEY = "interaction_banned_users";
+
 const CATEGORIES = [
   { value: "software", label: "Software" },
   { value: "hardware", label: "Hardware" },
@@ -102,6 +161,10 @@ export default function AdminInteractionPage() {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
+  // Comment management state
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [bannedUsers, setBannedUsers] = useState<BanEntry[]>([]);
+
   // User management state
   const [userFilter, setUserFilter] = useState<"all" | "active" | "banned" | "admins">("all");
   const [userActionLoading, setUserActionLoading] = useState(false);
@@ -124,6 +187,114 @@ export default function AdminInteractionPage() {
   };
 
   useEffect(() => { if (message) { const t = setTimeout(() => setMessage(null), 5000); return () => clearTimeout(t); } }, [message]);
+
+  // Comment management functions
+  const loadComments = (itemId: string) => {
+    const stored = localStorage.getItem(COMMENTS_STORAGE_KEY);
+    if (stored) {
+      const allComments = JSON.parse(stored);
+      const pageComments = allComments[itemId] || [];
+      setComments(pageComments.length > 0 ? pageComments : DEFAULT_COMMENTS);
+    } else {
+      setComments(DEFAULT_COMMENTS);
+    }
+    const banned = localStorage.getItem(BANNED_USERS_KEY);
+    if (banned) {
+      setBannedUsers(JSON.parse(banned));
+    } else {
+      setBannedUsers([]);
+    }
+  };
+
+  const saveComments = (itemId: string, newComments: Comment[]) => {
+    const stored = localStorage.getItem(COMMENTS_STORAGE_KEY);
+    const allComments = stored ? JSON.parse(stored) : {};
+    allComments[itemId] = newComments;
+    localStorage.setItem(COMMENTS_STORAGE_KEY, JSON.stringify(allComments));
+    setComments(newComments);
+  };
+
+  const isUserBanned = (email: string): boolean => {
+    const now = Date.now();
+    return bannedUsers.some(b => b.email === email && (b.expiresAt === null || b.expiresAt > now));
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    if (!confirm("Delete this comment and all its replies?")) return;
+    const updated = comments.filter((c) => c.id !== commentId);
+    if (editingId) {
+      saveComments(editingId, updated);
+    }
+    setMessage({ type: "success", text: "Comment and replies deleted" });
+  };
+
+  const handleDeleteReply = (parentId: string, replyId: string) => {
+    if (!confirm("Delete this reply?")) return;
+    const updated = comments.map((c) => {
+      if (c.id === parentId) {
+        return { ...c, replies: c.replies.filter((r) => r.id !== replyId) };
+      }
+      return c;
+    });
+    if (editingId) {
+      saveComments(editingId, updated);
+    }
+    setMessage({ type: "success", text: "Reply deleted" });
+  };
+
+  const handleBanUser = (email: string, duration: number | null, deleteComments: boolean = false) => {
+    const expiresAt = duration === null ? null : Date.now() + duration;
+    let updatedComments = comments;
+    if (deleteComments) {
+      updatedComments = comments
+        .filter((c) => c.authorEmail !== email)
+        .map((c) => ({
+          ...c,
+          replies: c.replies.filter((r) => r.authorEmail !== email),
+        }));
+    }
+    const newBanned = bannedUsers.filter(b => b.email !== email);
+    newBanned.push({ email, expiresAt });
+    setBannedUsers(newBanned);
+    localStorage.setItem(BANNED_USERS_KEY, JSON.stringify(newBanned));
+    if (editingId && deleteComments) {
+      saveComments(editingId, updatedComments);
+    }
+    const durationText = duration === null ? "permanently" : `${duration / 86400000} day(s)`;
+    setMessage({ type: "success", text: `User ${email} banned ${durationText}` });
+  };
+
+  const handleUnbanUser = (email: string) => {
+    const newBanned = bannedUsers.filter(b => b.email !== email);
+    setBannedUsers(newBanned);
+    localStorage.setItem(BANNED_USERS_KEY, JSON.stringify(newBanned));
+    setMessage({ type: "success", text: `User ${email} unbanned` });
+  };
+
+  const formatTime = (timestamp: number): string => {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return "just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(timestamp).toLocaleDateString();
+  };
+
+  const getCommentAuthors = () => {
+    const authors = new Map<string, { email: string; avatar: string; count: number }>();
+    comments.forEach((c) => {
+      const existing = authors.get(c.authorEmail);
+      authors.set(c.authorEmail, { email: c.authorEmail, avatar: c.authorAvatar, count: existing ? existing.count + 1 : 1 });
+      c.replies.forEach((r) => {
+        const replyExisting = authors.get(r.authorEmail);
+        authors.set(r.authorEmail, { email: r.authorEmail, avatar: r.authorAvatar, count: replyExisting ? replyExisting.count + 1 : 1 });
+      });
+    });
+    return Array.from(authors.values());
+  };
 
   // Group items by category
   const itemsByCategory = CATEGORIES.map((cat) => ({
@@ -167,6 +338,7 @@ export default function AdminInteractionPage() {
     setAuthor(item.author || "");
     setCoverImage(item.coverImage || "");
     setCoverPreview(item.coverImage || null);
+    loadComments(item.id);
     setShowForm(true);
   };
 
@@ -312,6 +484,109 @@ export default function AdminInteractionPage() {
                 </div>
                 <div className="flex justify-end gap-3 border-t pt-4"><button type="button" onClick={() => setShowForm(false)} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button><button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-white disabled:opacity-50">{loading ? "Saving..." : editingId ? "Update" : "Create"}</button></div>
               </form>
+
+              {/* Comment Management Section */}
+              <div className="mt-8 border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Comments ({comments.length})</h3>
+
+                {/* Authors Summary */}
+                {getCommentAuthors().length > 0 && (
+                  <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">Authors</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {getCommentAuthors().map((author) => {
+                        const isBanned = isUserBanned(author.email);
+                        return (
+                          <div key={author.email} className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-gray-200">
+                            <span className="text-sm">{author.avatar}</span>
+                            <span className="text-sm text-gray-700">{author.email}</span>
+                            <span className="text-xs text-gray-400">({author.count})</span>
+                            {isBanned ? (
+                              <div className="flex items-center gap-1">
+                                <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Banned</span>
+                                <button onClick={() => handleUnbanUser(author.email)} className="text-xs text-green-600 hover:text-green-700 font-medium">Unban</button>
+                              </div>
+                            ) : (
+                              <div className="relative group">
+                                <button className="text-xs text-red-600 hover:text-red-700 font-medium">Ban ▾</button>
+                                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
+                                  <button onClick={() => handleBanUser(author.email, 86400000, false)} className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-t-lg">Ban for 1 day</button>
+                                  <button onClick={() => handleBanUser(author.email, 604800000, false)} className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50">Ban for 7 days</button>
+                                  <button onClick={() => handleBanUser(author.email, 2592000000, false)} className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50">Ban for 30 days</button>
+                                  <button onClick={() => handleBanUser(author.email, null, false)} className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-b-lg">Ban permanently</button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Comments List */}
+                {comments.length === 0 ? (
+                  <p className="text-center text-gray-500 py-8">No comments yet.</p>
+                ) : (
+                  <div className="space-y-4 max-h-96 overflow-y-auto">
+                    {comments.map((comment) => {
+                      const isBanned = isUserBanned(comment.authorEmail);
+                      return (
+                        <div key={comment.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-start gap-3">
+                              <span className="text-2xl">{comment.authorAvatar}</span>
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-gray-900">{comment.authorName}</span>
+                                  <span className="text-xs text-gray-400">{comment.authorEmail}</span>
+                                  {isBanned && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Banned</span>}
+                                </div>
+                                <span className="text-xs text-gray-400">{formatTime(comment.createdAt)}</span>
+                                <p className="mt-2 text-gray-700 text-sm">{comment.content}</p>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button onClick={() => handleDeleteComment(comment.id)} className="text-xs text-red-600 hover:text-red-700 font-medium">Delete</button>
+                              {!isBanned && (
+                                <div className="relative group">
+                                  <button className="text-xs text-orange-600 hover:text-orange-700 font-medium">Ban ▾</button>
+                                  <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[200px]">
+                                    <button onClick={() => handleBanUser(comment.authorEmail, 86400000, true)} className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-t-lg">Ban 1 day + Delete comments</button>
+                                    <button onClick={() => handleBanUser(comment.authorEmail, 604800000, true)} className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50">Ban 7 days + Delete comments</button>
+                                    <button onClick={() => handleBanUser(comment.authorEmail, 2592000000, true)} className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50">Ban 30 days + Delete comments</button>
+                                    <button onClick={() => handleBanUser(comment.authorEmail, null, true)} className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-b-lg">Ban permanently + Delete comments</button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          {comment.replies.length > 0 && (
+                            <div className="ml-12 mt-3 space-y-3 border-t border-gray-100 pt-3">
+                              {comment.replies.map((reply) => (
+                                <div key={reply.id} className="flex items-start justify-between">
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-lg">{reply.authorAvatar}</span>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-gray-900 text-sm">{reply.authorName}</span>
+                                        {isUserBanned(reply.authorEmail) && <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Banned</span>}
+                                      </div>
+                                      <span className="text-xs text-gray-400">{formatTime(reply.createdAt)}</span>
+                                      <p className="mt-1 text-gray-700 text-sm">{reply.content}</p>
+                                    </div>
+                                  </div>
+                                  <button onClick={() => handleDeleteReply(comment.id, reply.id)} className="text-xs text-red-600 hover:text-red-700 font-medium">Delete</button>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
