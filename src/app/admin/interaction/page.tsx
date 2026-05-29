@@ -21,6 +21,9 @@ interface Interaction {
   managedAt?: number;
   reason?: string;
   isHidden?: boolean;
+  // Featured fields
+  isPinned?: boolean;
+  isFeatured?: boolean;
 }
 
 interface Comment {
@@ -432,6 +435,42 @@ export default function AdminInteractionPage() {
       setViolationLoading(false);
       setViolationModal(null);
     }
+  };
+
+  // ============================================
+  // PIN & FEATURE HANDLING
+  // ============================================
+  const togglePin = (itemId: string) => {
+    const updated = items.map((item) => {
+      if (item.id === itemId) {
+        return { ...item, isPinned: !item.isPinned, updatedAt: Date.now() };
+      }
+      return item;
+    });
+    saveToStorage(updated);
+    setMessage({ type: "success", text: "Pin status updated" });
+  };
+
+  const toggleFeatured = (itemId: string) => {
+    const updated = items.map((item) => {
+      if (item.id === itemId) {
+        return { ...item, isFeatured: !item.isFeatured, updatedAt: Date.now() };
+      }
+      return item;
+    });
+    saveToStorage(updated);
+    setMessage({ type: "success", text: "Highlight status updated" });
+  };
+
+  const moveCategory = (itemId: string, newCategory: string) => {
+    const updated = items.map((item) => {
+      if (item.id === itemId) {
+        return { ...item, category: newCategory, updatedAt: Date.now() };
+      }
+      return item;
+    });
+    saveToStorage(updated);
+    setMessage({ type: "success", text: `Moved to ${newCategory}` });
   };
 
   // ============================================
@@ -901,19 +940,52 @@ export default function AdminInteractionPage() {
                             <span className="text-xs text-gray-400 truncate">{formatDate(item.createdAt)}</span>
                           </div>
                         </div>
-                        <div className="flex items-center gap-2 ml-4">
+                        <div className="flex items-center gap-1 ml-4">
+                          {item.isPinned && (
+                            <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">Pinned</span>
+                          )}
+                          {item.isFeatured && (
+                            <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded">Featured</span>
+                          )}
+                          <button
+                            onClick={() => togglePin(item.id)}
+                            className={`px-2 py-1 text-xs font-medium rounded ${item.isPinned ? "bg-blue-100 text-blue-700" : "text-blue-600 hover:bg-blue-50"}`}
+                          >
+                            {item.isPinned ? "Unpin" : "Pin"}
+                          </button>
+                          <button
+                            onClick={() => toggleFeatured(item.id)}
+                            className={`px-2 py-1 text-xs font-medium rounded ${item.isFeatured ? "bg-yellow-100 text-yellow-700" : "text-yellow-600 hover:bg-yellow-50"}`}
+                          >
+                            {item.isFeatured ? "Unhighlight" : "Highlight"}
+                          </button>
+                          <select
+                            value={item.category}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              if (e.target.value !== item.category) {
+                                moveCategory(item.id, e.target.value);
+                              }
+                            }}
+                            className="px-2 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-50"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {CATEGORY_OPTIONS.map((c) => (
+                              <option key={c.value} value={c.value}>{c.label}</option>
+                            ))}
+                          </select>
                           {item.isHidden ? (
-                            <span className="px-3 py-1 text-xs font-medium text-yellow-600 bg-yellow-50 rounded">Hidden</span>
+                            <span className="px-2 py-1 text-xs font-medium text-yellow-600 bg-yellow-50 rounded">Hidden</span>
                           ) : (
                             <button
                               onClick={() => openViolationModal("post", item.id, item.title, item.author || "Unknown")}
-                              className="px-3 py-1 text-xs font-medium text-orange-600 hover:bg-orange-50 rounded"
+                              className="px-2 py-1 text-xs font-medium text-orange-600 hover:bg-orange-50 rounded"
                             >
                               Handle
                             </button>
                           )}
-                          <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
-                          <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                          <button onClick={() => handleEdit(item)} className="px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                          <button onClick={() => handleDelete(item.id)} className="px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
                         </div>
                       </div>
                     ))
