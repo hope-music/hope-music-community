@@ -124,7 +124,8 @@ const COMMENTS_STORAGE_KEY = "news_comments";
 const BANNED_USERS_KEY = "news_banned_users";
 
 export default function NewsAdminPage() {
-  const allArticles = useQuery(api.admin.listNews) as NewsArticle[] | undefined;
+  const adminEmail = typeof window !== "undefined" ? localStorage.getItem("user_email") || "" : "";
+  const allArticles = useQuery(api.admin.listNews, { callerEmail: adminEmail }) as NewsArticle[] | undefined;
   const createArticle = useMutation(api.admin.createNewsArticle);
   const updateArticle = useMutation(api.admin.updateNewsArticle);
   const deleteArticle = useMutation(api.admin.deleteNewsArticle);
@@ -315,10 +316,10 @@ export default function NewsAdminPage() {
     try {
       const excerpt = textContent.substring(0, 150);
       if (editingId) {
-        await updateArticle({ id: editingId as any, title: title.trim(), content, coverImage, excerpt, isPublished, isFeatured });
+        await updateArticle({ callerEmail: adminEmail, id: editingId as any, title: title.trim(), content, coverImage, excerpt, isPublished, isFeatured });
         setMessage({ type: "success", text: "Updated successfully!" });
       } else {
-        await createArticle({ title: title.trim(), content, coverImage, excerpt, isPublished, isFeatured });
+        await createArticle({ callerEmail: adminEmail, title: title.trim(), content, coverImage, excerpt, isPublished, isFeatured });
         setMessage({ type: "success", text: "Created successfully!" });
       }
       setShowForm(false);
@@ -333,7 +334,7 @@ export default function NewsAdminPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this article permanently?")) return;
     try {
-      await deleteArticle({ id: id as any });
+      await deleteArticle({ callerEmail: adminEmail, id: id as any });
       setMessage({ type: "success", text: "Deleted" });
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Failed to delete" });

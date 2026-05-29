@@ -67,10 +67,36 @@ async function requireSuperAdmin(ctx: any, email: string | null): Promise<any> {
 }
 
 // ============================================
-// HELPER: Skip Admin Authentication (for backward compatibility)
+// HELPER: Require Admin Authentication
 // ============================================
-async function requireAdmin(ctx: any): Promise<{ isAdmin: boolean; userId: string | null; email: string | null }> {
-  return { isAdmin: true, userId: null, email: null };
+async function requireAdmin(ctx: any, callerEmail?: string | null): Promise<{ isAdmin: boolean; userId: string | null; email: string | null }> {
+  if (!callerEmail) {
+    throw new Error("Unauthorized: Please login first");
+  }
+
+  // Check hardcoded admin emails
+  const ADMIN_EMAILS = ["admin@hopemusic.com"];
+  if (ADMIN_EMAILS.includes(callerEmail)) {
+    return { isAdmin: true, userId: null, email: callerEmail };
+  }
+
+  // Check database for admin users
+  const allUsers = await ctx.db.query("users").collect();
+  const user = allUsers.find((u: any) => u.email === callerEmail);
+
+  if (!user) {
+    throw new Error("Unauthorized: User not found");
+  }
+
+  if (user.role !== "super_admin" && user.role !== "operator") {
+    throw new Error("Unauthorized: Admin access required");
+  }
+
+  if (user.status === "disabled" || user.isBanned) {
+    throw new Error("Unauthorized: Account is disabled");
+  }
+
+  return { isAdmin: true, userId: user._id, email: callerEmail };
 }
 
 // ============================================
@@ -220,13 +246,13 @@ export const deleteUser = mutation({
 });
 
 // ============================================
-// TAB 1: USER MANAGEMENT (Legacy - kept for backward compatibility)
+// TAB 1: USER MANAGEMENT
 // ============================================
 
 export const listAllUsers = query({
-  args: {},
-  handler: async (ctx) => {
-    await requireAdmin(ctx);
+  args: { callerEmail: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
     const allUsers = await ctx.db.query("users").collect();
     return allUsers.map((u: any) => ({
       _id: u._id,
@@ -242,18 +268,18 @@ export const listAllUsers = query({
 });
 
 export const banUser = mutation({
-  args: { userId: v.id("users") },
+  args: { callerEmail: v.string(), userId: v.id("users") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     await ctx.db.patch(args.userId, { isBanned: true, status: "disabled" });
     return { success: true, message: "User banned successfully" };
   },
 });
 
 export const unbanUser = mutation({
-  args: { userId: v.id("users") },
+  args: { callerEmail: v.string(), userId: v.id("users") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     await ctx.db.patch(args.userId, { isBanned: false, status: "active" });
     return { success: true, message: "User unbanned successfully" };
   },
@@ -341,9 +367,9 @@ export const login = query({
 // ============================================
 
 export const listAllPosts = query({
-  args: { includeDeleted: v.optional(v.boolean()) },
-  handler: async (ctx) => {
-    await requireAdmin(ctx);
+  args: { callerEmail: v.optional(v.string()), includeDeleted: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
     const allPosts = await ctx.db.query("posts").collect();
     return allPosts
       .filter((p: any) => args.includeDeleted || !p.isDeleted)
@@ -363,9 +389,9 @@ export const listAllPosts = query({
 });
 
 export const listAllComments = query({
-  args: { includeDeleted: v.optional(v.boolean()) },
-  handler: async (ctx) => {
-    await requireAdmin(ctx);
+  args: { callerEmail: v.optional(v.string()), includeDeleted: v.optional(v.boolean()) },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
     const allComments = await ctx.db.query("comments").collect();
     return allComments
       .filter((c: any) => args.includeDeleted || !c.isDeleted)
@@ -384,9 +410,9 @@ export const listAllComments = query({
 });
 
 export const deletePost = mutation({
-  args: { postId: v.id("posts") },
+  args: { callerEmail: v.string(), postId: v.id("posts") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     await ctx.db.patch("posts", args.postId, { isDeleted: true });
     const allComments = await ctx.db.query("comments").collect();
     const postComments = allComments.filter((c: any) => c.postId === args.postId);
@@ -398,27 +424,27 @@ export const deletePost = mutation({
 });
 
 export const restorePost = mutation({
-  args: { postId: v.id("posts") },
+  args: { callerEmail: v.string(), postId: v.id("posts") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     await ctx.db.patch("posts", args.postId, { isDeleted: false });
     return { success: true, message: "Post restored" };
   },
 });
 
 export const deleteComment = mutation({
-  args: { commentId: v.id("comments") },
+  args: { callerEmail: v.string(), commentId: v.id("comments") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     await ctx.db.patch("comments", args.commentId, { isDeleted: true });
     return { success: true, message: "Comment deleted" };
   },
 });
 
 export const restoreComment = mutation({
-  args: { commentId: v.id("comments") },
+  args: { callerEmail: v.string(), commentId: v.id("comments") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     await ctx.db.patch("comments", args.commentId, { isDeleted: false });
     return { success: true, message: "Comment restored" };
   },
@@ -430,10 +456,11 @@ export const restoreComment = mutation({
 
 export const listStageProductions = query({
   args: {
+    callerEmail: v.optional(v.string()),
     status: v.optional(v.union(v.literal("upcoming"), v.literal("past"), v.literal("draft"))),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     let productions = await ctx.db.query("stageProductions").collect();
     if (args.status) {
       productions = productions.filter((p: any) => p.status === args.status);
@@ -454,6 +481,7 @@ export const listStageProductions = query({
 
 export const createStageProduction = mutation({
   args: {
+    callerEmail: v.string(),
     title: v.string(),
     description: v.string(),
     category: v.string(),
@@ -462,7 +490,7 @@ export const createStageProduction = mutation({
     eventDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     const id = await ctx.db.insert("stageProductions", {
       title: args.title,
       description: args.description,
@@ -479,6 +507,7 @@ export const createStageProduction = mutation({
 
 export const updateStageProduction = mutation({
   args: {
+    callerEmail: v.string(),
     id: v.id("stageProductions"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -488,7 +517,7 @@ export const updateStageProduction = mutation({
     eventDate: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     const updates: Record<string, any> = { updatedAt: Date.now() };
     if (args.title !== undefined) updates.title = args.title;
     if (args.description !== undefined) updates.description = args.description;
@@ -502,9 +531,9 @@ export const updateStageProduction = mutation({
 });
 
 export const deleteStageProduction = mutation({
-  args: { id: v.id("stageProductions") },
+  args: { callerEmail: v.string(), id: v.id("stageProductions") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     await ctx.db.delete("stageProductions", args.id);
     return { success: true, message: "Stage production deleted" };
   },
@@ -515,9 +544,9 @@ export const deleteStageProduction = mutation({
 // ============================================
 
 export const listHopeStudioServices = query({
-  args: { category: v.optional(v.string()) },
+  args: { callerEmail: v.optional(v.string()), category: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     let services = await ctx.db.query("hopeStudio").collect();
     if (args.category) {
       services = services.filter((s: any) => s.category === args.category);
@@ -539,6 +568,7 @@ export const listHopeStudioServices = query({
 
 export const createHopeStudioService = mutation({
   args: {
+    callerEmail: v.string(),
     serviceName: v.string(),
     description: v.string(),
     category: v.optional(v.string()),
@@ -548,7 +578,7 @@ export const createHopeStudioService = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     const id = await ctx.db.insert("hopeStudio", {
       serviceName: args.serviceName,
       description: args.description,
@@ -566,6 +596,7 @@ export const createHopeStudioService = mutation({
 
 export const updateHopeStudioService = mutation({
   args: {
+    callerEmail: v.string(),
     id: v.id("hopeStudio"),
     serviceName: v.optional(v.string()),
     description: v.optional(v.string()),
@@ -576,7 +607,7 @@ export const updateHopeStudioService = mutation({
     isActive: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     const updates: Record<string, any> = { updatedAt: Date.now() };
     if (args.serviceName !== undefined) updates.serviceName = args.serviceName;
     if (args.description !== undefined) updates.description = args.description;
@@ -591,9 +622,9 @@ export const updateHopeStudioService = mutation({
 });
 
 export const deleteHopeStudioService = mutation({
-  args: { id: v.id("hopeStudio") },
+  args: { callerEmail: v.string(), id: v.id("hopeStudio") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     await ctx.db.delete("hopeStudio", args.id);
     return { success: true, message: "Studio service deleted" };
   },
@@ -657,11 +688,12 @@ export const getNewsById = query({
 // Admin-only query for full news management
 export const listNews = query({
   args: {
+    callerEmail: v.optional(v.string()),
     isPublished: v.optional(v.boolean()),
     isFeatured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     let articles = await ctx.db.query("news").collect();
     if (args.isPublished !== undefined) {
       articles = articles.filter((n: any) => (n.isPublished ?? false) === args.isPublished);
@@ -688,6 +720,7 @@ export const listNews = query({
 
 export const createNewsArticle = mutation({
   args: {
+    callerEmail: v.string(),
     title: v.string(),
     coverImage: v.optional(v.string()),
     content: v.string(),
@@ -699,7 +732,7 @@ export const createNewsArticle = mutation({
     isFeatured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const adminInfo = await requireAdmin(ctx);
+    const adminInfo = await requireAdmin(ctx, args.callerEmail);
     const id = await ctx.db.insert("news", {
       title: args.title,
       coverImage: args.coverImage,
@@ -719,6 +752,7 @@ export const createNewsArticle = mutation({
 
 export const updateNewsArticle = mutation({
   args: {
+    callerEmail: v.string(),
     id: v.id("news"),
     title: v.optional(v.string()),
     coverImage: v.optional(v.string()),
@@ -731,7 +765,7 @@ export const updateNewsArticle = mutation({
     isFeatured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     const updates: Record<string, any> = { updatedAt: Date.now() };
     if (args.title !== undefined) updates.title = args.title;
     if (args.coverImage !== undefined) updates.coverImage = args.coverImage;
@@ -748,9 +782,9 @@ export const updateNewsArticle = mutation({
 });
 
 export const deleteNewsArticle = mutation({
-  args: { id: v.id("news") },
+  args: { callerEmail: v.string(), id: v.id("news") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx);
+    await requireAdmin(ctx, args.callerEmail);
     await ctx.db.delete("news", args.id);
     return { success: true, message: "News article deleted" };
   },

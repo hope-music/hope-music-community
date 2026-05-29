@@ -245,7 +245,8 @@ export default function AdminInteractionPage() {
   const [expandedUserCategory, setExpandedUserCategory] = useState<string | null>(null);
 
   // Convex queries and mutations for users
-  const allUsers = useQuery(api.admin.listAllUsers) ?? [];
+  const adminEmail = typeof window !== "undefined" ? localStorage.getItem("user_email") || "" : "";
+  const allUsers = useQuery(api.admin.listAllUsers, { callerEmail: adminEmail }) ?? [];
   const updateRole = useMutation(api.admin.updateUserRole);
   const banUser = useMutation(api.admin.banUser);
   const unbanUser = useMutation(api.admin.unbanUser);
@@ -472,7 +473,7 @@ export default function AdminInteractionPage() {
     if (!confirm("Ban this user? They will not be able to log in.")) return;
     setUserActionLoading(true);
     try {
-      await banUser({ userId });
+      await banUser({ callerEmail: adminEmail, userId });
       setMessage({ type: "success", text: "User banned" });
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Failed to ban user" });
@@ -484,7 +485,7 @@ export default function AdminInteractionPage() {
   const handleUserUnban = async (userId: Id<"users">) => {
     setUserActionLoading(true);
     try {
-      await unbanUser({ userId });
+      await unbanUser({ callerEmail: adminEmail, userId });
       setMessage({ type: "success", text: "User unbanned" });
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Failed to unban user" });
