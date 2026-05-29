@@ -205,7 +205,7 @@ export default function AdminStageProductionsPage() {
     if (!confirm("Delete this comment and all its replies?")) return;
     const updated = comments.filter((c) => c.id !== commentId);
     if (editingId) {
-      saveComments(editingId, updated);
+      saveComments(`stage-production-${editingId}`, updated);
     }
     setMessage({ type: "success", text: "Comment and replies deleted" });
   };
@@ -219,7 +219,7 @@ export default function AdminStageProductionsPage() {
       return c;
     });
     if (editingId) {
-      saveComments(editingId, updated);
+      saveComments(`stage-production-${editingId}`, updated);
     }
     setMessage({ type: "success", text: "Reply deleted" });
   };
@@ -240,7 +240,7 @@ export default function AdminStageProductionsPage() {
     setBannedUsers(newBanned);
     localStorage.setItem(BANNED_USERS_KEY, JSON.stringify(newBanned));
     if (editingId && deleteComments) {
-      saveComments(editingId, updatedComments);
+      saveComments(`stage-production-${editingId}`, updatedComments);
     }
     const durationText = duration === null ? "permanently" : `${duration / 86400000} day(s)`;
     setMessage({ type: "success", text: `User ${email} banned ${durationText}` });
@@ -323,7 +323,7 @@ export default function AdminStageProductionsPage() {
     setEventDate(item.eventDate || "");
     setCoverImage(item.coverImage || "");
     setCoverPreview(item.coverImage || null);
-    loadComments(item.id);
+    loadComments(`stage-production-${item.id}`);
     setShowForm(true);
   };
 
