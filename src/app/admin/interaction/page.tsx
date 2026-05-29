@@ -143,9 +143,39 @@ const CATEGORIES = [
   { value: "other", label: "Other" },
 ];
 
+// Generate default posts with fixed timestamps
+function getDefaultInteractionPosts(): Interaction[] {
+  const now = Date.now();
+  return [
+    {
+      id: "demo-i1",
+      title: "Getting Started with Pro Tools",
+      category: "software",
+      coverImage: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800",
+      author: "HOPE Studio Team",
+      description: "A comprehensive guide for beginners looking to start their music production journey with Pro Tools.",
+      content: "<p>Pro Tools guide content...</p>",
+      createdAt: now - 86400000 * 8,
+      updatedAt: now - 86400000 * 8,
+    },
+    {
+      id: "demo-i2",
+      title: "Choosing the Right Microphone",
+      category: "hardware",
+      coverImage: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=800",
+      author: "Audio Engineer Team",
+      description: "An essential guide to understanding different microphone types and their best use cases.",
+      content: "<p>Microphone guide content...</p>",
+      createdAt: now - 86400000 * 12,
+      updatedAt: now - 86400000 * 12,
+    },
+  ];
+}
+
 export default function AdminInteractionPage() {
   const [activeTab, setActiveTab] = useState<"items" | "users">("items");
-  const [items, setItems] = useState<Interaction[]>([]);
+  const [items, setItems] = useState<Interaction[]>(getDefaultInteractionPosts());
+  const [isInitialized, setIsInitialized] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -176,41 +206,21 @@ export default function AdminInteractionPage() {
   const banUser = useMutation(api.admin.banUser);
   const unbanUser = useMutation(api.admin.unbanUser);
 
-  // Default demo posts for Interaction
-  const DEFAULT_INTERACTION_POSTS: Interaction[] = [
-    {
-      id: "demo-i1",
-      title: "Getting Started with Pro Tools",
-      category: "software",
-      coverImage: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800",
-      author: "HOPE Studio Team",
-      description: "A comprehensive guide for beginners looking to start their music production journey with Pro Tools.",
-      content: "<p>Pro Tools guide content...</p>",
-      createdAt: Date.now() - 86400000 * 8,
-      updatedAt: Date.now() - 86400000 * 8,
-    },
-    {
-      id: "demo-i2",
-      title: "Choosing the Right Microphone",
-      category: "hardware",
-      coverImage: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=800",
-      author: "Audio Engineer Team",
-      description: "An essential guide to understanding different microphone types and their best use cases.",
-      content: "<p>Microphone guide content...</p>",
-      createdAt: Date.now() - 86400000 * 12,
-      updatedAt: Date.now() - 86400000 * 12,
-    },
-  ];
-
+  // Load data from localStorage after mount
   useEffect(() => {
-    const stored = localStorage.getItem("admin_interaction");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setItems(parsed.length > 0 ? parsed : DEFAULT_INTERACTION_POSTS);
-    } else {
-      // Initialize with demo data if nothing exists
-      localStorage.setItem("admin_interaction", JSON.stringify(DEFAULT_INTERACTION_POSTS));
-      setItems(DEFAULT_INTERACTION_POSTS);
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("admin_interaction");
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setItems(parsed);
+          }
+        } catch (e) {
+          console.error("Failed to parse stored data", e);
+        }
+      }
+      setIsInitialized(true);
     }
   }, []);
 
@@ -451,6 +461,14 @@ export default function AdminInteractionPage() {
   const activeUsers = allUsers.filter((u: User) => !u.isBanned).length;
   const bannedUsersCount = allUsers.filter((u: User) => u.isBanned).length;
   const adminCount = allUsers.filter((u: User) => u.role === "admin").length;
+
+  if (!isInitialized) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
