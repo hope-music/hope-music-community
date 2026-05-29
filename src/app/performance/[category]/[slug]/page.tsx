@@ -133,7 +133,11 @@ export default function PerformanceDetailPage() {
       {/* Comments Section */}
       <div className="max-w-4xl mx-auto px-4 py-12">
         {pageId && (
-          <CommentSection pageId={pageId} storageKey="performance_comments" />
+          <CommentSection
+            pageId={pageId}
+            storageKey="performance_comments"
+            bannedUsersKey="performance_banned_users"
+          />
         )}
       </div>
     </main>

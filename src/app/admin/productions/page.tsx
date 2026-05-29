@@ -77,7 +77,7 @@ function RichTextEditor({
 interface Production {
   id: string;
   title: string;
-  category: string; // subcategory: Musical, Opera, Concert, etc.
+  category: string;
   description: string;
   coverImage: string;
   content: string;
@@ -86,6 +86,63 @@ interface Production {
   createdAt: number;
   updatedAt: number;
 }
+
+interface Comment {
+  id: string;
+  authorName: string;
+  authorEmail: string;
+  authorAvatar: string;
+  content: string;
+  createdAt: number;
+  replies: Comment[];
+}
+
+// Ban duration options
+interface BanEntry {
+  email: string;
+  expiresAt: number | null; // null means permanent
+}
+
+// Default comments (same as frontend)
+const DEFAULT_COMMENTS: Comment[] = [
+  {
+    id: "placeholder_1",
+    authorName: "Sarah Johnson",
+    authorEmail: "sarah@example.com",
+    authorAvatar: "🎵",
+    content: "This was absolutely amazing! The performances were top-notch and the atmosphere was electric. Highly recommend catching this show!",
+    createdAt: Date.now() - 86400000 * 3,
+    replies: [
+      {
+        id: "placeholder_1_reply",
+        authorName: "Mike Chen",
+        authorEmail: "mike@example.com",
+        authorAvatar: "🎤",
+        content: "Totally agree! I was there opening night and it exceeded all expectations.",
+        createdAt: Date.now() - 86400000 * 2,
+        replies: [],
+      },
+    ],
+  },
+  {
+    id: "placeholder_2",
+    authorName: "Emily Davis",
+    authorEmail: "emily@example.com",
+    authorAvatar: "🎹",
+    content: "Brought my whole family and we all loved it. The production quality is outstanding!",
+    createdAt: Date.now() - 86400000 * 5,
+    replies: [],
+  },
+  {
+    id: "placeholder_3",
+    authorName: "Alex Thompson",
+    authorEmail: "alex@example.com",
+    authorAvatar: "🥁",
+    content: "The attention to detail in every aspect of this production is remarkable. A must-see!",
+    createdAt: Date.now() - 86400000 * 7,
+    replies: [],
+  },
+];
 
 // Subcategories for Performance
 const SUBCATEGORIES = [
@@ -100,6 +157,8 @@ const SUBCATEGORIES = [
   { value: "others", label: "Others" },
 ];
 
+const COMMENTS_STORAGE_KEY = "performance_comments";
+
 export default function StageProductionsPage() {
   const [items, setItems] = useState<Production[]>([]);
   const [filterCategory, setFilterCategory] = useState<string>("all");
@@ -109,7 +168,11 @@ export default function StageProductionsPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
-  
+
+  // Comment management state
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [bannedUsers, setBannedUsers] = useState<BanEntry[]>([]);
+
   // Form state
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -124,7 +187,29 @@ export default function StageProductionsPage() {
   useEffect(() => {
     const stored = localStorage.getItem("admin_performance");
     if (stored) setItems(JSON.parse(stored));
+
+    // Load banned users
+    const banned = localStorage.getItem("performance_banned_users");
+    if (banned) {
+      setBannedUsers(JSON.parse(banned));
+    }
   }, []);
+
+  // Check and clean up expired bans
+  const cleanupExpiredBans = () => {
+    const now = Date.now();
+    const validBans = bannedUsers.filter(b => b.expiresAt === null || b.expiresAt > now);
+    if (validBans.length !== bannedUsers.length) {
+      setBannedUsers(validBans);
+      localStorage.setItem("performance_banned_users", JSON.stringify(validBans));
+    }
+    return validBans;
+  };
+
+  const isUserBanned = (email: string): boolean => {
+    const now = Date.now();
+    return bannedUsers.some(b => b.email === email && (b.expiresAt === null || b.expiresAt > now));
+  };
 
   const saveToStorage = (data: Production[]) => {
     localStorage.setItem("admin_performance", JSON.stringify(data));
@@ -137,6 +222,107 @@ export default function StageProductionsPage() {
       return () => clearTimeout(timer);
     }
   }, [message]);
+
+  // Load comments for the current editing item
+  const loadComments = (itemId: string) => {
+    const stored = localStorage.getItem(COMMENTS_STORAGE_KEY);
+    if (stored) {
+      const allComments = JSON.parse(stored);
+      const pageComments = allComments[itemId] || [];
+      setComments(pageComments.length > 0 ? pageComments : DEFAULT_COMMENTS);
+    } else {
+      setComments(DEFAULT_COMMENTS);
+    }
+
+    // Also reload banned users when switching items
+    const banned = localStorage.getItem("performance_banned_users");
+    if (banned) {
+      setBannedUsers(JSON.parse(banned));
+    } else {
+      setBannedUsers([]);
+    }
+  };
+
+  const saveComments = (itemId: string, newComments: Comment[]) => {
+    const stored = localStorage.getItem(COMMENTS_STORAGE_KEY);
+    const allComments = stored ? JSON.parse(stored) : {};
+    allComments[itemId] = newComments;
+    localStorage.setItem(COMMENTS_STORAGE_KEY, JSON.stringify(allComments));
+    setComments(newComments);
+  };
+
+  const handleDeleteComment = (commentId: string) => {
+    if (!confirm("Delete this comment and all its replies?")) return;
+    const updated = comments.filter((c) => c.id !== commentId);
+    if (editingId) {
+      saveComments(editingId, updated);
+    }
+    setMessage({ type: "success", text: "Comment and replies deleted" });
+  };
+
+  const handleDeleteReply = (parentId: string, replyId: string) => {
+    if (!confirm("Delete this reply?")) return;
+    const updated = comments.map((c) => {
+      if (c.id === parentId) {
+        return { ...c, replies: c.replies.filter((r) => r.id !== replyId) };
+      }
+      return c;
+    });
+    if (editingId) {
+      saveComments(editingId, updated);
+    }
+    setMessage({ type: "success", text: "Reply deleted" });
+  };
+
+  const handleBanUser = (email: string, duration: number | null, deleteComments: boolean = false) => {
+    // duration: null = permanent, number = milliseconds until expiry
+    const expiresAt = duration === null ? null : Date.now() + duration;
+
+    let updatedComments = comments;
+    if (deleteComments) {
+      updatedComments = comments
+        .filter((c) => c.authorEmail !== email)
+        .map((c) => ({
+          ...c,
+          replies: c.replies.filter((r) => r.authorEmail !== email),
+        }));
+    }
+
+    const newBanned = bannedUsers.filter(b => b.email !== email); // Remove existing ban for this user
+    newBanned.push({ email, expiresAt });
+    setBannedUsers(newBanned);
+    localStorage.setItem("performance_banned_users", JSON.stringify(newBanned));
+
+    if (editingId && deleteComments) {
+      saveComments(editingId, updatedComments);
+    }
+
+    const durationText = duration === null ? "permanently" :
+      duration === 86400000 ? "for 1 day" :
+      duration === 604800000 ? "for 7 days" :
+      duration === 2592000000 ? "for 30 days" : `for ${duration / 86400000} days`;
+
+    setMessage({ type: "success", text: `User ${email} banned ${durationText}` });
+  };
+
+  const handleUnbanUser = (email: string) => {
+    const newBanned = bannedUsers.filter(b => b.email !== email);
+    setBannedUsers(newBanned);
+    localStorage.setItem("performance_banned_users", JSON.stringify(newBanned));
+    setMessage({ type: "success", text: `User ${email} unbanned` });
+  };
+
+  const formatTime = (timestamp: number): string => {
+    const seconds = Math.floor((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return "just now";
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes}m ago`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(timestamp).toLocaleDateString();
+  };
 
   const filteredItems = items.filter((p) => {
     if (filterCategory !== "all" && p.category !== filterCategory) return false;
@@ -174,6 +360,7 @@ export default function StageProductionsPage() {
     setEventDate("");
     setCoverImage("");
     setCoverPreview(null);
+    setComments([]);
     setShowForm(true);
   };
 
@@ -187,6 +374,7 @@ export default function StageProductionsPage() {
     setEventDate(item.eventDate || "");
     setCoverImage(item.coverImage || "");
     setCoverPreview(item.coverImage || null);
+    loadComments(item.id);
     setShowForm(true);
   };
 
@@ -200,29 +388,19 @@ export default function StageProductionsPage() {
     setLoading(true);
     try {
       const now = Date.now();
-      
-      // Get current form values
-      const currentStatus = status;
-      const currentCategory = category;
-      const currentDescription = description;
-      const currentContent = content;
-      const currentCoverImage = coverImage;
-      const currentEventDate = eventDate;
-      const currentTitle = title.trim();
 
       if (editingId) {
-        // Update existing - create new array with updated item
         const updated = items.map((item) => {
           if (item.id === editingId) {
             return {
               ...item,
-              title: currentTitle,
-              description: currentDescription,
-              content: currentContent,
-              category: currentCategory,
-              status: currentStatus,
-              eventDate: currentEventDate,
-              coverImage: currentCoverImage,
+              title: title.trim(),
+              description,
+              content,
+              category,
+              status,
+              eventDate,
+              coverImage,
               updatedAt: now
             };
           }
@@ -231,16 +409,15 @@ export default function StageProductionsPage() {
         saveToStorage(updated);
         setMessage({ type: "success", text: "Updated successfully!" });
       } else {
-        // Create new
         const newItem: Production = {
           id: now.toString(),
-          title: currentTitle,
-          category: currentCategory,
-          description: currentDescription,
-          content: currentContent,
-          coverImage: currentCoverImage,
-          status: currentStatus,
-          eventDate: currentEventDate,
+          title: title.trim(),
+          category,
+          description,
+          content,
+          coverImage,
+          status,
+          eventDate,
           createdAt: now,
           updatedAt: now,
         };
@@ -274,6 +451,28 @@ export default function StageProductionsPage() {
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return "";
     return new Date(dateStr).toLocaleDateString();
+  };
+
+  // Get all unique authors from comments
+  const getCommentAuthors = () => {
+    const authors = new Map<string, { email: string; avatar: string; count: number }>();
+    comments.forEach((c) => {
+      const existing = authors.get(c.authorEmail);
+      authors.set(c.authorEmail, {
+        email: c.authorEmail,
+        avatar: c.authorAvatar,
+        count: existing ? existing.count + 1 : 1,
+      });
+      c.replies.forEach((r) => {
+        const replyExisting = authors.get(r.authorEmail);
+        authors.set(r.authorEmail, {
+          email: r.authorEmail,
+          avatar: r.authorAvatar,
+          count: replyExisting ? replyExisting.count + 1 : 1,
+        });
+      });
+    });
+    return Array.from(authors.values());
   };
 
   return (
@@ -375,6 +574,185 @@ export default function StageProductionsPage() {
               </button>
             </div>
           </form>
+
+          {/* Comment Management Section - Only show when editing */}
+          {editingId && (
+            <div className="mt-8 border-t border-gray-200 pt-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">Comments ({comments.length})</h3>
+
+              {/* Authors Summary */}
+              {getCommentAuthors().length > 0 && (
+                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Authors</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {getCommentAuthors().map((author) => {
+                      const banInfo = bannedUsers.find(b => b.email === author.email);
+                      const isBanned = isUserBanned(author.email);
+
+                      return (
+                        <div key={author.email} className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-gray-200">
+                          <span className="text-sm">{author.avatar}</span>
+                          <span className="text-sm text-gray-700">{author.email}</span>
+                          <span className="text-xs text-gray-400">({author.count})</span>
+                          {isBanned ? (
+                            <div className="flex items-center gap-1">
+                              <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">
+                                {banInfo?.expiresAt ? `Banned` : `Banned`}
+                              </span>
+                              <button
+                                onClick={() => handleUnbanUser(author.email)}
+                                className="text-xs text-green-600 hover:text-green-700 font-medium"
+                              >
+                                Unban
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="relative group">
+                              <button className="text-xs text-red-600 hover:text-red-700 font-medium">
+                                Ban ▾
+                              </button>
+                              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
+                                <button
+                                  onClick={() => handleBanUser(author.email, 86400000, false)}
+                                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-t-lg"
+                                >
+                                  Ban for 1 day
+                                </button>
+                                <button
+                                  onClick={() => handleBanUser(author.email, 604800000, false)}
+                                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50"
+                                >
+                                  Ban for 7 days
+                                </button>
+                                <button
+                                  onClick={() => handleBanUser(author.email, 2592000000, false)}
+                                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50"
+                                >
+                                  Ban for 30 days
+                                </button>
+                                <button
+                                  onClick={() => handleBanUser(author.email, null, false)}
+                                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-b-lg"
+                                >
+                                  Ban permanently
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Comments List */}
+              {comments.length === 0 ? (
+                <p className="text-center text-gray-500 py-8">No comments yet.</p>
+              ) : (
+                <div className="space-y-4 max-h-96 overflow-y-auto">
+                  {comments.map((comment) => {
+                    const isBanned = isUserBanned(comment.authorEmail);
+
+                    return (
+                      <div key={comment.id} className="border border-gray-200 rounded-lg p-4 bg-white">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3">
+                            <span className="text-2xl">{comment.authorAvatar}</span>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-gray-900">{comment.authorName}</span>
+                                <span className="text-xs text-gray-400">{comment.authorEmail}</span>
+                                {isBanned && (
+                                  <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Banned</span>
+                                )}
+                              </div>
+                              <span className="text-xs text-gray-400">{formatTime(comment.createdAt)}</span>
+                              <p className="mt-2 text-gray-700 text-sm">{comment.content}</p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="text-xs text-red-600 hover:text-red-700 font-medium"
+                            >
+                              Delete
+                            </button>
+                            {!isBanned && (
+                              <div className="relative group">
+                                <button className="text-xs text-orange-600 hover:text-orange-700 font-medium">
+                                  Ban ▾
+                                </button>
+                                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
+                                  <button
+                                    onClick={() => handleBanUser(comment.authorEmail, 86400000, true)}
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-t-lg"
+                                  >
+                                    Ban 1 day + Delete comments
+                                  </button>
+                                  <button
+                                    onClick={() => handleBanUser(comment.authorEmail, 604800000, true)}
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50"
+                                  >
+                                    Ban 7 days + Delete comments
+                                  </button>
+                                  <button
+                                    onClick={() => handleBanUser(comment.authorEmail, 2592000000, true)}
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50"
+                                  >
+                                    Ban 30 days + Delete comments
+                                  </button>
+                                  <button
+                                    onClick={() => handleBanUser(comment.authorEmail, null, true)}
+                                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-b-lg"
+                                  >
+                                    Ban permanently + Delete comments
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Replies */}
+                        {comment.replies.length > 0 && (
+                          <div className="ml-12 mt-3 space-y-3 border-t border-gray-100 pt-3">
+                            {comment.replies.map((reply) => {
+                              const replyBanned = isUserBanned(reply.authorEmail);
+
+                              return (
+                                <div key={reply.id} className="flex items-start justify-between">
+                                  <div className="flex items-start gap-2">
+                                    <span className="text-lg">{reply.authorAvatar}</span>
+                                    <div>
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-medium text-gray-900 text-sm">{reply.authorName}</span>
+                                        {replyBanned && (
+                                          <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Banned</span>
+                                        )}
+                                      </div>
+                                      <span className="text-xs text-gray-400">{formatTime(reply.createdAt)}</span>
+                                      <p className="mt-1 text-gray-700 text-sm">{reply.content}</p>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={() => handleDeleteReply(comment.id, reply.id)}
+                                    className="text-xs text-red-600 hover:text-red-700 font-medium"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -384,9 +762,9 @@ export default function StageProductionsPage() {
           const categoryItems = filterCategory === "all" || filterCategory === sub.value
             ? sub.items.filter(item => filterStatus === "all" || item.status === filterStatus)
             : [];
-          
+
           if (filterCategory !== "all" && filterCategory !== sub.value) return null;
-          
+
           return (
             <div key={sub.value} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
               <button
@@ -404,7 +782,7 @@ export default function StageProductionsPage() {
                   </span>
                 )}
               </button>
-              
+
               {expandedCategory === sub.value && (
                 <div className="divide-y divide-gray-100">
                   {categoryItems.length === 0 ? (

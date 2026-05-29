@@ -16,7 +16,49 @@ interface Comment {
 interface CommentSectionProps {
   pageId: string;
   storageKey: string;
+  bannedUsersKey?: string;
 }
+
+// Default placeholder comments
+const DEFAULT_COMMENTS: Comment[] = [
+  {
+    id: "placeholder_1",
+    authorName: "Sarah Johnson",
+    authorEmail: "sarah@example.com",
+    authorAvatar: "avatar2",
+    content: "This was absolutely amazing! The performances were top-notch and the atmosphere was electric. Highly recommend catching this show!",
+    createdAt: Date.now() - 86400000 * 3,
+    replies: [
+      {
+        id: "placeholder_1_reply",
+        authorName: "Mike Chen",
+        authorEmail: "mike@example.com",
+        authorAvatar: "avatar4",
+        content: "Totally agree! I was there opening night and it exceeded all expectations.",
+        createdAt: Date.now() - 86400000 * 2,
+        replies: [],
+      },
+    ],
+  },
+  {
+    id: "placeholder_2",
+    authorName: "Emily Davis",
+    authorEmail: "emily@example.com",
+    authorAvatar: "avatar5",
+    content: "Brought my whole family and we all loved it. The production quality is outstanding!",
+    createdAt: Date.now() - 86400000 * 5,
+    replies: [],
+  },
+  {
+    id: "placeholder_3",
+    authorName: "Alex Thompson",
+    authorEmail: "alex@example.com",
+    authorAvatar: "avatar8",
+    content: "The attention to detail in every aspect of this production is remarkable. A must-see!",
+    createdAt: Date.now() - 86400000 * 7,
+    replies: [],
+  },
+];
 
 interface UserData {
   id: string;
@@ -57,33 +99,72 @@ function getAvatarEmoji(avatarId: string): { emoji: string; color: string } {
   return avatars[avatarId] || { emoji: "👤", color: "#6B7280" };
 }
 
-export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
+export function CommentSection({ pageId, storageKey, bannedUsersKey }: CommentSectionProps) {
   const [comments, setComments] = useState<Comment[]>([]);
   const [currentUser, setCurrentUser] = useState<UserData | null>(null);
   const [newComment, setNewComment] = useState("");
   const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [isBanned, setIsBanned] = useState(false);
+  const [banExpiry, setBanExpiry] = useState<string | null>(null);
   const router = useRouter();
+
+  // Check if user is banned with expiry
+  const checkBanStatus = (email: string, bannedData: any[]): boolean => {
+    const now = Date.now();
+    const ban = bannedData.find(b => b.email === email);
+    if (!ban) return false;
+    if (ban.expiresAt === null) return true; // Permanent ban
+    if (ban.expiresAt > now) {
+      // Still banned, calculate remaining time
+      const remaining = ban.expiresAt - now;
+      const hours = Math.floor(remaining / (1000 * 60 * 60));
+      const days = Math.floor(hours / 24);
+      if (days > 0) {
+        setBanExpiry(`${days} day${days > 1 ? 's' : ''}`);
+      } else {
+        setBanExpiry(`${hours} hour${hours > 1 ? 's' : ''}`);
+      }
+      return true;
+    }
+    return false; // Ban expired
+  };
 
   useEffect(() => {
     const userData = localStorage.getItem("hmc_current_user");
     if (userData) {
-      setCurrentUser(JSON.parse(userData));
+      const user = JSON.parse(userData);
+      setCurrentUser(user);
+
+      // Check if user is banned
+      if (bannedUsersKey) {
+        const banned = localStorage.getItem(bannedUsersKey);
+        if (banned) {
+          const bannedList = JSON.parse(banned);
+          setIsBanned(checkBanStatus(user.email, bannedList));
+        }
+      }
     }
-    
+
     const stored = localStorage.getItem(storageKey);
     if (stored) {
       const allComments = JSON.parse(stored);
-      setComments(allComments[pageId] || []);
+      const pageComments = allComments[pageId] || [];
+      setComments(pageComments.length > 0 ? pageComments : DEFAULT_COMMENTS);
+    } else {
+      setComments(DEFAULT_COMMENTS);
     }
-  }, [pageId, storageKey]);
+  }, [pageId, storageKey, bannedUsersKey]);
 
-  const saveComments = (newComments: Comment[]) => {
+  const saveComments = (newComments: Comment[], isUserGenerated: boolean = false) => {
     const stored = localStorage.getItem(storageKey);
     const allComments = stored ? JSON.parse(stored) : {};
     allComments[pageId] = newComments;
-    localStorage.setItem(storageKey, JSON.stringify(allComments));
+    // Only save user-generated comments, not default placeholders
+    if (isUserGenerated) {
+      localStorage.setItem(storageKey, JSON.stringify(allComments));
+    }
   };
 
   const handleSubmitComment = (e: React.FormEvent) => {
@@ -92,6 +173,11 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
 
     if (!currentUser) {
       router.push("/login");
+      return;
+    }
+
+    if (isBanned) {
+      alert("You have been banned from commenting.");
       return;
     }
 
@@ -109,7 +195,7 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
 
     const updatedComments = [comment, ...comments];
     setComments(updatedComments);
-    saveComments(updatedComments);
+    saveComments(updatedComments, true);
     setNewComment("");
     setSubmitting(false);
   };
@@ -120,6 +206,11 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
 
     if (!currentUser) {
       router.push("/login");
+      return;
+    }
+
+    if (isBanned) {
+      alert("You have been banned from commenting.");
       return;
     }
 
@@ -143,7 +234,7 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
     });
 
     setComments(updatedComments);
-    saveComments(updatedComments);
+    saveComments(updatedComments, true);
     setReplyContent("");
     setReplyingTo(null);
     setSubmitting(false);
@@ -224,7 +315,15 @@ export function CommentSection({ pageId, storageKey }: CommentSectionProps) {
 
       {/* Comment Input - Always visible */}
       <form onSubmit={handleSubmitComment} className="mb-8 bg-gray-50 rounded-xl p-5">
-        {currentUser ? (
+        {isBanned ? (
+          <div className="text-center py-4">
+            <p className="text-red-600 font-medium">
+              {banExpiry
+                ? `You are banned from commenting (${banExpiry} remaining)`
+                : "You have been permanently banned from commenting."}
+            </p>
+          </div>
+        ) : currentUser ? (
           <div className="flex gap-3">
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold shrink-0"
