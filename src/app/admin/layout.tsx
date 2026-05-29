@@ -10,6 +10,7 @@ const BASE_NAV_ITEMS = [
   { label: "Hope Studio", href: "/admin/hope-studio" },
   { label: "Interaction", href: "/admin/interaction" },
   { label: "News", href: "/admin/news" },
+  { label: "Cooperation", href: "/admin/cooperation" },
 ];
 
 export default function AdminLayout({
