@@ -163,7 +163,7 @@ export default function AdminInteractionPage() {
 
   // Comment management state
   const [comments, setComments] = useState<Comment[]>([]);
-  const [bannedUsers, setBannedUsers] = useState<BanEntry[]>([]);
+  const [commentBannedUsers, setCommentBannedUsers] = useState<BanEntry[]>([]);
 
   // User management state
   const [userFilter, setUserFilter] = useState<"all" | "active" | "banned" | "admins">("all");
@@ -200,9 +200,9 @@ export default function AdminInteractionPage() {
     }
     const banned = localStorage.getItem(BANNED_USERS_KEY);
     if (banned) {
-      setBannedUsers(JSON.parse(banned));
+      setCommentBannedUsers(JSON.parse(banned));
     } else {
-      setBannedUsers([]);
+      setCommentBannedUsers([]);
     }
   };
 
@@ -216,7 +216,7 @@ export default function AdminInteractionPage() {
 
   const isUserBanned = (email: string): boolean => {
     const now = Date.now();
-    return bannedUsers.some(b => b.email === email && (b.expiresAt === null || b.expiresAt > now));
+    return commentBannedUsers.some(b => b.email === email && (b.expiresAt === null || b.expiresAt > now));
   };
 
   const handleDeleteComment = (commentId: string) => {
@@ -253,9 +253,9 @@ export default function AdminInteractionPage() {
           replies: c.replies.filter((r) => r.authorEmail !== email),
         }));
     }
-    const newBanned = bannedUsers.filter(b => b.email !== email);
+    const newBanned = commentBannedUsers.filter(b => b.email !== email);
     newBanned.push({ email, expiresAt });
-    setBannedUsers(newBanned);
+    setCommentBannedUsers(newBanned);
     localStorage.setItem(BANNED_USERS_KEY, JSON.stringify(newBanned));
     if (editingId && deleteComments) {
       saveComments(editingId, updatedComments);
@@ -265,8 +265,8 @@ export default function AdminInteractionPage() {
   };
 
   const handleUnbanUser = (email: string) => {
-    const newBanned = bannedUsers.filter(b => b.email !== email);
-    setBannedUsers(newBanned);
+    const newBanned = commentBannedUsers.filter(b => b.email !== email);
+    setCommentBannedUsers(newBanned);
     localStorage.setItem(BANNED_USERS_KEY, JSON.stringify(newBanned));
     setMessage({ type: "success", text: `User ${email} unbanned` });
   };
@@ -416,7 +416,7 @@ export default function AdminInteractionPage() {
 
   const totalUsers = allUsers.length;
   const activeUsers = allUsers.filter((u: User) => !u.isBanned).length;
-  const bannedUsers = allUsers.filter((u: User) => u.isBanned).length;
+  const bannedUsersCount = allUsers.filter((u: User) => u.isBanned).length;
   const adminCount = allUsers.filter((u: User) => u.role === "admin").length;
 
   return (
@@ -699,7 +699,7 @@ export default function AdminInteractionPage() {
               <div className="text-sm text-gray-500">Active</div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-white p-4">
-              <div className="text-2xl font-bold text-red-600">{bannedUsers}</div>
+              <div className="text-2xl font-bold text-red-600">{bannedUsersCount}</div>
               <div className="text-sm text-gray-500">Banned</div>
             </div>
             <div className="rounded-lg border border-gray-200 bg-white p-4">
