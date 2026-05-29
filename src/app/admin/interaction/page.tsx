@@ -176,9 +176,42 @@ export default function AdminInteractionPage() {
   const banUser = useMutation(api.admin.banUser);
   const unbanUser = useMutation(api.admin.unbanUser);
 
+  // Default demo posts for Interaction
+  const DEFAULT_INTERACTION_POSTS: Interaction[] = [
+    {
+      id: "demo-i1",
+      title: "Getting Started with Pro Tools",
+      category: "software",
+      coverImage: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800",
+      author: "HOPE Studio Team",
+      description: "A comprehensive guide for beginners looking to start their music production journey with Pro Tools.",
+      content: "<p>Pro Tools guide content...</p>",
+      createdAt: Date.now() - 86400000 * 8,
+      updatedAt: Date.now() - 86400000 * 8,
+    },
+    {
+      id: "demo-i2",
+      title: "Choosing the Right Microphone",
+      category: "hardware",
+      coverImage: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=800",
+      author: "Audio Engineer Team",
+      description: "An essential guide to understanding different microphone types and their best use cases.",
+      content: "<p>Microphone guide content...</p>",
+      createdAt: Date.now() - 86400000 * 12,
+      updatedAt: Date.now() - 86400000 * 12,
+    },
+  ];
+
   useEffect(() => {
     const stored = localStorage.getItem("admin_interaction");
-    if (stored) setItems(JSON.parse(stored));
+    if (stored) {
+      const parsed = JSON.parse(stored);
+      setItems(parsed.length > 0 ? parsed : DEFAULT_INTERACTION_POSTS);
+    } else {
+      // Initialize with demo data if nothing exists
+      localStorage.setItem("admin_interaction", JSON.stringify(DEFAULT_INTERACTION_POSTS));
+      setItems(DEFAULT_INTERACTION_POSTS);
+    }
   }, []);
 
   const saveToStorage = (data: Interaction[]) => {
