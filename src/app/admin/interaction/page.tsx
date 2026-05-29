@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { ViolationModal, type ViolationAction } from "@/components/ui/ViolationModal";
 
 // ============================================
 // TYPES
@@ -15,6 +16,11 @@ interface Interaction {
   author: string;
   createdAt: number;
   updatedAt: number;
+  // Violation audit fields
+  managedBy?: string;
+  managedAt?: number;
+  reason?: string;
+  isHidden?: boolean;
 }
 
 interface Comment {
@@ -185,6 +191,17 @@ export default function AdminInteractionPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [commentBannedUsers, setCommentBannedUsers] = useState<BanEntry[]>([]);
 
+  // Violation modal state
+  const [violationModal, setViolationModal] = useState<{
+    isOpen: boolean;
+    targetType: "post" | "comment";
+    targetId: string;
+    targetTitle: string;
+    targetAuthor: string;
+    targetAuthorEmail?: string;
+  } | null>(null);
+  const [violationLoading, setViolationLoading] = useState(false);
+
   // Load data
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -324,6 +341,97 @@ export default function AdminInteractionPage() {
       });
     });
     return Array.from(authors.values());
+  };
+
+  // ============================================
+  // VIOLATION HANDLING
+  // ============================================
+  const openViolationModal = (
+    targetType: "post" | "comment",
+    targetId: string,
+    targetTitle: string,
+    targetAuthor: string,
+    targetAuthorEmail?: string
+  ) => {
+    setViolationModal({
+      isOpen: true,
+      targetType,
+      targetId,
+      targetTitle,
+      targetAuthor,
+      targetAuthorEmail,
+    });
+  };
+
+  const handleViolationAction = async (action: ViolationAction) => {
+    setViolationLoading(true);
+    try {
+      if (violationModal) {
+        const { targetType, targetId } = violationModal;
+
+        if (targetType === "post") {
+          // Update post with violation audit
+          const updated = items.map((item) => {
+            if (item.id === targetId) {
+              const updates: Partial<Interaction> = {
+                managedBy: action.managedBy,
+                managedAt: Date.now(),
+                reason: action.reason,
+              };
+
+              if (action.action === "delete") {
+                // Mark as hidden and delete
+                return { ...item, ...updates, isHidden: true };
+              } else {
+                // Just hide, keep content
+                return { ...item, ...updates, isHidden: true };
+              }
+            }
+            return item;
+          });
+          saveToStorage(updated);
+          setMessage({ type: "success", text: `Post handled: ${action.action === "delete" ? "deleted" : "hidden"}` });
+        } else {
+          // Handle comment
+          const updatedComments = comments.filter((c) => c.id !== targetId);
+          if (editingItem) {
+            saveComments(editingItem.id, updatedComments);
+          }
+          setMessage({ type: "success", text: "Comment deleted" });
+        }
+
+        // Handle user ban
+        if (action.banUser && action.banDuration) {
+          const durations: Record<string, number | null> = {
+            "1day": 86400000,
+            "7days": 604800000,
+            "permanent": null,
+          };
+          const banDurationMs = durations[action.banDuration];
+
+          if (violationModal.targetAuthorEmail) {
+            const newBanned = commentBannedUsers.filter((b) => b.email !== violationModal!.targetAuthorEmail);
+            newBanned.push({
+              email: violationModal.targetAuthorEmail,
+              expiresAt: banDurationMs === null ? null : Date.now() + banDurationMs,
+            });
+            setCommentBannedUsers(newBanned);
+            localStorage.setItem(BANNED_USERS_KEY, JSON.stringify(newBanned));
+
+            const durationText = action.banDuration === "permanent" ? "permanently" : `for ${action.banDuration}`;
+            setMessage((prev) => ({
+              type: "success",
+              text: `${prev?.text || ""} User banned ${durationText}.`.trim(),
+            }));
+          }
+        }
+      }
+    } catch (error) {
+      setMessage({ type: "error", text: "Failed to handle violation" });
+    } finally {
+      setViolationLoading(false);
+      setViolationModal(null);
+    }
   };
 
   // ============================================
@@ -566,6 +674,20 @@ export default function AdminInteractionPage() {
         </div>
       )}
 
+      {/* Violation Modal */}
+      {violationModal && (
+        <ViolationModal
+          isOpen={violationModal.isOpen}
+          onClose={() => setViolationModal(null)}
+          onConfirm={handleViolationAction}
+          targetType={violationModal.targetType}
+          targetTitle={violationModal.targetTitle}
+          targetAuthor={violationModal.targetAuthor}
+          targetAuthorEmail={violationModal.targetAuthorEmail}
+          loading={violationLoading}
+        />
+      )}
+
       {/* Form Modal */}
       {showForm && (
         <div className="rounded-lg border border-gray-200 bg-white p-6">
@@ -674,6 +796,7 @@ export default function AdminInteractionPage() {
                           </div>
                         </div>
                         <div className="flex gap-2">
+                          <button onClick={() => openViolationModal("comment", comment.id, comment.content.substring(0, 50) + "...", comment.authorName, comment.authorEmail)} className="text-xs text-orange-600 hover:text-orange-700 font-medium">Handle</button>
                           <button onClick={() => handleDeleteComment(comment.id)} className="text-xs text-red-600 hover:text-red-700 font-medium">Delete</button>
                           {!isBanned && (
                             <div className="relative group">
@@ -779,6 +902,16 @@ export default function AdminInteractionPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
+                          {item.isHidden ? (
+                            <span className="px-3 py-1 text-xs font-medium text-yellow-600 bg-yellow-50 rounded">Hidden</span>
+                          ) : (
+                            <button
+                              onClick={() => openViolationModal("post", item.id, item.title, item.author || "Unknown")}
+                              className="px-3 py-1 text-xs font-medium text-orange-600 hover:bg-orange-50 rounded"
+                            >
+                              Handle
+                            </button>
+                          )}
                           <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
                           <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
                         </div>
