@@ -9,6 +9,7 @@ const BASE_NAV_ITEMS = [
   { label: "Stage Production", href: "/admin/stage-production" },
   { label: "Hope Studio", href: "/admin/hope-studio" },
   { label: "Interaction", href: "/admin/interaction" },
+  { label: "Posts", href: "/admin/posts" },
   { label: "News", href: "/admin/news" },
   { label: "Cooperation", href: "/admin/cooperation" },
 ];

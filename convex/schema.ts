@@ -30,8 +30,18 @@ export default defineSchema(
       content: v.string(),
       category: v.string(),
       createdAt: v.optional(v.number()),
+      updatedAt: v.optional(v.number()),
       isDeleted: v.optional(v.boolean()),
-    }),
+      isPinned: v.optional(v.boolean()),
+      isFeatured: v.optional(v.boolean()),
+      views: v.optional(v.number()),
+      tags: v.optional(v.array(v.string())),
+      status: v.optional(v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("rejected")
+      )),
+    }).index("by_authorEmail", ["authorEmail"]).index("by_category", ["category"]).index("by_status", ["status"]),
 
     comments: defineTable({
       postId: v.id("posts"),

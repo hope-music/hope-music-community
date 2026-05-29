@@ -367,12 +367,51 @@ export const login = query({
 // ============================================
 
 export const listAllPosts = query({
-  args: { callerEmail: v.optional(v.string()), includeDeleted: v.optional(v.boolean()) },
+  args: {
+    callerEmail: v.optional(v.string()),
+    includeDeleted: v.optional(v.boolean()),
+    category: v.optional(v.string()),
+    status: v.optional(v.string()),
+    searchQuery: v.optional(v.string()),
+    authorEmail: v.optional(v.string()),
+  },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.callerEmail);
-    const allPosts = await ctx.db.query("posts").collect();
+    let allPosts = await ctx.db.query("posts").collect();
+
+    // Apply filters
+    if (!args.includeDeleted) {
+      allPosts = allPosts.filter((p: any) => !p.isDeleted);
+    }
+    if (args.category) {
+      allPosts = allPosts.filter((p: any) => p.category === args.category);
+    }
+    if (args.status) {
+      allPosts = allPosts.filter((p: any) => (p.status ?? "approved") === args.status);
+    }
+    if (args.authorEmail) {
+      allPosts = allPosts.filter((p: any) => p.authorEmail === args.authorEmail);
+    }
+    if (args.searchQuery) {
+      const query = args.searchQuery.toLowerCase();
+      allPosts = allPosts.filter((p: any) =>
+        p.title?.toLowerCase().includes(query) ||
+        p.content?.toLowerCase().includes(query) ||
+        p.authorUsername?.toLowerCase().includes(query)
+      );
+    }
+
+    // Get comment counts for each post
+    const allComments = await ctx.db.query("comments").collect();
+    const commentCounts = new Map<string, number>();
+    allComments.forEach((c: any) => {
+      if (!c.isDeleted) {
+        const count = commentCounts.get(c.postId) || 0;
+        commentCounts.set(c.postId, count + 1);
+      }
+    });
+
     return allPosts
-      .filter((p: any) => args.includeDeleted || !p.isDeleted)
       .map((p: any) => ({
         _id: p._id,
         authorEmail: p.authorEmail ?? "",
@@ -382,9 +421,21 @@ export const listAllPosts = query({
         content: p.content ?? "",
         category: p.category ?? "",
         isDeleted: p.isDeleted ?? false,
+        isPinned: p.isPinned ?? false,
+        isFeatured: p.isFeatured ?? false,
+        views: p.views ?? 0,
+        tags: p.tags ?? [],
+        status: p.status ?? "approved",
+        replyCount: commentCounts.get(p._id) || 0,
         createdAt: p.createdAt ?? Date.now(),
+        updatedAt: p.updatedAt,
       }))
-      .sort((a: any, b: any) => b.createdAt - a.createdAt);
+      .sort((a: any, b: any) => {
+        // Pinned posts first, then by date
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return b.createdAt - a.createdAt;
+      });
   },
 });
 
@@ -409,6 +460,65 @@ export const listAllComments = query({
   },
 });
 
+// Batch operations for posts
+export const batchUpdatePosts = mutation({
+  args: {
+    callerEmail: v.string(),
+    postIds: v.array(v.id("posts")),
+    updates: v.object({
+      isPinned: v.optional(v.boolean()),
+      isFeatured: v.optional(v.boolean()),
+      status: v.optional(v.union(
+        v.literal("pending"),
+        v.literal("approved"),
+        v.literal("rejected")
+      )),
+      category: v.optional(v.string()),
+    }),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
+
+    const updates: Record<string, any> = {};
+    if (args.updates.isPinned !== undefined) updates.isPinned = args.updates.isPinned;
+    if (args.updates.isFeatured !== undefined) updates.isFeatured = args.updates.isFeatured;
+    if (args.updates.status !== undefined) updates.status = args.updates.status;
+    if (args.updates.category !== undefined) updates.category = args.updates.category;
+    updates.updatedAt = Date.now();
+
+    for (const postId of args.postIds) {
+      await ctx.db.patch("posts", postId, updates);
+    }
+
+    return { success: true, count: args.postIds.length, message: `${args.postIds.length} posts updated` };
+  },
+});
+
+export const batchDeletePosts = mutation({
+  args: {
+    callerEmail: v.string(),
+    postIds: v.array(v.id("posts")),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
+
+    const allComments = await ctx.db.query("comments").collect();
+
+    for (const postId of args.postIds) {
+      // Mark post as deleted
+      await ctx.db.patch("posts", postId, { isDeleted: true, updatedAt: Date.now() });
+
+      // Mark all comments as deleted
+      const postComments = allComments.filter((c: any) => c.postId === postId);
+      for (const comment of postComments) {
+        await ctx.db.patch("comments", comment._id, { isDeleted: true });
+      }
+    }
+
+    return { success: true, count: args.postIds.length, message: `${args.postIds.length} posts deleted` };
+  },
+});
+
 export const deletePost = mutation({
   args: { callerEmail: v.string(), postId: v.id("posts") },
   handler: async (ctx, args) => {
@@ -429,6 +539,50 @@ export const restorePost = mutation({
     await requireAdmin(ctx, args.callerEmail);
     await ctx.db.patch("posts", args.postId, { isDeleted: false });
     return { success: true, message: "Post restored" };
+  },
+});
+
+export const togglePinPost = mutation({
+  args: { callerEmail: v.string(), postId: v.id("posts") },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
+    const post = await ctx.db.get(args.postId);
+    if (!post) throw new Error("Post not found");
+    await ctx.db.patch("posts", args.postId, { isPinned: !post.isPinned, updatedAt: Date.now() });
+    return { success: true, message: post.isPinned ? "Post unpinned" : "Post pinned" };
+  },
+});
+
+export const toggleFeaturePost = mutation({
+  args: { callerEmail: v.string(), postId: v.id("posts") },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
+    const post = await ctx.db.get(args.postId);
+    if (!post) throw new Error("Post not found");
+    await ctx.db.patch("posts", args.postId, { isFeatured: !post.isFeatured, updatedAt: Date.now() });
+    return { success: true, message: post.isFeatured ? "Post unfeatured" : "Post featured" };
+  },
+});
+
+export const updatePostStatus = mutation({
+  args: {
+    callerEmail: v.string(),
+    postId: v.id("posts"),
+    status: v.union(v.literal("pending"), v.literal("approved"), v.literal("rejected")),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
+    await ctx.db.patch("posts", args.postId, { status: args.status, updatedAt: Date.now() });
+    return { success: true, message: `Post status updated to ${args.status}` };
+  },
+});
+
+export const movePostCategory = mutation({
+  args: { callerEmail: v.string(), postId: v.id("posts"), newCategory: v.string() },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
+    await ctx.db.patch("posts", args.postId, { category: args.newCategory, updatedAt: Date.now() });
+    return { success: true, message: `Post moved to ${args.newCategory}` };
   },
 });
 
