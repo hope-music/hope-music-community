@@ -59,6 +59,7 @@ export default defineSchema(
       title: v.optional(v.string()),
       description: v.optional(v.string()),
       category: v.optional(v.string()),
+      city: v.optional(v.string()),
       mediaLinks: v.optional(v.array(v.string())),
       status: v.optional(v.string()),
       eventDate: v.optional(v.number()),
