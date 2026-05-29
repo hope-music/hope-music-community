@@ -23,6 +23,7 @@ function RichTextEditor({ content, onChange }: { content: string; onChange: (c: 
     }
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
+
   useEffect(() => { if (editorRef.current && !editorRef.current.innerHTML) editorRef.current.innerHTML = content; }, []);
 
   return (
@@ -30,11 +31,22 @@ function RichTextEditor({ content, onChange }: { content: string; onChange: (c: 
       <div className="flex flex-wrap items-center gap-1 border-b border-gray-300 bg-gray-50 px-2 py-2">
         <button type="button" onClick={() => execCommand("bold")} className="rounded px-2 py-1 text-sm font-bold hover:bg-gray-200">B</button>
         <button type="button" onClick={() => execCommand("italic")} className="rounded px-2 py-1 text-sm italic hover:bg-gray-200">I</button>
+        <button type="button" onClick={() => execCommand("underline")} className="rounded px-2 py-1 text-sm underline hover:bg-gray-200">U</button>
+        <div className="mx-1 h-5 w-px bg-gray-300" />
+        <select onChange={(e) => { if (e.target.value) execCommand("formatBlock", e.target.value); }} className="rounded border border-gray-300 bg-white px-2 py-1 text-sm">
+          <option value="">Paragraph</option>
+          <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
+        </select>
         <div className="mx-1 h-5 w-px bg-gray-300" />
         <button type="button" onClick={() => execCommand("insertUnorderedList")} className="rounded px-2 py-1 text-sm hover:bg-gray-200">• List</button>
+        <button type="button" onClick={() => execCommand("insertOrderedList")} className="rounded px-2 py-1 text-sm hover:bg-gray-200">1. List</button>
         <div className="mx-1 h-5 w-px bg-gray-300" />
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handleFileSelect} className="hidden" />
         <button type="button" onClick={() => fileInputRef.current?.click()} className="rounded px-2 py-1 text-sm hover:bg-gray-200">🖼 Image</button>
+        <div className="mx-1 h-5 w-px bg-gray-300" />
+        <button type="button" onClick={() => execCommand("undo")} className="rounded px-2 py-1 text-sm hover:bg-gray-200">↶</button>
+        <button type="button" onClick={() => execCommand("redo")} className="rounded px-2 py-1 text-sm hover:bg-gray-200">↷</button>
       </div>
       <div ref={editorRef} contentEditable onInput={handleInput} className="min-h-[200px] max-h-[400px] overflow-y-auto px-4 py-3 focus:outline-none" style={{ fontFamily: "Georgia, serif", fontSize: "15px", lineHeight: "1.7" }} />
     </div>
@@ -87,10 +99,13 @@ export default function AdminInteractionPage() {
   const [coverImage, setCoverImage] = useState("");
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   // User management state
   const [userFilter, setUserFilter] = useState<"all" | "active" | "banned" | "admins">("all");
   const [userActionLoading, setUserActionLoading] = useState(false);
+  const [expandedUserCategory, setExpandedUserCategory] = useState<string | null>(null);
 
   // Convex queries and mutations for users
   const allUsers = useQuery(api.admin.listAllUsers) ?? [];
@@ -110,6 +125,17 @@ export default function AdminInteractionPage() {
 
   useEffect(() => { if (message) { const t = setTimeout(() => setMessage(null), 5000); return () => clearTimeout(t); } }, [message]);
 
+  // Group items by category
+  const itemsByCategory = CATEGORIES.map((cat) => ({
+    ...cat,
+    items: items.filter((p) => p.category === cat.value),
+  }));
+
+  const filteredItems = items.filter((p) => {
+    if (filterCategory !== "all" && p.category !== filterCategory) return false;
+    return true;
+  });
+
   const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith("image/")) {
@@ -120,28 +146,56 @@ export default function AdminInteractionPage() {
     if (coverInputRef.current) coverInputRef.current.value = "";
   };
 
-  const handleNew = () => { setEditingId(null); setTitle(""); setDescription(""); setContent(""); setCategory("software"); setAuthor(""); setCoverImage(""); setCoverPreview(null); setShowForm(true); };
-  const handleEdit = (item: Interaction) => { setEditingId(item.id); setTitle(item.title || ""); setDescription(item.description || ""); setContent(item.content || ""); setCategory(item.category || "software"); setAuthor(item.author || ""); setCoverImage(item.coverImage || ""); setCoverPreview(item.coverImage || null); setShowForm(true); };
+  const handleNew = () => {
+    setEditingId(null);
+    setTitle("");
+    setDescription("");
+    setContent("");
+    setCategory(filterCategory !== "all" ? filterCategory : "software");
+    setAuthor("");
+    setCoverImage("");
+    setCoverPreview(null);
+    setShowForm(true);
+  };
+
+  const handleEdit = (item: Interaction) => {
+    setEditingId(item.id);
+    setTitle(item.title || "");
+    setDescription(item.description || "");
+    setContent(item.content || "");
+    setCategory(item.category || "software");
+    setAuthor(item.author || "");
+    setCoverImage(item.coverImage || "");
+    setCoverPreview(item.coverImage || null);
+    setShowForm(true);
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) { setMessage({ type: "error", text: "Title required" }); return; }
+    if (!title.trim()) { setMessage({ type: "error", text: "Title is required" }); return; }
     setLoading(true);
     try {
       const now = Date.now();
       if (editingId) {
         const updated = items.map((item) => item.id === editingId ? { ...item, title: title.trim(), description, content, category, author, coverImage, updatedAt: now } : item);
         saveToStorage(updated);
+        setMessage({ type: "success", text: "Updated successfully!" });
       } else {
         const newItem: Interaction = { id: now.toString(), title: title.trim(), category, description, content, author, coverImage, createdAt: now, updatedAt: now };
         saveToStorage([newItem, ...items]);
+        setMessage({ type: "success", text: "Created successfully!" });
       }
-      setMessage({ type: "success", text: editingId ? "Updated!" : "Created!" });
       setShowForm(false);
     } catch { setMessage({ type: "error", text: "Failed" }); } finally { setLoading(false); }
   };
 
-  const handleDelete = (id: string) => { if (confirm("Delete?")) { saveToStorage(items.filter((item) => item.id !== id)); setMessage({ type: "success", text: "Deleted" }); } };
+  const handleDelete = (id: string) => {
+    if (!confirm("Delete this item?")) return;
+    saveToStorage(items.filter((item) => item.id !== id));
+    setMessage({ type: "success", text: "Deleted" });
+  };
+
+  const formatDate = (timestamp: number) => new Date(timestamp).toLocaleDateString();
 
   // User management functions
   const filteredUsers = allUsers.filter((u: User) => {
@@ -188,10 +242,6 @@ export default function AdminInteractionPage() {
     }
   };
 
-  const formatDate = (timestamp: number) => {
-    return new Date(timestamp).toLocaleDateString();
-  };
-
   const totalUsers = allUsers.length;
   const activeUsers = allUsers.filter((u: User) => !u.isBanned).length;
   const bannedUsers = allUsers.filter((u: User) => u.isBanned).length;
@@ -232,37 +282,131 @@ export default function AdminInteractionPage() {
       {/* Resources Tab */}
       {activeTab === "items" && (
         <>
-          <div className="flex justify-end">
-            <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">+ New</button>
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Filter by Category</label>
+              <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
+                <option value="all">All Categories</option>
+                {CATEGORIES.map((cat) => (
+                  <option key={cat.value} value={cat.value}>{cat.label} ({itemsByCategory.find(c => c.value === cat.value)?.items.length || 0})</option>
+                ))}
+              </select>
+            </div>
+            <div className="ml-auto">
+              <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">+ New Resource</button>
+            </div>
           </div>
+
+          {/* Form */}
           {showForm && (
             <div className="rounded-lg border border-gray-200 bg-white p-6">
-              <h2 className="mb-4 text-lg font-semibold">{editingId ? "Edit" : "New"} Item</h2>
+              <h2 className="mb-4 text-lg font-semibold">{editingId ? "Edit" : "New"} Resource</h2>
               <form onSubmit={handleSave} className="space-y-4">
                 <div className="grid gap-4 md:grid-cols-2">
-                  <div><label className="mb-1 block text-sm font-medium">Title</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" required /></div>
-                  <div><label className="mb-1 block text-sm font-medium">Category</label><select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">{CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
-                  <div><label className="mb-1 block text-sm font-medium">Author</label><input type="text" value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Author name" className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
-                  <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Cover Image</label><input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverSelect} className="hidden" /><button type="button" onClick={() => coverInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Choose Image</button>{coverPreview && <img src={coverPreview} alt="Preview" className="mt-2 h-32 w-48 rounded-md object-cover" />}</div>
-                  <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Summary</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
-                  <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Full Content</label><RichTextEditor content={content} onChange={setContent} /></div>
+                  <div><label className="mb-1 block text-sm font-medium text-gray-700">Title</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" required /></div>
+                  <div><label className="mb-1 block text-sm font-medium text-gray-700">Category</label><select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">{CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
+                  <div><label className="mb-1 block text-sm font-medium text-gray-700">Author</label><input type="text" value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Author name" className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
+                  <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium text-gray-700">Cover Image</label><input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverSelect} className="hidden" /><button type="button" onClick={() => coverInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Choose Image</button>{coverPreview && <div className="mt-2 flex items-center gap-4"><img src={coverPreview} alt="Preview" className="h-20 w-32 rounded-md object-cover" /><button type="button" onClick={() => { setCoverImage(""); setCoverPreview(null); }} className="text-sm text-red-500 hover:text-red-700">Remove</button></div>}</div>
+                  <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium text-gray-700">Summary (for list display)</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
                 </div>
-                <div className="flex justify-end gap-3 border-t pt-4"><button type="button" onClick={() => setShowForm(false)} className="rounded-md border border-gray-300 bg-white px-4 py-2">Cancel</button><button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-white disabled:opacity-50">{loading ? "Saving..." : editingId ? "Update" : "Create"}</button></div>
+                <div className="flex justify-end gap-3 border-t pt-4"><button type="button" onClick={() => setShowForm(false)} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button><button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-white disabled:opacity-50">{loading ? "Saving..." : editingId ? "Update" : "Create"}</button></div>
               </form>
             </div>
           )}
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {items.length === 0 ? <div className="col-span-full rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">No items yet.</div> : items.map((item) => (
-              <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-4">
-                {item.coverImage && <img src={item.coverImage} alt={item.title} className="h-32 w-full rounded-md object-cover" />}
-                <div className="mt-3"><span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">{CATEGORIES.find((c) => c.value === item.category)?.label || item.category}</span></div>
-                <h3 className="mt-2 font-medium text-gray-900">{item.title}</h3>
-                {item.author && <p className="mt-1 text-xs text-gray-500">by {item.author}</p>}
-                <p className="mt-2 text-sm text-gray-500 line-clamp-2">{item.description?.replace(/<[^>]*>/g, "").substring(0, 100)}</p>
-                <div className="mt-3 flex gap-2 border-t pt-3"><button onClick={() => handleEdit(item)} className="flex-1 rounded bg-gray-100 px-3 py-1.5 text-xs font-medium hover:bg-gray-200">Edit</button><button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600">Delete</button></div>
-              </div>
-            ))}
+
+          {/* Category Accordion */}
+          <div className="space-y-6">
+            {itemsByCategory.map((cat) => {
+              const categoryItems = filterCategory === "all" || filterCategory === cat.value ? cat.items : [];
+
+              if (filterCategory !== "all" && filterCategory !== cat.value) return null;
+
+              return (
+                <div key={cat.value} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+                  <button
+                    onClick={() => setExpandedCategory(expandedCategory === cat.value ? null : cat.value)}
+                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      <span className="text-lg">{expandedCategory === cat.value ? "▼" : "▶"}</span>
+                      <span className="font-medium text-gray-900">{cat.label}</span>
+                      <span className="text-sm text-gray-500">({categoryItems.length})</span>
+                    </div>
+                  </button>
+
+                  {expandedCategory === cat.value && (
+                    <div className="divide-y divide-gray-100">
+                      {categoryItems.length === 0 ? (
+                        <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                          No items in this category
+                        </div>
+                      ) : (
+                        categoryItems.map((item) => (
+                          <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              {item.coverImage && (
+                                <img src={item.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-gray-900 truncate">{item.title}</span>
+                                  {item.author && <span className="text-xs text-gray-400">by {item.author}</span>}
+                                </div>
+                                <span className="text-xs text-gray-400 truncate">{formatDate(item.createdAt)}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 ml-4">
+                              <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                              <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
+
+          {/* All Items List */}
+          {filterCategory === "all" && (
+            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+              <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <span className="font-medium text-gray-900">All Items</span>
+                <span className="ml-2 text-sm text-gray-500">({filteredItems.length})</span>
+              </div>
+              <div className="divide-y divide-gray-100">
+                {filteredItems.length === 0 ? (
+                  <div className="px-4 py-8 text-center text-gray-500">No items found</div>
+                ) : (
+                  filteredItems.map((item) => (
+                    <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {item.coverImage && (
+                          <img src={item.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 truncate">{item.title}</span>
+                            <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
+                              {CATEGORIES.find(c => c.value === item.category)?.label || item.category}
+                            </span>
+                          </div>
+                          {item.author && <span className="text-xs text-gray-400">by {item.author} • {formatDate(item.createdAt)}</span>}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                        <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
         </>
       )}
 

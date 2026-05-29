@@ -32,6 +32,12 @@ function RichTextEditor({ content, onChange }: { content: string; onChange: (c: 
         <button type="button" onClick={() => execCommand("italic")} className="rounded px-2 py-1 text-sm italic hover:bg-gray-200">I</button>
         <button type="button" onClick={() => execCommand("underline")} className="rounded px-2 py-1 text-sm underline hover:bg-gray-200">U</button>
         <div className="mx-1 h-5 w-px bg-gray-300" />
+        <select onChange={(e) => { if (e.target.value) execCommand("formatBlock", e.target.value); }} className="rounded border border-gray-300 bg-white px-2 py-1 text-sm">
+          <option value="">Paragraph</option>
+          <option value="h2">Heading 2</option>
+          <option value="h3">Heading 3</option>
+        </select>
+        <div className="mx-1 h-5 w-px bg-gray-300" />
         <button type="button" onClick={() => execCommand("insertUnorderedList")} className="rounded px-2 py-1 text-sm hover:bg-gray-200">• List</button>
         <button type="button" onClick={() => execCommand("insertOrderedList")} className="rounded px-2 py-1 text-sm hover:bg-gray-200">1. List</button>
         <div className="mx-1 h-5 w-px bg-gray-300" />
@@ -74,6 +80,7 @@ export default function NewsAdminPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
+  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -88,6 +95,7 @@ export default function NewsAdminPage() {
 
   const publishedCount = articles.filter(a => a.isPublished).length;
   const draftCount = articles.filter(a => !a.isPublished).length;
+  const featuredCount = articles.filter(a => a.isFeatured).length;
 
   const handleCoverImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -187,7 +195,7 @@ export default function NewsAdminPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">News</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage news articles</p>
+          <p className="mt-1 text-sm text-gray-500">Manage news articles ({articles.length} total)</p>
         </div>
         <button onClick={handleNewArticle} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
           + New Article
@@ -220,46 +228,149 @@ export default function NewsAdminPage() {
           <form onSubmit={handleSave} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div><label className="mb-1 block text-sm font-medium text-gray-700">Title</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" required /></div>
-              <div><label className="mb-1 block text-sm font-medium text-gray-700">Cover Image</label><input ref={coverFileInputRef} type="file" accept="image/*" onChange={handleCoverImageSelect} className="hidden" /><button type="button" onClick={() => coverFileInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Choose Image</button>{imagePreview && <img src={imagePreview} alt="Preview" className="mt-2 h-32 w-48 rounded-md object-cover" />}</div>
+              <div><label className="mb-1 block text-sm font-medium text-gray-700">Cover Image</label><input ref={coverFileInputRef} type="file" accept="image/*" onChange={handleCoverImageSelect} className="hidden" /><button type="button" onClick={() => coverFileInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Choose Image</button>{imagePreview && <div className="mt-2 flex items-center gap-4"><img src={imagePreview} alt="Preview" className="h-20 w-32 rounded-md object-cover" /><button type="button" onClick={() => { setCoverImage(""); setImagePreview(null); }} className="text-sm text-red-500 hover:text-red-700">Remove</button></div>}</div>
               <div><label className="mb-1 block text-sm font-medium text-gray-700">Options</label><div className="flex items-center gap-4"><label className="flex items-center gap-2"><input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} className="h-4 w-4" />Published</label><label className="flex items-center gap-2"><input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className="h-4 w-4" />Featured</label></div></div>
             </div>
             <div><label className="mb-1 block text-sm font-medium text-gray-700">Content</label><RichTextEditor content={content} onChange={setContent} /></div>
-            <div className="flex justify-end gap-3 border-t pt-4"><button type="button" onClick={() => setShowForm(false)} className="rounded-md border border-gray-300 bg-white px-4 py-2">Cancel</button><button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-white disabled:opacity-50">{loading ? "Saving..." : editingId ? "Update" : "Create"}</button></div>
+            <div className="flex justify-end gap-3 border-t pt-4"><button type="button" onClick={() => { setShowForm(false); resetForm(); }} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button><button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-white disabled:opacity-50">{loading ? "Saving..." : editingId ? "Update" : "Create"}</button></div>
           </form>
         </div>
       )}
 
-      {/* Cards Grid */}
+      {/* Loading State */}
       {allArticles === undefined ? (
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div key={i} className="animate-pulse rounded-lg border border-gray-200 bg-white p-4">
-              <div className="aspect-[4/3] rounded-md bg-gray-200" />
-              <div className="mt-3 h-4 w-20 rounded bg-gray-200" />
-              <div className="mt-2 h-5 w-full rounded bg-gray-200" />
-            </div>
-          ))}
+        <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">
+          Loading articles...
         </div>
       ) : filteredArticles.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white p-12 text-center text-gray-500">
           No articles found. Click "New Article" to create one.
         </div>
       ) : (
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {filteredArticles.map((article) => (
-            <div key={article._id} className="rounded-lg border border-gray-200 bg-white p-4">
-              {article.coverImage && <img src={article.coverImage} alt={article.title} className="aspect-[4/3] w-full rounded-md object-cover" />}
-              <div className="mt-3">{getStatusBadge(article.isPublished, article.isFeatured)}</div>
-              <h3 className="mt-2 font-medium text-gray-900">{article.title || "Untitled"}</h3>
-              <p className="mt-1 text-xs text-gray-400">{formatDate(article.createdAt)}</p>
-              {article.excerpt && <p className="mt-2 line-clamp-2 text-sm text-gray-500">{article.excerpt}</p>}
-              <div className="mt-4 flex gap-2 border-t pt-3">
-                <button onClick={() => handleEdit(article)} className="flex-1 rounded bg-blue-100 px-3 py-1.5 text-xs font-medium text-blue-600 hover:bg-blue-200">Edit</button>
-                <button onClick={() => handleDelete(article._id)} className="flex-1 rounded bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600">Delete</button>
-              </div>
+        <>
+          {/* Featured Articles Accordion */}
+          {featuredCount > 0 && filter === "all" && (
+            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+              <button
+                onClick={() => setExpandedCategory(expandedCategory === "featured" ? null : "featured")}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{expandedCategory === "featured" ? "▼" : "▶"}</span>
+                  <span className="font-medium text-gray-900">Featured</span>
+                  <span className="text-sm text-gray-500">({featuredCount})</span>
+                </div>
+              </button>
+
+              {expandedCategory === "featured" && (
+                <div className="divide-y divide-gray-100">
+                  {articles.filter(a => a.isFeatured).map((article) => (
+                    <div key={article._id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {article.coverImage && (
+                          <img src={article.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 truncate">{article.title}</span>
+                            {getStatusBadge(article.isPublished, article.isFeatured)}
+                          </div>
+                          <span className="text-xs text-gray-400">{formatDate(article.createdAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <button onClick={() => handleEdit(article)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                        <button onClick={() => handleDelete(article._id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          ))}
-        </div>
+          )}
+
+          {/* Published Articles Accordion */}
+          {publishedCount > 0 && (
+            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+              <button
+                onClick={() => setExpandedCategory(expandedCategory === "published" ? null : "published")}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{expandedCategory === "published" ? "▼" : "▶"}</span>
+                  <span className="font-medium text-gray-900">Published</span>
+                  <span className="text-sm text-gray-500">({publishedCount})</span>
+                </div>
+              </button>
+
+              {expandedCategory === "published" && (
+                <div className="divide-y divide-gray-100">
+                  {articles.filter(a => a.isPublished).map((article) => (
+                    <div key={article._id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {article.coverImage && (
+                          <img src={article.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 truncate">{article.title}</span>
+                            {getStatusBadge(article.isPublished, article.isFeatured)}
+                          </div>
+                          <span className="text-xs text-gray-400">{formatDate(article.createdAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <button onClick={() => handleEdit(article)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                        <button onClick={() => handleDelete(article._id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Draft Articles Accordion */}
+          {draftCount > 0 && (
+            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+              <button
+                onClick={() => setExpandedCategory(expandedCategory === "drafts" ? null : "drafts")}
+                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-lg">{expandedCategory === "drafts" ? "▼" : "▶"}</span>
+                  <span className="font-medium text-gray-900">Drafts</span>
+                  <span className="text-sm text-gray-500">({draftCount})</span>
+                </div>
+              </button>
+
+              {expandedCategory === "drafts" && (
+                <div className="divide-y divide-gray-100">
+                  {articles.filter(a => !a.isPublished).map((article) => (
+                    <div key={article._id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {article.coverImage && (
+                          <img src={article.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 truncate">{article.title}</span>
+                            {getStatusBadge(article.isPublished, article.isFeatured)}
+                          </div>
+                          <span className="text-xs text-gray-400">{formatDate(article.createdAt)}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 ml-4">
+                        <button onClick={() => handleEdit(article)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                        <button onClick={() => handleDelete(article._id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
