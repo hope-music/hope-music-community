@@ -133,6 +133,7 @@ export default function InteractionCategoryPage({ params }: PageProps) {
   const allPosts = useQuery(api.admin.listAllPosts) as Post[] | undefined;
 
   useEffect(() => {
+    // First try Convex
     if (allPosts && allPosts.length > 0) {
       const filtered = currentCategory
         ? allPosts.filter((p: Post) => p.category === currentCategory)
@@ -148,10 +149,21 @@ export default function InteractionCategoryPage({ params }: PageProps) {
         createdAt: p.createdAt || Date.now(),
       })));
     } else {
-      const filtered = currentCategory
-        ? PLACEHOLDER_POSTS.filter(p => p.category === currentCategory)
-        : PLACEHOLDER_POSTS;
-      setPosts(filtered);
+      // Fall back to localStorage (admin-created posts)
+      const stored = localStorage.getItem("admin_interaction");
+      if (stored) {
+        const localPosts = JSON.parse(stored);
+        const filtered = currentCategory
+          ? localPosts.filter((p: any) => p.category === currentCategory)
+          : localPosts;
+        setPosts(filtered);
+      } else {
+        // Final fallback to placeholders
+        const filtered = currentCategory
+          ? PLACEHOLDER_POSTS.filter(p => p.category === currentCategory)
+          : PLACEHOLDER_POSTS;
+        setPosts(filtered);
+      }
     }
   }, [allPosts, currentCategory]);
 
