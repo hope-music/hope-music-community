@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "@/lib/convex";
+import type { Id } from "@/types/convex";
 
 function RichTextEditor({ content, onChange }: { content: string; onChange: (c: string) => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -38,6 +41,16 @@ function RichTextEditor({ content, onChange }: { content: string; onChange: (c: 
   );
 }
 
+type User = {
+  _id: Id<"users">;
+  email: string;
+  username: string;
+  avatar: string;
+  role: "user" | "admin";
+  isBanned: boolean;
+  createdAt: number;
+};
+
 interface Interaction {
   id: string;
   title: string;
@@ -60,6 +73,7 @@ const CATEGORIES = [
 ];
 
 export default function AdminInteractionPage() {
+  const [activeTab, setActiveTab] = useState<"items" | "users">("items");
   const [items, setItems] = useState<Interaction[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -73,6 +87,16 @@ export default function AdminInteractionPage() {
   const [coverImage, setCoverImage] = useState("");
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
+
+  // User management state
+  const [userFilter, setUserFilter] = useState<"all" | "active" | "banned" | "admins">("all");
+  const [userActionLoading, setUserActionLoading] = useState(false);
+
+  // Convex queries and mutations for users
+  const allUsers = useQuery(api.admin.listAllUsers) ?? [];
+  const updateRole = useMutation(api.admin.updateUserRole);
+  const banUser = useMutation(api.admin.banUser);
+  const unbanUser = useMutation(api.admin.unbanUser);
 
   useEffect(() => {
     const stored = localStorage.getItem("admin_interaction");
@@ -119,41 +143,228 @@ export default function AdminInteractionPage() {
 
   const handleDelete = (id: string) => { if (confirm("Delete?")) { saveToStorage(items.filter((item) => item.id !== id)); setMessage({ type: "success", text: "Deleted" }); } };
 
+  // User management functions
+  const filteredUsers = allUsers.filter((u: User) => {
+    if (userFilter === "active") return !u.isBanned;
+    if (userFilter === "banned") return u.isBanned;
+    if (userFilter === "admins") return u.role === "admin";
+    return true;
+  });
+
+  const handleUserRoleChange = async (userId: Id<"users">, newRole: "user" | "admin") => {
+    setUserActionLoading(true);
+    try {
+      await updateRole({ userId, newRole });
+      setMessage({ type: "success", text: `User role updated to ${newRole}` });
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Failed to update role" });
+    } finally {
+      setUserActionLoading(false);
+    }
+  };
+
+  const handleUserBan = async (userId: Id<"users">) => {
+    if (!confirm("Ban this user? They will not be able to log in.")) return;
+    setUserActionLoading(true);
+    try {
+      await banUser({ userId });
+      setMessage({ type: "success", text: "User banned" });
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Failed to ban user" });
+    } finally {
+      setUserActionLoading(false);
+    }
+  };
+
+  const handleUserUnban = async (userId: Id<"users">) => {
+    setUserActionLoading(true);
+    try {
+      await unbanUser({ userId });
+      setMessage({ type: "success", text: "User unbanned" });
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Failed to unban user" });
+    } finally {
+      setUserActionLoading(false);
+    }
+  };
+
+  const formatDate = (timestamp: number) => {
+    return new Date(timestamp).toLocaleDateString();
+  };
+
+  const totalUsers = allUsers.length;
+  const activeUsers = allUsers.filter((u: User) => !u.isBanned).length;
+  const bannedUsers = allUsers.filter((u: User) => u.isBanned).length;
+  const adminCount = allUsers.filter((u: User) => u.role === "admin").length;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <div><h1 className="text-2xl font-bold text-gray-900">Interaction</h1><p className="mt-1 text-sm text-gray-500">Manage software, hardware, music & production resources</p></div>
-        <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">+ New</button>
+        <div><h1 className="text-2xl font-bold text-gray-900">Interaction</h1><p className="mt-1 text-sm text-gray-500">Manage resources and users</p></div>
       </div>
+
+      {/* Tabs */}
+      <div className="flex items-center border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab("items")}
+          className={`border-b-2 px-4 py-3 text-sm font-medium ${
+            activeTab === "items"
+              ? "border-blue-500 text-blue-600"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Resources ({items.length})
+        </button>
+        <button
+          onClick={() => setActiveTab("users")}
+          className={`border-b-2 px-4 py-3 text-sm font-medium ${
+            activeTab === "users"
+              ? "border-blue-500 text-blue-600"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          Users ({totalUsers})
+        </button>
+      </div>
+
       {message && <div className={`rounded-lg p-4 text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>{message.text}</div>}
-      {showForm && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="mb-4 text-lg font-semibold">{editingId ? "Edit" : "New"} Item</h2>
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div><label className="mb-1 block text-sm font-medium">Title</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" required /></div>
-              <div><label className="mb-1 block text-sm font-medium">Category</label><select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">{CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
-              <div><label className="mb-1 block text-sm font-medium">Author</label><input type="text" value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Author name" className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
-              <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Cover Image</label><input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverSelect} className="hidden" /><button type="button" onClick={() => coverInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Choose Image</button>{coverPreview && <img src={coverPreview} alt="Preview" className="mt-2 h-32 w-48 rounded-md object-cover" />}</div>
-              <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Summary</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
-              <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Full Content</label><RichTextEditor content={content} onChange={setContent} /></div>
-            </div>
-            <div className="flex justify-end gap-3 border-t pt-4"><button type="button" onClick={() => setShowForm(false)} className="rounded-md border border-gray-300 bg-white px-4 py-2">Cancel</button><button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-white disabled:opacity-50">{loading ? "Saving..." : editingId ? "Update" : "Create"}</button></div>
-          </form>
-        </div>
-      )}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {items.length === 0 ? <div className="col-span-full rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">No items yet.</div> : items.map((item) => (
-          <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-4">
-            {item.coverImage && <img src={item.coverImage} alt={item.title} className="h-32 w-full rounded-md object-cover" />}
-            <div className="mt-3"><span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">{CATEGORIES.find((c) => c.value === item.category)?.label || item.category}</span></div>
-            <h3 className="mt-2 font-medium text-gray-900">{item.title}</h3>
-            {item.author && <p className="mt-1 text-xs text-gray-500">by {item.author}</p>}
-            <p className="mt-2 text-sm text-gray-500 line-clamp-2">{item.description?.replace(/<[^>]*>/g, "").substring(0, 100)}</p>
-            <div className="mt-3 flex gap-2 border-t pt-3"><button onClick={() => handleEdit(item)} className="flex-1 rounded bg-gray-100 px-3 py-1.5 text-xs font-medium hover:bg-gray-200">Edit</button><button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600">Delete</button></div>
+
+      {/* Resources Tab */}
+      {activeTab === "items" && (
+        <>
+          <div className="flex justify-end">
+            <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">+ New</button>
           </div>
-        ))}
-      </div>
+          {showForm && (
+            <div className="rounded-lg border border-gray-200 bg-white p-6">
+              <h2 className="mb-4 text-lg font-semibold">{editingId ? "Edit" : "New"} Item</h2>
+              <form onSubmit={handleSave} className="space-y-4">
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div><label className="mb-1 block text-sm font-medium">Title</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" required /></div>
+                  <div><label className="mb-1 block text-sm font-medium">Category</label><select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">{CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
+                  <div><label className="mb-1 block text-sm font-medium">Author</label><input type="text" value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="Author name" className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
+                  <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Cover Image</label><input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverSelect} className="hidden" /><button type="button" onClick={() => coverInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Choose Image</button>{coverPreview && <img src={coverPreview} alt="Preview" className="mt-2 h-32 w-48 rounded-md object-cover" />}</div>
+                  <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Summary</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
+                  <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium">Full Content</label><RichTextEditor content={content} onChange={setContent} /></div>
+                </div>
+                <div className="flex justify-end gap-3 border-t pt-4"><button type="button" onClick={() => setShowForm(false)} className="rounded-md border border-gray-300 bg-white px-4 py-2">Cancel</button><button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-white disabled:opacity-50">{loading ? "Saving..." : editingId ? "Update" : "Create"}</button></div>
+              </form>
+            </div>
+          )}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {items.length === 0 ? <div className="col-span-full rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">No items yet.</div> : items.map((item) => (
+              <div key={item.id} className="rounded-lg border border-gray-200 bg-white p-4">
+                {item.coverImage && <img src={item.coverImage} alt={item.title} className="h-32 w-full rounded-md object-cover" />}
+                <div className="mt-3"><span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">{CATEGORIES.find((c) => c.value === item.category)?.label || item.category}</span></div>
+                <h3 className="mt-2 font-medium text-gray-900">{item.title}</h3>
+                {item.author && <p className="mt-1 text-xs text-gray-500">by {item.author}</p>}
+                <p className="mt-2 text-sm text-gray-500 line-clamp-2">{item.description?.replace(/<[^>]*>/g, "").substring(0, 100)}</p>
+                <div className="mt-3 flex gap-2 border-t pt-3"><button onClick={() => handleEdit(item)} className="flex-1 rounded bg-gray-100 px-3 py-1.5 text-xs font-medium hover:bg-gray-200">Edit</button><button onClick={() => handleDelete(item.id)} className="flex-1 rounded bg-red-500 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600">Delete</button></div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Users Tab */}
+      {activeTab === "users" && (
+        <>
+          {/* Stats */}
+          <div className="grid grid-cols-4 gap-4">
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="text-2xl font-bold text-gray-900">{totalUsers}</div>
+              <div className="text-sm text-gray-500">Total Users</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="text-2xl font-bold text-green-600">{activeUsers}</div>
+              <div className="text-sm text-gray-500">Active</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="text-2xl font-bold text-red-600">{bannedUsers}</div>
+              <div className="text-sm text-gray-500">Banned</div>
+            </div>
+            <div className="rounded-lg border border-gray-200 bg-white p-4">
+              <div className="text-2xl font-bold text-blue-600">{adminCount}</div>
+              <div className="text-sm text-gray-500">Admins</div>
+            </div>
+          </div>
+
+          {/* Filter */}
+          <div className="flex items-center justify-end">
+            <select
+              value={userFilter}
+              onChange={(e) => setUserFilter(e.target.value as any)}
+              className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+            >
+              <option value="all">All Users</option>
+              <option value="active">Active Only</option>
+              <option value="banned">Banned Only</option>
+              <option value="admins">Admins Only</option>
+            </select>
+          </div>
+
+          {/* Users Table */}
+          <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">User</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Role</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Joined</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200 bg-white">
+                {filteredUsers.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">No users found.</td>
+                  </tr>
+                ) : (
+                  filteredUsers.map((user: User) => (
+                    <tr key={user._id} className={user.isBanned ? "bg-red-50" : ""}>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{user.avatar}</span>
+                          <span className="font-medium text-gray-900">{user.username}</span>
+                        </div>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{user.email}</td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        <select
+                          value={user.role}
+                          onChange={(e) => handleUserRoleChange(user._id, e.target.value as "user" | "admin")}
+                          disabled={userActionLoading}
+                          className="rounded border border-gray-300 px-2 py-1 text-sm disabled:opacity-50"
+                        >
+                          <option value="user">User</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {user.isBanned ? (
+                          <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-600">Banned</span>
+                        ) : (
+                          <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-600">Active</span>
+                        )}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">{formatDate(user.createdAt)}</td>
+                      <td className="whitespace-nowrap px-6 py-4">
+                        {user.isBanned ? (
+                          <button onClick={() => handleUserUnban(user._id)} disabled={userActionLoading} className="rounded bg-green-500 px-3 py-1 text-xs font-medium text-white hover:bg-green-600 disabled:opacity-50">Unban</button>
+                        ) : (
+                          <button onClick={() => handleUserBan(user._id)} disabled={userActionLoading} className="rounded bg-red-500 px-3 py-1 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50">Ban</button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </div>
   );
 }
