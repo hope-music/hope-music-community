@@ -19,6 +19,7 @@ export default defineSchema(
       )),
       createdAt: v.optional(v.number()),
       isBanned: v.optional(v.boolean()),
+      isBannedUntil: v.optional(v.number()),
     })
     .index("by_email", ["email"]),
 
@@ -39,7 +40,8 @@ export default defineSchema(
       status: v.optional(v.union(
         v.literal("pending"),
         v.literal("approved"),
-        v.literal("rejected")
+        v.literal("rejected"),
+        v.literal("hidden")
       )),
     }).index("by_authorEmail", ["authorEmail"]).index("by_category", ["category"]).index("by_status", ["status"]),
 
