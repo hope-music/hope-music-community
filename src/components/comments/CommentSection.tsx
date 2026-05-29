@@ -159,9 +159,11 @@ export function CommentSection({ pageId, storageKey, bannedUsersKey, defaultComm
     if (stored) {
       const allComments = JSON.parse(stored);
       const pageComments = allComments[pageId] || [];
-      setComments(pageComments.length > 0 ? pageComments : (defaultComments || []));
+      // Use defaultComments prop or fall back to built-in DEFAULT_COMMENTS
+      const defaults = defaultComments || DEFAULT_COMMENTS;
+      setComments(pageComments.length > 0 ? pageComments : defaults);
     } else {
-      setComments(defaultComments || []);
+      setComments(defaultComments || DEFAULT_COMMENTS);
     }
   }, [pageId, storageKey, bannedUsersKey]);
 
