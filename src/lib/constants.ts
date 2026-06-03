@@ -14,14 +14,14 @@ export const COMMUNITY_TICKER_MESSAGE =
   "Welcome to our music community — discover performances, collaborations, and creative resources.";
 
 export const PERFORMANCE_CATEGORIES = [
+  "Legend Hall of Fame",
   "Musical",
-  "Opera",
-  "Concert",
+  "Classical",
   "EDM",
-  "Rock & Roll",
+  "Legendary Rock",
+  "Legendary Pop",
   "Festival",
   "Ballet",
-  "Tourist Performance",
   "Others",
 ] as const;
 

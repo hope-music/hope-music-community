@@ -9,26 +9,26 @@ import { SectionHeading } from "@/components/ui/SectionHeading";
 import { PLACEHOLDER_ARTICLE } from "@/lib/constants";
 
 const PERFORMANCE_CATEGORIES = [
+  "Legend Hall of Fame",
   "Musical",
-  "Opera", 
-  "Concert",
+  "Classical",
   "EDM",
-  "Rock & Roll",
+  "Legendary Rock",
+  "Legendary Pop",
   "Festival",
   "Ballet",
-  "Tourist Performance",
   "Others",
 ];
 
 const CATEGORY_SLUG_MAP: Record<string, string> = {
+  "Legend Hall of Fame": "legend-hall-of-fame",
   Musical: "musical",
-  Opera: "opera",
-  Concert: "concert",
+  Classical: "classical",
   EDM: "edm",
-  "Rock & Roll": "rock-roll",
+  "Legendary Rock": "legendary-rock",
+  "Legendary Pop": "legendary-pop",
   Festival: "festival",
   Ballet: "ballet",
-  "Tourist Performance": "tourist-performance",
   Others: "others",
 };
 
@@ -106,14 +106,35 @@ export function PerformanceSection() {
         const stored = localStorage.getItem("admin_performance");
         if (stored) {
           const data: PerformanceItem[] = JSON.parse(stored);
+
+          // One-time migration: update old category slugs to new ones
+          const OLD_TO_NEW: Record<string, string> = {
+            "opera": "legend-hall-of-fame",
+            "concert": "musical",
+            "rock-roll": "classical",
+            "tourist-performance": "edm",
+          };
+          let migrated = false;
+          const updated = data.map((item: PerformanceItem) => {
+            const newCat = OLD_TO_NEW[item.category];
+            if (newCat) {
+              migrated = true;
+              return { ...item, category: newCat };
+            }
+            return item;
+          });
+          if (migrated) {
+            localStorage.setItem("admin_performance", JSON.stringify(updated));
+          }
+
           const result: Record<string, CategoryData> = {};
 
           PERFORMANCE_CATEGORIES.forEach((category) => {
             const slug = CATEGORY_SLUG_MAP[category];
-            const categoryItems = data.filter(
+            const categoryItems = updated.filter(
               (item) => item.category === slug && item.status !== "draft"
             );
-            
+
             if (categoryItems.length > 0) {
               const sorted = categoryItems.sort((a, b) => b.createdAt - a.createdAt);
               result[category] = {

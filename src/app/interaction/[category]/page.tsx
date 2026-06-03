@@ -3,7 +3,20 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { api } from "@/lib/convex";
-import { useQuery } from "@/lib/convex";
+import { useQuery_experimental } from "@/lib/convex";
+
+// Wrapper to safely call useQuery without crashing on errors
+function useAdminPosts() {
+  const result = useQuery_experimental({
+    query: api.admin.listAllPosts,
+    throwOnError: false,
+  });
+
+  if (result.status === "success") {
+    return result.data as Post[];
+  }
+  return undefined;
+}
 
 interface Post {
   _id: string;
@@ -130,14 +143,14 @@ export default function InteractionCategoryPage({ params }: PageProps) {
   }, [params]);
 
   // Load posts from Convex or localStorage
-  const allPosts = useQuery(api.admin.listAllPosts) as Post[] | undefined;
+  const allPosts = useAdminPosts();
 
   useEffect(() => {
-    // First try Convex
+    if (!currentCategory) return;
+
+    // First try Convex (only if we got data back without error)
     if (allPosts && allPosts.length > 0) {
-      const filtered = currentCategory
-        ? allPosts.filter((p: Post) => p.category === currentCategory)
-        : allPosts;
+      const filtered = allPosts.filter((p: Post) => p.category === currentCategory);
       setPosts(filtered.map((p: Post) => ({
         id: p._id,
         title: p.title,

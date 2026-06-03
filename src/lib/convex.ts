@@ -9,5 +9,5 @@
  *   const news = useQuery(api.admin.getPublishedNews);
  */
 
-export { useQuery, useMutation } from "convex/react";
+export { useQuery, useMutation, useQuery_experimental } from "convex/react";
 export { api } from "../../convex/_generated/api";

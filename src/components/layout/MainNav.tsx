@@ -95,14 +95,14 @@ export function MainNav() {
 }
 
 const PERFORMANCE_ITEMS = [
+  { label: "Legend Hall of Fame", slug: "legend-hall-of-fame" },
   { label: "Musical", slug: "musical" },
-  { label: "Opera", slug: "opera" },
-  { label: "Concert", slug: "concert" },
+  { label: "Classical", slug: "classical" },
   { label: "EDM", slug: "edm" },
-  { label: "Rock & Roll", slug: "rock-roll" },
+  { label: "Legendary Rock", slug: "legendary-rock" },
+  { label: "Legendary Pop", slug: "legendary-pop" },
   { label: "Festival", slug: "festival" },
   { label: "Ballet", slug: "ballet" },
-  { label: "Tourist Performance", slug: "tourist-performance" },
   { label: "Others", slug: "others" },
 ];
 

@@ -15,14 +15,14 @@ interface Production {
 }
 
 const SUBCATEGORIES = [
+  { value: "legend-hall-of-fame", label: "Legend Hall of Fame" },
   { value: "musical", label: "Musical" },
-  { value: "opera", label: "Opera" },
-  { value: "concert", label: "Concert" },
+  { value: "classical", label: "Classical" },
   { value: "edm", label: "EDM" },
-  { value: "rock-roll", label: "Rock & Roll" },
+  { value: "legendary-rock", label: "Legendary Rock" },
+  { value: "legendary-pop", label: "Legendary Pop" },
   { value: "festival", label: "Festival" },
   { value: "ballet", label: "Ballet" },
-  { value: "tourist-performance", label: "Tourist Performance" },
   { value: "others", label: "Others" },
 ];
 
@@ -38,12 +38,33 @@ export default function PerformanceCategoryPage() {
 
     const sub = SUBCATEGORIES.find((c) => c.value === category);
     setCategoryName(sub?.label || category);
-    
+
     try {
       const stored = localStorage.getItem("admin_performance");
       if (stored) {
         const data = JSON.parse(stored);
-        const filtered = data.filter((item: Production) => 
+
+        // One-time migration: update old category slugs to new ones
+        const OLD_TO_NEW: Record<string, string> = {
+          "opera": "legend-hall-of-fame",
+          "concert": "musical",
+          "rock-roll": "classical",
+          "tourist-performance": "edm",
+        };
+        let migrated = false;
+        const updated = data.map((item: Production) => {
+          const newCat = OLD_TO_NEW[item.category];
+          if (newCat) {
+            migrated = true;
+            return { ...item, category: newCat };
+          }
+          return item;
+        });
+        if (migrated) {
+          localStorage.setItem("admin_performance", JSON.stringify(updated));
+        }
+
+        const filtered = updated.filter((item: Production) =>
           item.category === category && item.status !== "draft"
         );
         setItems(filtered);

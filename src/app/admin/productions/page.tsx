@@ -146,14 +146,14 @@ const DEFAULT_COMMENTS: Comment[] = [
 
 // Subcategories for Performance
 const SUBCATEGORIES = [
+  { value: "legend-hall-of-fame", label: "Legend Hall of Fame" },
   { value: "musical", label: "Musical" },
-  { value: "opera", label: "Opera" },
-  { value: "concert", label: "Concert" },
+  { value: "classical", label: "Classical" },
   { value: "edm", label: "EDM" },
-  { value: "rock-roll", label: "Rock & Roll" },
+  { value: "legendary-rock", label: "Legendary Rock" },
+  { value: "legendary-pop", label: "Legendary Pop" },
   { value: "festival", label: "Festival" },
   { value: "ballet", label: "Ballet" },
-  { value: "tourist-performance", label: "Tourist Performance" },
   { value: "others", label: "Others" },
 ];
 
@@ -185,8 +185,41 @@ export default function StageProductionsPage() {
   const coverInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
+    // Migrate old categories to new ones (one-time migration)
+    const OLD_TO_NEW_CATEGORY: Record<string, string> = {
+      "opera": "legend-hall-of-fame",
+      "concert": "musical",
+      "rock-roll": "classical",
+      "tourist-performance": "edm",
+    };
+
     const stored = localStorage.getItem("admin_performance");
-    if (stored) setItems(JSON.parse(stored));
+    if (stored) {
+      try {
+        const data = JSON.parse(stored);
+        let needsMigration = false;
+
+        const updated = data.map((item: Production) => {
+          const newCategory = OLD_TO_NEW_CATEGORY[item.category];
+          if (newCategory) {
+            needsMigration = true;
+            return { ...item, category: newCategory };
+          }
+          return item;
+        });
+
+        if (needsMigration) {
+          localStorage.setItem("admin_performance", JSON.stringify(updated));
+          setItems(updated);
+          console.log("Performance categories migrated successfully.");
+        } else {
+          setItems(data);
+        }
+      } catch (e) {
+        console.error("Error parsing performance data:", e);
+        setItems([]);
+      }
+    }
 
     // Load banned users
     const banned = localStorage.getItem("performance_banned_users");
@@ -819,47 +852,6 @@ export default function StageProductionsPage() {
           );
         })}
       </div>
-
-      {/* All Items List (when filter is active) */}
-      {filterCategory === "all" && (
-        <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-          <div className="px-4 py-3 bg-gray-50 border-b border-gray-200">
-            <span className="font-medium text-gray-900">All Items</span>
-            <span className="ml-2 text-sm text-gray-500">({filteredItems.length})</span>
-          </div>
-          <div className="divide-y divide-gray-100">
-            {filteredItems.length === 0 ? (
-              <div className="px-4 py-8 text-center text-gray-500">No items found</div>
-            ) : (
-              filteredItems.map((item) => (
-                <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {item.coverImage && (
-                      <img src={item.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900 truncate">{item.title}</span>
-                        <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded">
-                          {SUBCATEGORIES.find(c => c.value === item.category)?.label || item.category}
-                        </span>
-                        {getStatusBadge(item.status)}
-                      </div>
-                      {item.eventDate && (
-                        <span className="text-xs text-gray-400">{formatDate(item.eventDate)}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
-                    <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
