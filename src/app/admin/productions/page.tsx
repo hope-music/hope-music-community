@@ -159,6 +159,64 @@ const SUBCATEGORIES = [
 
 const COMMENTS_STORAGE_KEY = "performance_comments";
 
+// Data source enum
+type DataSource = "admin" | "ticketmaster";
+
+// Load from Ticketmaster JSON API
+async function loadItemsFromApi(): Promise<Production[]> {
+  try {
+    const res = await fetch("/data/ticketmaster-events.json");
+    if (!res.ok) return [];
+    const data = await res.json();
+    return (data.events || []).map((event: any) => ({
+      id: event.id || event._id,
+      title: event.title || event.name,
+      category: event.category,
+      description: event.description || "",
+      coverImage: event.coverImage || event.image || "",
+      content: event.content || "",
+      status: event.status || "upcoming",
+      eventDate: event.eventDate || event.date,
+      createdAt: event.createdAt || Date.now(),
+      updatedAt: event.updatedAt || Date.now(),
+    }));
+  } catch (e) {
+    console.error("Error loading events from API:", e);
+    return [];
+  }
+}
+
+// Load from localStorage (admin-managed data)
+function loadItemsFromStorage(): Production[] {
+  try {
+    const stored = localStorage.getItem("admin_performance");
+    if (stored) {
+      const data = JSON.parse(stored);
+      // Migrate old categories
+      const OLD_TO_NEW_CATEGORY: Record<string, string> = {
+        "opera": "legend-hall-of-fame",
+        "concert": "musical",
+        "rock-roll": "classical",
+        "tourist-performance": "edm",
+      };
+      return data.map((item: Production) => ({
+        ...item,
+        category: OLD_TO_NEW_CATEGORY[item.category] || item.category,
+      }));
+    }
+  } catch (e) {
+    console.error("Error parsing performance data:", e);
+  }
+  return [];
+}
+
+// Merge admin data with API data (admin data takes precedence for duplicates)
+function mergePerformanceData(apiData: Production[], adminData: Production[]): Production[] {
+  const adminIds = new Set(adminData.map(item => item.id));
+  const uniqueApiData = apiData.filter(item => !adminIds.has(item.id));
+  return [...adminData, ...uniqueApiData];
+}
+
 export default function StageProductionsPage() {
   const [items, setItems] = useState<Production[]>([]);
   const [filterCategory, setFilterCategory] = useState<string>("all");
@@ -168,6 +226,8 @@ export default function StageProductionsPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [dataSource, setDataSource] = useState<DataSource>("admin");
+  const [isMerging, setIsMerging] = useState(false);
 
   // Comment management state
   const [comments, setComments] = useState<Comment[]>([]);
@@ -184,49 +244,44 @@ export default function StageProductionsPage() {
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
+  // Load data on mount
   useEffect(() => {
-    // Migrate old categories to new ones (one-time migration)
-    const OLD_TO_NEW_CATEGORY: Record<string, string> = {
-      "opera": "legend-hall-of-fame",
-      "concert": "musical",
-      "rock-roll": "classical",
-      "tourist-performance": "edm",
-    };
-
-    const stored = localStorage.getItem("admin_performance");
-    if (stored) {
-      try {
-        const data = JSON.parse(stored);
-        let needsMigration = false;
-
-        const updated = data.map((item: Production) => {
-          const newCategory = OLD_TO_NEW_CATEGORY[item.category];
-          if (newCategory) {
-            needsMigration = true;
-            return { ...item, category: newCategory };
-          }
-          return item;
-        });
-
-        if (needsMigration) {
-          localStorage.setItem("admin_performance", JSON.stringify(updated));
-          setItems(updated);
-          console.log("Performance categories migrated successfully.");
-        } else {
-          setItems(data);
-        }
-      } catch (e) {
-        console.error("Error parsing performance data:", e);
-        setItems([]);
-      }
-    }
-
+    loadAllData();
+    
     // Load banned users
     const banned = localStorage.getItem("performance_banned_users");
     if (banned) {
       setBannedUsers(JSON.parse(banned));
     }
   }, []);
+
+  // Load all data sources
+  const loadAllData = async () => {
+    setLoading(true);
+    try {
+      // Always load admin data from localStorage
+      const adminData = loadItemsFromStorage();
+      
+      // Load API data
+      const apiData = await loadItemsFromApi();
+      
+      // Merge data
+      const merged = mergePerformanceData(apiData, adminData);
+      setItems(merged);
+      
+      if (apiData.length > 0 && adminData.length > 0) {
+        setDataSource("admin");
+      } else if (apiData.length > 0) {
+        setDataSource("ticketmaster");
+      } else {
+        setDataSource("admin");
+      }
+    } catch (e) {
+      console.error("Error loading data:", e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Check and clean up expired bans
   const cleanupExpiredBans = () => {
@@ -245,7 +300,22 @@ export default function StageProductionsPage() {
   };
 
   const saveToStorage = (data: Production[]) => {
-    localStorage.setItem("admin_performance", JSON.stringify(data));
+    // Only save items that were created/edited in admin (have admin-created timestamps or match localStorage items)
+    const stored = localStorage.getItem("admin_performance");
+    let adminItems: Production[] = [];
+    if (stored) {
+      try {
+        adminItems = JSON.parse(stored);
+      } catch (e) {
+        console.error("Error parsing stored data:", e);
+      }
+    }
+    
+    // Keep only admin-created items (those that were originally in localStorage or newly created)
+    const adminIds = new Set(adminItems.map(item => item.id));
+    const adminOnlyItems = data.filter(item => adminIds.has(item.id) || item.id.startsWith("admin_"));
+    
+    localStorage.setItem("admin_performance", JSON.stringify(adminOnlyItems));
     setItems(data);
   };
 
@@ -398,6 +468,22 @@ export default function StageProductionsPage() {
   };
 
   const handleEdit = (item: Production) => {
+    // Check if item is from API (not in localStorage)
+    const stored = localStorage.getItem("admin_performance");
+    let adminItems: Production[] = [];
+    if (stored) {
+      try {
+        adminItems = JSON.parse(stored);
+      } catch (e) {}
+    }
+    const isFromApi = !adminItems.some(i => i.id === item.id);
+    
+    // If from API, add to localStorage first
+    if (isFromApi) {
+      const updatedAdminItems = [item, ...adminItems];
+      localStorage.setItem("admin_performance", JSON.stringify(updatedAdminItems));
+    }
+    
     setEditingId(item.id);
     setTitle(item.title || "");
     setDescription(item.description || "");
@@ -443,7 +529,7 @@ export default function StageProductionsPage() {
         setMessage({ type: "success", text: "Updated successfully!" });
       } else {
         const newItem: Production = {
-          id: now.toString(),
+          id: `admin_${now}_${Math.random().toString(36).substr(2, 9)}`,
           title: title.trim(),
           category,
           description,
@@ -515,10 +601,27 @@ export default function StageProductionsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Performance</h1>
           <p className="mt-1 text-sm text-gray-500">Manage performances by subcategory</p>
+          <div className="mt-2 flex items-center gap-4">
+            <span className="text-sm">
+              Total: <span className="font-semibold">{items.length}</span> items
+            </span>
+            <span className="text-xs text-gray-400">
+              (Source: {dataSource === "ticketmaster" ? "Ticketmaster API" : "Admin + Ticketmaster"})
+            </span>
+          </div>
         </div>
-        <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-          + New Performance
-        </button>
+        <div className="flex gap-3">
+          <button 
+            onClick={loadAllData} 
+            disabled={loading}
+            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+          >
+            {loading ? "Loading..." : "↻ Refresh from API"}
+          </button>
+          <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
+            + New Performance
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
