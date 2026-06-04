@@ -200,102 +200,126 @@ export default function PerformanceCategoryPage() {
         </p>
       </div>
 
-      {/* Featured + List Layout */}
+      {/* All Events Layout */}
       <div className="mx-auto max-w-6xl px-4 pb-8">
         {/* Section Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="h-5 w-1 bg-[#D96A32]"></div>
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-700">Featured Picks</h2>
-          <div className="flex-1 h-px bg-gray-200"></div>
+          <div className="h-6 w-1.5 bg-[#D96A32]"></div>
+          <h2 className="text-base font-bold uppercase tracking-wider text-gray-800">All Events</h2>
+          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">{items.length}</span>
+          <div className="flex-1 h-px bg-gradient-to-r from-gray-200 via-transparent to-transparent"></div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-          {/* Left: Featured Cards (stacked vertically) */}
-          <div className="lg:col-span-2 space-y-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column */}
+          <div className="space-y-3">
             {featuredItems.map((item, idx) => (
               <a
                 key={item.id}
                 href={`/performance/${item.category}/${item.id}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group flex gap-4 p-2 rounded-xl border border-gray-100 bg-white hover:border-[#D96A32]/30 hover:shadow-md transition-all"
+                className="group flex gap-4 p-3 rounded-2xl border border-gray-100 bg-white hover:border-[#D96A32]/40 hover:shadow-lg hover:shadow-[#D96A32]/5 transition-all duration-300"
               >
-                <div className="relative w-28 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
+                <div className="relative w-32 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100">
                   {item.coverImage ? (
                     <Image
                       src={item.coverImage}
                       alt={item.title}
                       fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-110"
-                      sizes="112px"
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      sizes="128px"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-gray-200">
                       <span className="text-gray-400 text-xs">No Image</span>
                     </div>
                   )}
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                 </div>
-                <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
-                  <div className="flex items-start justify-between gap-2">
-                    <h3 className="text-sm font-semibold text-gray-900 leading-tight line-clamp-2 group-hover:text-[#D96A32] transition-colors">
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h3 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#D96A32] transition-colors">
                       {item.title}
                     </h3>
                     {idx < 2 && (
-                      <span className="flex-shrink-0 bg-[#D96A32] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                      <span className="flex-shrink-0 bg-[#D96A32] text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
                         FEATURED
                       </span>
                     )}
                   </div>
-                  <div className="mt-1.5 flex items-center gap-2 text-xs text-gray-500">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
                     {item.eventDate && (
-                      <span className="text-[#D96A32] font-medium">{formatDate(item.eventDate)}</span>
+                      <span className="inline-flex items-center gap-1 text-[#D96A32] font-semibold">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {formatDate(item.eventDate)}
+                      </span>
                     )}
-                    {item.city && <span className="truncate">{item.city}</span>}
+                    {item.city && <span>{item.city}</span>}
                   </div>
+                  {item.venue && (
+                    <p className="mt-1 text-xs text-gray-400 truncate">{item.venue}</p>
+                  )}
                 </div>
               </a>
             ))}
           </div>
 
-          {/* Right: List */}
-          <div className="lg:col-span-3">
-            {/* List Header */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-5 w-1 bg-gray-400"></div>
-              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-700">All Events</h2>
-              <div className="flex-1 h-px bg-gray-200"></div>
-              <span className="text-xs text-gray-400">{items.length - FEATURED_COUNT} events</span>
-            </div>
-
-            <div className="rounded-xl border border-gray-100 bg-white overflow-hidden">
-              {listItems.map((item, idx) => (
-                <a
-                  key={item.id}
-                  href={`/performance/${item.category}/${item.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex items-center gap-4 px-4 py-3 hover:bg-gradient-to-r hover:from-[#D96A32]/5 hover:to-transparent transition-colors border-b border-gray-50 last:border-0"
-                >
-                  {/* Index */}
-                  <span className="w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full text-xs font-medium text-gray-500 group-hover:bg-[#D96A32] group-hover:text-white transition-colors">
-                    {FEATURED_COUNT + (currentPage - 1) * ITEMS_PER_PAGE + idx + 1}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-gray-900 truncate group-hover:text-[#D96A32] transition-colors">
+          {/* Right Column */}
+          <div className="space-y-3">
+            {listItems.map((item, idx) => (
+              <a
+                key={item.id}
+                href={`/performance/${item.category}/${item.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex gap-4 p-3 rounded-2xl border border-gray-100 bg-white hover:border-[#D96A32]/40 hover:shadow-lg hover:shadow-[#D96A32]/5 transition-all duration-300"
+              >
+                <div className="relative w-32 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100">
+                  {item.coverImage ? (
+                    <Image
+                      src={item.coverImage}
+                      alt={item.title}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                      sizes="128px"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center bg-gray-200">
+                      <span className="text-gray-400 text-xs">No Image</span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col justify-center">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h4 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#D96A32] transition-colors">
                       {item.title}
                     </h4>
-                    <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-500">
-                      {item.eventDate && <span className="font-medium">{formatDate(item.eventDate)}</span>}
-                      {item.city && <span className="truncate">{item.city}</span>}
-                      {item.venue && <span className="hidden sm:inline truncate text-gray-400">@{item.venue}</span>}
-                    </div>
+                    <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-gray-100 rounded-full text-[10px] font-medium text-gray-500 group-hover:bg-[#D96A32] group-hover:text-white transition-colors">
+                      {FEATURED_COUNT + (currentPage - 1) * ITEMS_PER_PAGE + idx + 1}
+                    </span>
                   </div>
-                  <svg className="w-4 h-4 text-gray-300 group-hover:text-[#D96A32] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                </a>
-              ))}
-            </div>
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    {item.eventDate && (
+                      <span className="inline-flex items-center gap-1 text-[#D96A32] font-semibold">
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                        </svg>
+                        {formatDate(item.eventDate)}
+                      </span>
+                    )}
+                    {item.city && <span>{item.city}</span>}
+                  </div>
+                  {item.venue && (
+                    <p className="mt-1 text-xs text-gray-400 truncate">{item.venue}</p>
+                  )}
+                </div>
+              </a>
+            ))}
           </div>
         </div>
       </div>
