@@ -47,6 +47,40 @@ interface CategoryData {
   total: number;
 }
 
+async function loadCategoryData(): Promise<Record<string, CategoryData>> {
+  try {
+    const res = await fetch("/data/ticketmaster-events.json");
+    if (!res.ok) return {};
+    const data = await res.json();
+    const events: PerformanceItem[] = data.events || [];
+
+    const result: Record<string, CategoryData> = {};
+    PERFORMANCE_CATEGORIES.forEach((category) => {
+      const slug = CATEGORY_SLUG_MAP[category];
+      const categoryItems = events.filter((item) => item.category === slug);
+
+      if (categoryItems.length > 0) {
+        const sorted = categoryItems.sort((a, b) => {
+          const dateA = a.eventDate ? new Date(a.eventDate).getTime() : 0;
+          const dateB = b.eventDate ? new Date(b.eventDate).getTime() : 0;
+          return dateB - dateA;
+        });
+        result[category] = {
+          latest: sorted[0],
+          total: categoryItems.length,
+        };
+      } else {
+        result[category] = { latest: null, total: 0 };
+      }
+    });
+
+    return result;
+  } catch (e) {
+    console.error("Error loading category data:", e);
+    return {};
+  }
+}
+
 function CategoryCard({ category, data }: { category: string; data: CategoryData }) {
   const categorySlug = CATEGORY_SLUG_MAP[category];
   const categoryHref = `/performance/${categorySlug}`;
@@ -101,62 +135,10 @@ export function PerformanceSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadData = () => {
-      try {
-        const stored = localStorage.getItem("admin_performance");
-        if (stored) {
-          const data: PerformanceItem[] = JSON.parse(stored);
-
-          // One-time migration: update old category slugs to new ones
-          const OLD_TO_NEW: Record<string, string> = {
-            "opera": "legend-hall-of-fame",
-            "concert": "musical",
-            "rock-roll": "classical",
-            "tourist-performance": "edm",
-          };
-          let migrated = false;
-          const updated = data.map((item: PerformanceItem) => {
-            const newCat = OLD_TO_NEW[item.category];
-            if (newCat) {
-              migrated = true;
-              return { ...item, category: newCat };
-            }
-            return item;
-          });
-          if (migrated) {
-            localStorage.setItem("admin_performance", JSON.stringify(updated));
-          }
-
-          const result: Record<string, CategoryData> = {};
-
-          PERFORMANCE_CATEGORIES.forEach((category) => {
-            const slug = CATEGORY_SLUG_MAP[category];
-            const categoryItems = updated.filter(
-              (item) => item.category === slug && item.status !== "draft"
-            );
-
-            if (categoryItems.length > 0) {
-              const sorted = categoryItems.sort((a, b) => b.createdAt - a.createdAt);
-              result[category] = {
-                latest: sorted[0],
-                total: categoryItems.length,
-              };
-            } else {
-              result[category] = { latest: null, total: 0 };
-            }
-          });
-
-          setCategoriesData(result);
-        }
-      } catch (e) {
-        console.error("Error loading performance data:", e);
-      }
+    loadCategoryData().then((result) => {
+      setCategoriesData(result);
       setLoading(false);
-    };
-
-    loadData();
-    const interval = setInterval(loadData, 2000);
-    return () => clearInterval(interval);
+    });
   }, []);
 
   if (loading) {

@@ -35,7 +35,7 @@ export default function PerformanceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [pageId, setPageId] = useState<string | null>(null);
 
-  const loadData = useCallback(() => {
+  const loadData = useCallback(async () => {
     const id = params?.slug as string;
 
     if (!id) {
@@ -45,6 +45,23 @@ export default function PerformanceDetailPage() {
 
     setPageId(id);
 
+    // First try to find in Ticketmaster JSON data
+    try {
+      const res = await fetch("/data/ticketmaster-events.json");
+      if (res.ok) {
+        const data = await res.json();
+        const found = data.events?.find((e: Performance) => e.id === id);
+        if (found) {
+          setItem(found);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("Error loading from API:", e);
+    }
+
+    // Fallback to localStorage for backwards compatibility
     try {
       const stored = localStorage.getItem("admin_performance");
       if (stored) {

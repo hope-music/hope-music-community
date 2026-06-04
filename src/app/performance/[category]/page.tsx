@@ -32,13 +32,30 @@ export default function PerformanceCategoryPage() {
   const [loading, setLoading] = useState(true);
   const [categoryName, setCategoryName] = useState("");
 
-  const loadData = () => {
+  const loadData = async () => {
     const category = params.category as string;
     if (!category) return;
 
     const sub = SUBCATEGORIES.find((c) => c.value === category);
     setCategoryName(sub?.label || category);
 
+    // First try to load from Ticketmaster JSON
+    try {
+      const res = await fetch("/data/ticketmaster-events.json");
+      if (res.ok) {
+        const data = await res.json();
+        const filtered = (data.events || []).filter((item: Production) => item.category === category);
+        if (filtered.length > 0) {
+          setItems(filtered);
+          setLoading(false);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("Error loading from API:", e);
+    }
+
+    // Fallback to localStorage
     try {
       const stored = localStorage.getItem("admin_performance");
       if (stored) {
@@ -77,12 +94,7 @@ export default function PerformanceCategoryPage() {
 
   useEffect(() => {
     loadData();
-  }, [params.category]);
-
-  useEffect(() => {
-    const interval = setInterval(loadData, 1000);
-    return () => clearInterval(interval);
-  }, [params.category]);
+  }, [loadData]);
 
   const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
 

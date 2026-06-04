@@ -27,36 +27,20 @@ const SUBCATEGORIES = [
 ];
 
 function loadItems(): Production[] {
-  // One-time migration: update old category slugs to new ones
-  const OLD_TO_NEW: Record<string, string> = {
-    "opera": "legend-hall-of-fame",
-    "concert": "musical",
-    "rock-roll": "classical",
-    "tourist-performance": "edm",
-  };
-
-  try {
-    const stored = localStorage.getItem("admin_performance");
-    if (stored) {
-      const data = JSON.parse(stored);
-      let migrated = false;
-      const updated = data.map((item: Production) => {
-        const newCat = OLD_TO_NEW[item.category];
-        if (newCat) {
-          migrated = true;
-          return { ...item, category: newCat };
-        }
-        return item;
-      });
-      if (migrated) {
-        localStorage.setItem("admin_performance", JSON.stringify(updated));
-      }
-      return updated.filter((item: Production) => item.status !== "draft");
-    }
-  } catch (e) {
-    console.error("Error loading items:", e);
-  }
+  // Data will be loaded from JSON API, this returns empty initially
   return [];
+}
+
+async function loadItemsFromApi(): Promise<Production[]> {
+  try {
+    const res = await fetch("/data/ticketmaster-events.json");
+    if (!res.ok) return [];
+    const data = await res.json();
+    return data.events || [];
+  } catch (e) {
+    console.error("Error loading events:", e);
+    return [];
+  }
 }
 
 export default function PerformancePage() {
@@ -64,26 +48,14 @@ export default function PerformancePage() {
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
-  const loadData = useCallback(() => {
-    const data = loadItems();
+  const loadData = useCallback(async () => {
+    const data = await loadItemsFromApi();
     setItems(data);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     loadData();
-    
-    // Listen for storage changes (when data is updated in another tab/window)
-    const handleStorage = () => loadData();
-    window.addEventListener("storage", handleStorage);
-    
-    // Poll for changes every second (for same-tab updates)
-    const interval = setInterval(loadData, 1000);
-    
-    return () => {
-      window.removeEventListener("storage", handleStorage);
-      clearInterval(interval);
-    };
   }, [loadData]);
 
   const filteredItems = selectedCategory === "all"
