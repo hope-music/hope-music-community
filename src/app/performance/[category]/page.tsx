@@ -202,72 +202,95 @@ export default function PerformanceCategoryPage() {
 
       {/* Featured + List Layout */}
       <div className="mx-auto max-w-6xl px-4 pb-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          {/* Left: Featured Cards (2x2 grid) */}
-          <div className="lg:col-span-3">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {featuredItems.map((item, idx) => (
-                <a
-                  key={item.id}
-                  href={`/performance/${item.category}/${item.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group relative overflow-hidden rounded-xl bg-gray-100 aspect-[4/3]"
-                >
+        {/* Section Header */}
+        <div className="flex items-center gap-3 mb-6">
+          <div className="h-5 w-1 bg-[#D96A32]"></div>
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-700">Featured Picks</h2>
+          <div className="flex-1 h-px bg-gray-200"></div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+          {/* Left: Featured Cards (stacked vertically) */}
+          <div className="lg:col-span-2 space-y-3">
+            {featuredItems.map((item, idx) => (
+              <a
+                key={item.id}
+                href={`/performance/${item.category}/${item.id}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex gap-4 p-2 rounded-xl border border-gray-100 bg-white hover:border-[#D96A32]/30 hover:shadow-md transition-all"
+              >
+                <div className="relative w-28 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
                   {item.coverImage ? (
                     <Image
                       src={item.coverImage}
                       alt={item.title}
                       fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, 33vw"
+                      className="object-cover transition-transform duration-300 group-hover:scale-110"
+                      sizes="112px"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-gray-200">
-                      <span className="text-gray-400">No Image</span>
+                      <span className="text-gray-400 text-xs">No Image</span>
                     </div>
                   )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                  <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <h3 className="text-sm font-semibold text-white leading-snug line-clamp-2">
+                </div>
+                <div className="flex-1 min-w-0 flex flex-col justify-center py-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-sm font-semibold text-gray-900 leading-tight line-clamp-2 group-hover:text-[#D96A32] transition-colors">
                       {item.title}
                     </h3>
-                    <div className="mt-1 flex items-center gap-2 text-xs text-white/80">
-                      {item.eventDate && <span>{formatDate(item.eventDate)}</span>}
-                      {item.venue && <span className="truncate">@{item.venue}</span>}
-                    </div>
+                    {idx < 2 && (
+                      <span className="flex-shrink-0 bg-[#D96A32] text-white text-[9px] font-bold px-1.5 py-0.5 rounded">
+                        FEATURED
+                      </span>
+                    )}
                   </div>
-                  {idx < 2 && (
-                    <span className="absolute top-3 left-3 bg-[#D96A32] text-white text-[10px] font-semibold px-2 py-0.5 rounded">
-                      FEATURED
-                    </span>
-                  )}
-                </a>
-              ))}
-            </div>
+                  <div className="mt-1.5 flex items-center gap-2 text-xs text-gray-500">
+                    {item.eventDate && (
+                      <span className="text-[#D96A32] font-medium">{formatDate(item.eventDate)}</span>
+                    )}
+                    {item.city && <span className="truncate">{item.city}</span>}
+                  </div>
+                </div>
+              </a>
+            ))}
           </div>
 
           {/* Right: List */}
-          <div className="lg:col-span-2">
-            <div className="rounded-xl border border-hmc-placeholder-border bg-white divide-y divide-gray-100">
-              {listItems.map((item) => (
+          <div className="lg:col-span-3">
+            {/* List Header */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="h-5 w-1 bg-gray-400"></div>
+              <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-700">All Events</h2>
+              <div className="flex-1 h-px bg-gray-200"></div>
+              <span className="text-xs text-gray-400">{items.length - FEATURED_COUNT} events</span>
+            </div>
+
+            <div className="rounded-xl border border-gray-100 bg-white overflow-hidden">
+              {listItems.map((item, idx) => (
                 <a
                   key={item.id}
                   href={`/performance/${item.category}/${item.id}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 hover:bg-gray-50 transition-colors"
+                  className="group flex items-center gap-4 px-4 py-3 hover:bg-gradient-to-r hover:from-[#D96A32]/5 hover:to-transparent transition-colors border-b border-gray-50 last:border-0"
                 >
+                  {/* Index */}
+                  <span className="w-7 h-7 flex items-center justify-center bg-gray-100 rounded-full text-xs font-medium text-gray-500 group-hover:bg-[#D96A32] group-hover:text-white transition-colors">
+                    {FEATURED_COUNT + (currentPage - 1) * ITEMS_PER_PAGE + idx + 1}
+                  </span>
                   <div className="flex-1 min-w-0">
-                    <h4 className="text-sm font-medium text-gray-900 truncate group-hover:text-[#C8102E]">
+                    <h4 className="text-sm font-medium text-gray-900 truncate group-hover:text-[#D96A32] transition-colors">
                       {item.title}
                     </h4>
-                    <div className="mt-0.5 flex items-center gap-2 text-xs text-gray-500">
-                      {item.eventDate && <span>{formatDate(item.eventDate)}</span>}
+                    <div className="mt-0.5 flex items-center gap-3 text-xs text-gray-500">
+                      {item.eventDate && <span className="font-medium">{formatDate(item.eventDate)}</span>}
                       {item.city && <span className="truncate">{item.city}</span>}
+                      {item.venue && <span className="hidden sm:inline truncate text-gray-400">@{item.venue}</span>}
                     </div>
                   </div>
-                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4 text-gray-300 group-hover:text-[#D96A32] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                   </svg>
                 </a>
