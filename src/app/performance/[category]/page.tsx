@@ -111,16 +111,18 @@ export default function PerformanceCategoryPage() {
     return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
-  // Featured items: first 4 from the full list
-  const featuredItems = useMemo(() => items.slice(0, FEATURED_COUNT), [items]);
-
-  // List items: paginated, excluding featured
-  const listItems = useMemo(() => {
-    const listStart = FEATURED_COUNT + (currentPage - 1) * ITEMS_PER_PAGE;
-    return items.slice(listStart, listStart + ITEMS_PER_PAGE);
+  // Split items into two columns (top half / bottom half)
+  const { leftColumnItems, rightColumnItems } = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    const pageItems = items.slice(start, start + ITEMS_PER_PAGE);
+    const mid = Math.ceil(pageItems.length / 2);
+    return {
+      leftColumnItems: pageItems.slice(0, mid),
+      rightColumnItems: pageItems.slice(mid),
+    };
   }, [items, currentPage]);
 
-  const totalPages = Math.ceil(Math.max(0, items.length - FEATURED_COUNT) / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(items.length / ITEMS_PER_PAGE);
 
   // Pagination: show up to 5 page numbers with ellipsis
   const getPageNumbers = () => {
@@ -210,116 +212,132 @@ export default function PerformanceCategoryPage() {
           <div className="flex-1 h-px bg-gradient-to-r from-gray-200 via-transparent to-transparent"></div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column */}
-          <div className="space-y-3">
-            {featuredItems.map((item, idx) => (
-              <a
-                key={item.id}
-                href={`/performance/${item.category}/${item.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex gap-4 p-3 rounded-2xl border border-gray-100 bg-white hover:border-[#D96A32]/40 hover:shadow-lg hover:shadow-[#D96A32]/5 transition-all duration-300"
-              >
-                <div className="relative w-32 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100">
-                  {item.coverImage ? (
-                    <Image
-                      src={item.coverImage}
-                      alt={item.title}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      sizes="128px"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center bg-gray-200">
-                      <span className="text-gray-400 text-xs">No Image</span>
-                    </div>
-                  )}
-                  {/* Gradient overlay */}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <div className="flex-1 min-w-0 flex flex-col justify-center">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#D96A32] transition-colors">
-                      {item.title}
-                    </h3>
-                    {idx < 2 && (
-                      <span className="flex-shrink-0 bg-[#D96A32] text-white text-[9px] font-bold px-2 py-0.5 rounded-full">
-                        FEATURED
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    {item.eventDate && (
-                      <span className="inline-flex items-center gap-1 text-[#D96A32] font-semibold">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {formatDate(item.eventDate)}
-                      </span>
-                    )}
-                    {item.city && <span>{item.city}</span>}
-                  </div>
-                  {item.venue && (
-                    <p className="mt-1 text-xs text-gray-400 truncate">{item.venue}</p>
-                  )}
-                </div>
-              </a>
-            ))}
+        {/* Two-column grid with divider */}
+        <div className="relative">
+          {/* Vertical Divider */}
+          <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-transparent via-[#D96A32]/30 to-transparent -translate-x-1/2 hidden lg:block"></div>
+
+          {/* Center Circle */}
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden lg:flex">
+            <div className="w-12 h-12 rounded-full bg-white border-2 border-[#D96A32]/30 flex items-center justify-center shadow-sm">
+              <span className="text-[#D96A32] font-bold text-sm">{Math.ceil(items.length / 2)}</span>
+            </div>
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-3">
-            {listItems.map((item, idx) => (
-              <a
-                key={item.id}
-                href={`/performance/${item.category}/${item.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex gap-4 p-3 rounded-2xl border border-gray-100 bg-white hover:border-[#D96A32]/40 hover:shadow-lg hover:shadow-[#D96A32]/5 transition-all duration-300"
-              >
-                <div className="relative w-32 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100">
-                  {item.coverImage ? (
-                    <Image
-                      src={item.coverImage}
-                      alt={item.title}
-                      fill
-                      className="object-cover transition-transform duration-500 group-hover:scale-110"
-                      sizes="128px"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center bg-gray-200">
-                      <span className="text-gray-400 text-xs">No Image</span>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+            {/* Left Column */}
+            <div className="space-y-3">
+              {leftColumnItems.map((item, idx) => {
+                const itemNumber = (currentPage - 1) * ITEMS_PER_PAGE + idx + 1;
+                return (
+                  <a
+                    key={item.id}
+                    href={`/performance/${item.category}/${item.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex gap-4 p-3 rounded-2xl border border-gray-100 bg-white hover:border-[#D96A32]/40 hover:shadow-lg hover:shadow-[#D96A32]/5 transition-all duration-300"
+                  >
+                    <div className="relative w-32 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100">
+                      {item.coverImage ? (
+                        <Image
+                          src={item.coverImage}
+                          alt={item.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                          sizes="128px"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center bg-gray-200">
+                          <span className="text-gray-400 text-xs">No Image</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                </div>
-                <div className="flex-1 min-w-0 flex flex-col justify-center">
-                  <div className="flex items-start justify-between gap-2 mb-1">
-                    <h4 className="text-sm font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#D96A32] transition-colors">
-                      {item.title}
-                    </h4>
-                    <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-gray-100 rounded-full text-[10px] font-medium text-gray-500 group-hover:bg-[#D96A32] group-hover:text-white transition-colors">
-                      {FEATURED_COUNT + (currentPage - 1) * ITEMS_PER_PAGE + idx + 1}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-gray-500">
-                    {item.eventDate && (
-                      <span className="inline-flex items-center gap-1 text-[#D96A32] font-semibold">
-                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                        </svg>
-                        {formatDate(item.eventDate)}
-                      </span>
-                    )}
-                    {item.city && <span>{item.city}</span>}
-                  </div>
-                  {item.venue && (
-                    <p className="mt-1 text-xs text-gray-400 truncate">{item.venue}</p>
-                  )}
-                </div>
-              </a>
-            ))}
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="flex-1 text-sm font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#D96A32] transition-colors">
+                          {item.title}
+                        </h3>
+                        <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-gray-100 rounded-full text-[10px] font-medium text-gray-500 group-hover:bg-[#D96A32] group-hover:text-white transition-colors">
+                          {itemNumber}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        {item.eventDate && (
+                          <span className="inline-flex items-center gap-1 text-[#D96A32] font-semibold">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {formatDate(item.eventDate)}
+                          </span>
+                        )}
+                        {item.city && <span>{item.city}</span>}
+                      </div>
+                      {item.venue && (
+                        <p className="mt-1 text-xs text-gray-400 truncate">{item.venue}</p>
+                      )}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-3">
+              {rightColumnItems.map((item, idx) => {
+                const itemNumber = (currentPage - 1) * ITEMS_PER_PAGE + leftColumnItems.length + idx + 1;
+                return (
+                  <a
+                    key={item.id}
+                    href={`/performance/${item.category}/${item.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="group flex gap-4 p-3 rounded-2xl border border-gray-100 bg-white hover:border-[#D96A32]/40 hover:shadow-lg hover:shadow-[#D96A32]/5 transition-all duration-300"
+                  >
+                    <div className="relative w-32 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100">
+                      {item.coverImage ? (
+                        <Image
+                          src={item.coverImage}
+                          alt={item.title}
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-110"
+                          sizes="128px"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center bg-gray-200">
+                          <span className="text-gray-400 text-xs">No Image</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col justify-center">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h4 className="flex-1 text-sm font-semibold text-gray-900 leading-snug line-clamp-2 group-hover:text-[#D96A32] transition-colors">
+                          {item.title}
+                        </h4>
+                        <span className="flex-shrink-0 w-6 h-6 flex items-center justify-center bg-gray-100 rounded-full text-[10px] font-medium text-gray-500 group-hover:bg-[#D96A32] group-hover:text-white transition-colors">
+                          {itemNumber}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-xs text-gray-500">
+                        {item.eventDate && (
+                          <span className="inline-flex items-center gap-1 text-[#D96A32] font-semibold">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            {formatDate(item.eventDate)}
+                          </span>
+                        )}
+                        {item.city && <span>{item.city}</span>}
+                      </div>
+                      {item.venue && (
+                        <p className="mt-1 text-xs text-gray-400 truncate">{item.venue}</p>
+                      )}
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
