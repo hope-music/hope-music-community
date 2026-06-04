@@ -105,6 +105,11 @@ export default function PerformanceCategoryPage() {
           <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">{categoryName}</h1>
         </div>
       </div>
+      <div className="mx-auto max-w-6xl px-4 py-4">
+        <p className="text-xs text-gray-500 text-center leading-relaxed">
+          Notice: This is a free informational guide only — we do not sell tickets. Schedules may not reflect real-time changes. For tickets and latest updates, visit Ticketmaster. Images shown are for artistic ambience illustration, not necessarily the actual event.
+        </p>
+      </div>
       <div className="mx-auto max-w-6xl px-4 py-8">
         {loading ? (
           <div className="py-20 text-center">
