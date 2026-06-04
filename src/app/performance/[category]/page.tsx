@@ -220,7 +220,7 @@ export default function PerformanceCategoryPage() {
           {/* Center Circle */}
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 hidden lg:flex">
             <div className="w-12 h-12 rounded-full bg-white border-2 border-[#D96A32]/30 flex items-center justify-center shadow-sm">
-              <span className="text-[#D96A32] font-bold text-sm">{Math.ceil(items.length / 2)}</span>
+              <span className="text-[#D96A32] font-bold text-xs">{currentPage}/{totalPages}</span>
             </div>
           </div>
 
