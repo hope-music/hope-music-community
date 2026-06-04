@@ -138,14 +138,25 @@ export function InteractionSection() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("admin_interaction");
-    if (stored) {
-      try {
-        const data = JSON.parse(stored);
-        setAllItems(data);
-      } catch (e) {
-        console.error("Failed to parse interaction data", e);
+    try {
+      const stored = localStorage.getItem("admin_interaction");
+      if (!stored) {
+        setAllItems([]);
+        setLoading(false);
+        return;
       }
+
+      const data = JSON.parse(stored);
+      if (Array.isArray(data)) {
+        setAllItems(data);
+      } else if (data && Array.isArray(data.posts)) {
+        setAllItems(data.posts);
+      } else {
+        setAllItems([]);
+      }
+    } catch (e) {
+      console.error("Failed to parse interaction data", e);
+      setAllItems([]);
     }
     setLoading(false);
   }, []);
