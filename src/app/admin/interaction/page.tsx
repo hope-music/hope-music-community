@@ -225,7 +225,7 @@ export default function AdminInteractionPage() {
       } else {
         const defaults = getDefaultPosts();
         setItems(defaults);
-        localStorage.setItem("admin_interaction", JSON.stringify(defaults));
+          localStorage.setItem(INTERACTION_STORAGE_KEY, JSON.stringify(defaults));
       }
       setIsInitialized(true);
     }

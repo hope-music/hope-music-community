@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import {
   getInteractionCategoryLabel,
+  INTERACTION_CATEGORIES,
+  INTERACTION_STORAGE_KEY,
   normalizeInteractionCategory,
   parseInteractionItems,
 } from "@/lib/interaction";
@@ -34,14 +36,7 @@ interface BanEntry {
   expiresAt: number | null;
 }
 
-const CATEGORIES = [
-  { value: "software", label: getInteractionCategoryLabel("software") },
-  { value: "hardware", label: getInteractionCategoryLabel("hardware") },
-  { value: "music", label: getInteractionCategoryLabel("music") },
-  { value: "production", label: getInteractionCategoryLabel("production") },
-  { value: "article", label: getInteractionCategoryLabel("article") },
-  { value: "others", label: getInteractionCategoryLabel("others") },
-];
+const CATEGORIES = INTERACTION_CATEGORIES;
 
 // Default comments
 const DEFAULT_COMMENTS: Comment[] = [
@@ -225,7 +220,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
       return;
     }
 
-    const localPosts = parseInteractionItems(localStorage.getItem("admin_interaction"));
+    const localPosts = parseInteractionItems(localStorage.getItem(INTERACTION_STORAGE_KEY));
     if (localPosts.length > 0) {
       const found = localPosts.find((p: any) => p.id === postId && normalizeInteractionCategory(p.category) === category);
       if (found) {

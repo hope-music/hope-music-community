@@ -5,8 +5,8 @@ import Link from "next/link";
 import { api } from "@/lib/convex";
 import { useQuery_experimental } from "@/lib/convex";
 import {
-  getInteractionCategoryLabel,
-  INTERACTION_CATEGORY_KEYS,
+  getInteractionCategoriesWithIcons,
+  INTERACTION_STORAGE_KEY,
   normalizeInteractionCategory,
   parseInteractionItems,
 } from "@/lib/interaction";
@@ -35,16 +35,7 @@ interface Post {
   createdAt: number;
 }
 
-const ALL_CATEGORIES = INTERACTION_CATEGORY_KEYS.map((value) => ({
-  value,
-  label: getInteractionCategoryLabel(value),
-  icon:
-    value === "software" ? "💻" :
-    value === "hardware" ? "🎛️" :
-    value === "music" ? "🎵" :
-    value === "production" ? "🎬" :
-    value === "article" ? "📝" : "💬",
-}));
+const ALL_CATEGORIES = getInteractionCategoriesWithIcons();
 
 // Placeholder posts data
 const PLACEHOLDER_POSTS = [
@@ -143,7 +134,7 @@ export default function InteractionCategoryPage({ params }: PageProps) {
   useEffect(() => {
     async function loadParams() {
       const resolved = await params;
-      setCurrentCategory(resolved.category);
+      setCurrentCategory(normalizeInteractionCategory(resolved.category));
       setLoading(false);
     }
     loadParams();
@@ -153,7 +144,7 @@ export default function InteractionCategoryPage({ params }: PageProps) {
   const allPosts = useAdminPosts();
   const localPosts = useMemo(() => {
     if (typeof window === "undefined") return [] as any[];
-    return parseInteractionItems(localStorage.getItem("admin_interaction")).map((p: any) => ({
+    return parseInteractionItems(localStorage.getItem(INTERACTION_STORAGE_KEY)).map((p: any) => ({
       ...p,
       category: normalizeInteractionCategory(p.category),
     }));
@@ -239,10 +230,10 @@ export default function InteractionCategoryPage({ params }: PageProps) {
     );
   }
 
-  const currentCategoryInfo = currentCategory ? ALL_CATEGORIES.find(c => c.value === currentCategory) : null;
+  const currentCategoryInfo = currentCategory ? ALL_CATEGORIES.find(c => c.value === normalizeInteractionCategory(currentCategory)) : null;
   const currentCategoryLabel = currentCategoryInfo?.label?.toUpperCase() || "INTERACTION";
 
-  const currentCategoryCount = currentCategory ? categoryCounts[currentCategory] || 0 : dataSourcePosts.length;
+  const currentCategoryCount = currentCategory ? categoryCounts[normalizeInteractionCategory(currentCategory)] || 0 : dataSourcePosts.length;
 
   return (
     <main className="min-h-screen bg-gray-100">

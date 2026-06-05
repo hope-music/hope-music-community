@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@/lib/convex";
-import { normalizeInteractionCategory, parseInteractionItems } from "@/lib/interaction";
+import { normalizeInteractionCategory, parseInteractionItems, INTERACTION_STORAGE_KEY } from "@/lib/interaction";
 import { useEffect, useMemo, useState } from "react";
 import {
   PERFORMANCE_CATEGORY_LABELS,
@@ -289,7 +289,7 @@ function loadStageProductionResults(): SearchResult[] {
 
 function loadInteractionResults(): SearchResult[] {
   try {
-    const items = parseInteractionItems<InteractionItem>(localStorage.getItem("admin_interaction"));
+    const items = parseInteractionItems<InteractionItem>(localStorage.getItem(INTERACTION_STORAGE_KEY));
 
     return items.map((item) => {
       const normalizedCat = normalizeInteractionCategory(item.category);
