@@ -1,12 +1,16 @@
-import { PlaceholderPage } from "@/components/layout/PlaceholderPage";
+import SearchPageClient from "@/components/search/SearchPageClient";
+
+type SearchPageProps = {
+  searchParams?: Promise<{
+    q?: string;
+  }>;
+};
 
 export const metadata = { title: "Search" };
 
-export default function SearchPage() {
-  return (
-    <PlaceholderPage
-      title="Search"
-      description="Site search will be wired up in a future pass."
-    />
-  );
+export default async function SearchPage({ searchParams }: SearchPageProps) {
+  const params = (await searchParams) ?? {};
+  const query = params.q?.trim() ?? "";
+
+  return <SearchPageClient initialQuery={query} />;
 }
