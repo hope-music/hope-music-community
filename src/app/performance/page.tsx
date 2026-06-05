@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 
 interface Production {
@@ -25,6 +25,25 @@ const SUBCATEGORIES = [
   { value: "ballet", label: "Ballet" },
   { value: "others", label: "Others" },
 ];
+
+const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+
+type DisplayStatus = "upcoming" | "recent" | "archived";
+
+function getDisplayStatus(eventDate?: string): DisplayStatus {
+  if (!eventDate) return "upcoming";
+  const eventTime = new Date(eventDate).getTime();
+  const now = Date.now();
+  if (eventTime > now) return "upcoming";
+  const elapsed = now - eventTime;
+  if (elapsed <= TWO_WEEKS_MS) return "recent";
+  return "archived";
+}
+
+function isVisible(eventDate?: string): boolean {
+  const status = getDisplayStatus(eventDate);
+  return status !== "archived";
+}
 
 function loadItems(): Production[] {
   // Data will be loaded from JSON API, this returns empty initially
@@ -58,13 +77,14 @@ export default function PerformancePage() {
     loadData();
   }, [loadData]);
 
-  const filteredItems = selectedCategory === "all"
+  const filteredItems = (selectedCategory === "all"
     ? items
-    : items.filter((item) => item.category === selectedCategory);
+    : items.filter((item) => item.category === selectedCategory)
+  ).filter((item) => isVisible(item.eventDate));
 
   const itemsByCategory = SUBCATEGORIES.map((sub) => ({
     ...sub,
-    items: items.filter((item) => item.category === sub.value),
+    items: items.filter((item) => item.category === sub.value && isVisible(item.eventDate)),
   }));
 
   const formatDate = (dateStr?: string) => {
@@ -156,8 +176,11 @@ export default function PerformancePage() {
                     <span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">
                       {SUBCATEGORIES.find((c) => c.value === item.category)?.label || item.category}
                     </span>
-                    {item.status === "upcoming" && (
-                      <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-600">Upcoming</span>
+                    {getDisplayStatus(item.eventDate) === "upcoming" && (
+                      <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-600">Upcoming</span>
+                    )}
+                    {getDisplayStatus(item.eventDate) === "recent" && (
+                      <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-600">Recent</span>
                     )}
                   </div>
                   <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors group-hover:text-[#C8102E]">

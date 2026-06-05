@@ -32,6 +32,25 @@ const SUBCATEGORIES = [
 const ITEMS_PER_PAGE = 20;
 const FEATURED_COUNT = 4;
 
+const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+
+type DisplayStatus = "upcoming" | "recent" | "archived";
+
+function getDisplayStatus(eventDate?: string): DisplayStatus {
+  if (!eventDate) return "upcoming";
+  const eventTime = new Date(eventDate).getTime();
+  const now = Date.now();
+  if (eventTime > now) return "upcoming";
+  const elapsed = now - eventTime;
+  if (elapsed <= TWO_WEEKS_MS) return "recent";
+  return "archived";
+}
+
+function isVisible(eventDate?: string): boolean {
+  const status = getDisplayStatus(eventDate);
+  return status !== "archived";
+}
+
 export default function PerformanceCategoryPage() {
   const params = useParams();
   const [items, setItems] = useState<Production[]>([]);
@@ -50,7 +69,9 @@ export default function PerformanceCategoryPage() {
       const res = await fetch("/data/ticketmaster-events.json");
       if (res.ok) {
         const data = await res.json();
-        const filtered = (data.events || []).filter((item: Production) => item.category === category);
+        const filtered = (data.events || [])
+          .filter((item: Production) => item.category === category)
+          .filter((item: Production) => isVisible(item.eventDate));
         if (filtered.length > 0) {
           setItems(filtered);
           setLoading(false);
@@ -86,7 +107,9 @@ export default function PerformanceCategoryPage() {
         }
 
         const filtered = updated.filter((item: Production) =>
-          item.category === category && item.status !== "draft"
+          item.category === category &&
+          item.status !== "draft" &&
+          isVisible(item.eventDate)
         );
         setItems(filtered);
       }

@@ -35,6 +35,20 @@ const SUBCATEGORIES = [
   { value: "others", label: "Others" },
 ];
 
+const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+
+type DisplayStatus = "upcoming" | "recent" | "archived";
+
+function getDisplayStatus(eventDate?: string): DisplayStatus {
+  if (!eventDate) return "upcoming";
+  const eventTime = new Date(eventDate).getTime();
+  const now = Date.now();
+  if (eventTime > now) return "upcoming";
+  const elapsed = now - eventTime;
+  if (elapsed <= TWO_WEEKS_MS) return "recent";
+  return "archived";
+}
+
 export default function PerformanceDetailPage() {
   const params = useParams();
   const [item, setItem] = useState<Performance | null>(null);
@@ -75,7 +89,7 @@ export default function PerformanceDetailPage() {
           setItem(found);
           // Find related items from same category
           const related = (data.events || [])
-            .filter((e: Performance) => e.category === found.category && e.id !== id)
+            .filter((e: Performance) => e.category === found.category && e.id !== id && isVisible(e.eventDate))
             .slice(0, 4);
           setRelatedItems(related);
           setLoading(false);
@@ -116,7 +130,7 @@ export default function PerformanceDetailPage() {
 
         if (found) {
           const related = updated
-            .filter((e: Performance) => e.category === found.category && e.id !== id && e.status !== "draft")
+            .filter((e: Performance) => e.category === found.category && e.id !== id && e.status !== "draft" && isVisible(e.eventDate))
             .slice(0, 4);
           setRelatedItems(related);
         }
@@ -150,13 +164,14 @@ export default function PerformanceDetailPage() {
 
   const statusConfig = useMemo(() => {
     if (!item) return null;
-    switch (item.status) {
+    const displayStatus = getDisplayStatus(item.eventDate);
+    switch (displayStatus) {
       case "upcoming":
         return { label: "Upcoming", color: "bg-emerald-500", textColor: "text-emerald-600", bgColor: "bg-emerald-50" };
-      case "past":
-        return { label: "Past", color: "bg-gray-400", textColor: "text-gray-500", bgColor: "bg-gray-50" };
+      case "recent":
+        return { label: "Recent", color: "bg-blue-500", textColor: "text-blue-600", bgColor: "bg-blue-50" };
       default:
-        return { label: "Draft", color: "bg-amber-500", textColor: "text-amber-600", bgColor: "bg-amber-50" };
+        return { label: "Archived", color: "bg-gray-400", textColor: "text-gray-500", bgColor: "bg-gray-50" };
     }
   }, [item]);
 
@@ -407,8 +422,8 @@ export default function PerformanceDetailPage() {
                     )}
                   </div>
 
-                  {/* CTA Button */}
-                  {item.status === "upcoming" && (
+                  {/* CTA Button - Only show for upcoming events */}
+                  {getDisplayStatus(item.eventDate) === "upcoming" && item.status !== "draft" && (
                     <a
                       href={item.url || "https://www.ticketmaster.com"}
                       target="_blank"
@@ -420,6 +435,12 @@ export default function PerformanceDetailPage() {
                       </svg>
                       Book Tickets
                     </a>
+                  )}
+                  {/* Archive Notice */}
+                  {getDisplayStatus(item.eventDate) === "archived" && (
+                    <div className="mt-6 px-4 py-3 bg-gray-100 rounded-xl text-center">
+                      <p className="text-xs text-gray-500">This event has been archived</p>
+                    </div>
                   )}
                 </div>
 
