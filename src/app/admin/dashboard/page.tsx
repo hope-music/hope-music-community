@@ -83,16 +83,6 @@ export default function AdminDashboardPage() {
         </p>
       </div>
 
-      {/* Quick Stats */}
-      <div className="grid grid-cols-5 gap-4">
-        {cards.map((card) => (
-          <div key={card.href} className="rounded-lg border border-gray-200 bg-white p-4 text-center">
-            <div className="text-2xl">{card.icon}</div>
-            <div className="mt-1 text-xs font-medium text-gray-700">{card.title}</div>
-          </div>
-        ))}
-      </div>
-
       {/* Management Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {cards.map((card) => (
