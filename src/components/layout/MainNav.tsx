@@ -104,6 +104,7 @@ const PERFORMANCE_ITEMS = [
   { label: "Festival", slug: "festival" },
   { label: "Ballet", slug: "ballet" },
   { label: "Others", slug: "others" },
+  { label: "Featured", slug: "", isFeatured: true },
 ];
 
 const STAGE_PRODUCTION_ITEMS = [
@@ -160,12 +161,19 @@ function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolea
       >
         {PERFORMANCE_ITEMS.map((item) => (
           <a
-            key={item.slug}
-            href={`/performance/${item.slug}`}
-            target="_blank"
+            key={item.slug || "featured"}
+            href={item.isFeatured ? "/performance" : `/performance/${item.slug}`}
+            target={item.isFeatured ? "_self" : "_blank"}
             rel="noopener noreferrer"
-            className="flex items-center px-5 py-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-white/20 hover:text-white"
+            className={`flex items-center px-5 py-3 text-[13px] font-medium transition-colors duration-150 ${
+              item.isFeatured
+                ? "text-yellow-300 hover:bg-yellow-500/20"
+                : "text-white hover:bg-white/20"
+            }`}
           >
+            {item.isFeatured && (
+              <span className="mr-2 text-yellow-300">★</span>
+            )}
             {item.label}
           </a>
         ))}
