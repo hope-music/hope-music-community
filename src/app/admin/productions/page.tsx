@@ -477,13 +477,13 @@ export default function StageProductionsPage() {
       } catch (e) {}
     }
     const isFromApi = !adminItems.some(i => i.id === item.id);
-    
+
     // If from API, add to localStorage first
     if (isFromApi) {
       const updatedAdminItems = [item, ...adminItems];
       localStorage.setItem("admin_performance", JSON.stringify(updatedAdminItems));
     }
-    
+
     setEditingId(item.id);
     setTitle(item.title || "");
     setDescription(item.description || "");
@@ -493,7 +493,15 @@ export default function StageProductionsPage() {
     setEventDate(item.eventDate || "");
     setCoverImage(item.coverImage || "");
     setCoverPreview(item.coverImage || null);
-    loadComments(item.id);
+
+    // Load comments for this item
+    try {
+      loadComments(item.id);
+    } catch (e) {
+      setComments([]);
+    }
+
+    // Show form after all state is set
     setShowForm(true);
   };
 
