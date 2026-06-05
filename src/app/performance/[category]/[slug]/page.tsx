@@ -49,6 +49,10 @@ function getDisplayStatus(eventDate?: string): DisplayStatus {
   return "archived";
 }
 
+function isVisible(eventDate?: string): boolean {
+  return getDisplayStatus(eventDate) !== "archived";
+}
+
 export default function PerformanceDetailPage() {
   const params = useParams();
   const [item, setItem] = useState<Performance | null>(null);
