@@ -501,8 +501,12 @@ export default function StageProductionsPage() {
       setComments([]);
     }
 
-    // Show form after all state is set
-    setShowForm(true);
+    // Use setTimeout to ensure state updates are processed
+    setTimeout(() => {
+      setShowForm(true);
+      // Scroll to form
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 0);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -951,8 +955,8 @@ export default function StageProductionsPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
-                          <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
-                          <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                          <button type="button" onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                          <button type="button" onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
                         </div>
                       </div>
                     ))
