@@ -21,53 +21,6 @@ interface CommentSectionProps {
   title?: string;
 }
 
-// Generate default comments with current timestamps
-function getDefaultComments(): Comment[] {
-  const now = Date.now();
-  return [
-    {
-      id: "placeholder_1",
-      authorName: "Sarah Johnson",
-      authorEmail: "sarah@example.com",
-      authorAvatar: "avatar2",
-      content: "This was absolutely amazing! The performances were top-notch and the atmosphere was electric. Highly recommend catching this show!",
-      createdAt: now - 86400000 * 3,
-      replies: [
-        {
-          id: "placeholder_1_reply",
-          authorName: "Mike Chen",
-          authorEmail: "mike@example.com",
-          authorAvatar: "avatar4",
-          content: "Totally agree! I was there opening night and it exceeded all expectations.",
-          createdAt: now - 86400000 * 2,
-          replies: [],
-        },
-      ],
-    },
-    {
-      id: "placeholder_2",
-      authorName: "Emily Davis",
-      authorEmail: "emily@example.com",
-      authorAvatar: "avatar5",
-      content: "Brought my whole family and we all loved it. The production quality is outstanding!",
-      createdAt: now - 86400000 * 5,
-      replies: [],
-    },
-    {
-      id: "placeholder_3",
-      authorName: "Alex Thompson",
-      authorEmail: "alex@example.com",
-      authorAvatar: "avatar8",
-      content: "The attention to detail in every aspect of this production is remarkable. A must-see!",
-      createdAt: now - 86400000 * 7,
-      replies: [],
-    },
-  ];
-}
-
-// Default placeholder comments (used as fallback)
-const DEFAULT_COMMENTS = getDefaultComments();
-
 interface UserData {
   id: string;
   username: string;
@@ -159,11 +112,9 @@ export function CommentSection({ pageId, storageKey, bannedUsersKey, defaultComm
     if (stored) {
       const allComments = JSON.parse(stored);
       const pageComments = allComments[pageId] || [];
-      // Use defaultComments prop or fall back to built-in DEFAULT_COMMENTS
-      const defaults = defaultComments || DEFAULT_COMMENTS;
-      setComments(pageComments.length > 0 ? pageComments : defaults);
+      setComments(defaultComments ?? pageComments);
     } else {
-      setComments(defaultComments || DEFAULT_COMMENTS);
+      setComments(defaultComments ?? []);
     }
   }, [pageId, storageKey, bannedUsersKey]);
 
