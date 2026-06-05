@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 interface Production {
@@ -14,189 +14,180 @@ interface Production {
   createdAt: number;
 }
 
-const SUBCATEGORIES = [
-  { value: "legend-hall-of-fame", label: "Legend Hall of Fame" },
-  { value: "musical", label: "Musical" },
-  { value: "classical", label: "Classical" },
-  { value: "edm", label: "EDM" },
-  { value: "legendary-rock", label: "Legendary Rock" },
-  { value: "legendary-pop", label: "Legendary Pop" },
-  { value: "festival", label: "Festival" },
-  { value: "ballet", label: "Ballet" },
-  { value: "others", label: "Others" },
-];
+const CATEGORY_LABELS: Record<string, string> = {
+  "legend-hall-of-fame": "Legend Hall of Fame",
+  "musical": "Musical",
+  "classical": "Classical",
+  "edm": "EDM",
+  "legendary-rock": "Legendary Rock",
+  "legendary-pop": "Legendary Pop",
+  "festival": "Festival",
+  "ballet": "Ballet",
+  "others": "Others",
+};
 
-const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+const FEATURED_STORAGE_KEY = "hmc_featured_performances";
 
-type DisplayStatus = "upcoming" | "recent" | "archived";
-
-function getDisplayStatus(eventDate?: string): DisplayStatus {
-  if (!eventDate) return "upcoming";
-  const eventTime = new Date(eventDate).getTime();
-  const now = Date.now();
-  if (eventTime > now) return "upcoming";
-  const elapsed = now - eventTime;
-  if (elapsed <= TWO_WEEKS_MS) return "recent";
-  return "archived";
-}
-
-function isVisible(eventDate?: string): boolean {
-  const status = getDisplayStatus(eventDate);
-  return status !== "archived";
-}
-
-function loadItems(): Production[] {
-  // Data will be loaded from JSON API, this returns empty initially
+function loadFeaturedIds(): string[] {
+  try {
+    const stored = localStorage.getItem(FEATURED_STORAGE_KEY);
+    if (stored) {
+      return JSON.parse(stored);
+    }
+  } catch (e) {
+    console.error("Error loading featured IDs:", e);
+  }
   return [];
 }
 
-async function loadItemsFromApi(): Promise<Production[]> {
-  try {
-    const res = await fetch("/data/ticketmaster-events.json");
-    if (!res.ok) return [];
-    const data = await res.json();
-    return data.events || [];
-  } catch (e) {
-    console.error("Error loading events:", e);
-    return [];
-  }
+function saveFeaturedIds(ids: string[]) {
+  localStorage.setItem(FEATURED_STORAGE_KEY, JSON.stringify(ids));
 }
 
-export default function PerformancePage() {
-  const [items, setItems] = useState<Production[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+function formatDate(dateStr?: string): string {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
 
-  const loadData = useCallback(async () => {
-    const data = await loadItemsFromApi();
-    setItems(data);
-    setLoading(false);
-  }, []);
+export default function FeaturedPage() {
+  const [featuredItems, setFeaturedItems] = useState<Production[]>([]);
+  const [allItems, setAllItems] = useState<Production[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Load all items from JSON
+        const res = await fetch("/data/ticketmaster-events.json");
+        const data = await res.json();
+        const events = data.events || [];
+        setAllItems(events);
+
+        // Load featured IDs and filter
+        const featuredIds = loadFeaturedIds();
+        const featured = events.filter((item: Production) => featuredIds.includes(item.id));
+        setFeaturedItems(featured);
+      } catch (e) {
+        console.error("Error loading data:", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     loadData();
-  }, [loadData]);
 
-  const filteredItems = (selectedCategory === "all"
-    ? items
-    : items.filter((item) => item.category === selectedCategory)
-  ).filter((item) => isVisible(item.eventDate));
+    // Listen for storage changes (when admin updates featured list)
+    const handleStorage = () => {
+      const featuredIds = loadFeaturedIds();
+      const featured = allItems.filter((item) => featuredIds.includes(item.id));
+      setFeaturedItems(featured);
+    };
 
-  const itemsByCategory = SUBCATEGORIES.map((sub) => ({
-    ...sub,
-    items: items.filter((item) => item.category === sub.value && isVisible(item.eventDate)),
-  }));
+    window.addEventListener("storage", handleStorage);
+    // Also listen for custom event
+    window.addEventListener("featuredUpdated", handleStorage);
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "";
-    return new Date(dateStr).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
-  };
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("featuredUpdated", handleStorage);
+    };
+  }, [allItems.length]);
+
+  if (loading) {
+    return (
+      <main className="min-h-screen bg-white">
+        <div className="mx-auto max-w-6xl px-4 py-20 text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div>
+        </div>
+      </main>
+    );
+  }
+
+  if (featuredItems.length === 0) {
+    return (
+      <main className="min-h-screen bg-white">
+        {/* Header */}
+        <div className="border-b border-t border-[#D96A32] bg-white">
+          <div className="mx-auto max-w-6xl px-4 py-6 text-center">
+            <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">Featured</h1>
+          </div>
+        </div>
+
+        {/* Empty State */}
+        <div className="mx-auto max-w-6xl px-4 py-20 text-center">
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-12">
+            <div className="text-4xl mb-4">🎭</div>
+            <h2 className="mb-2 text-xl font-semibold text-gray-700">No Featured Performances</h2>
+            <p className="text-gray-500">
+              Check back later or browse all performances in the navigation menu.
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-white">
       {/* Header */}
       <div className="border-b border-t border-[#D96A32] bg-white">
         <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">Performance</h1>
+          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">Featured</h1>
         </div>
       </div>
 
-      {/* Category Tabs */}
-      <div className="border-b border-gray-200 bg-white sticky top-0 z-10">
-        <div className="mx-auto max-w-6xl px-4">
-          <div className="flex flex-wrap gap-1 py-2">
-            <button
-              onClick={() => setSelectedCategory("all")}
-              className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                selectedCategory === "all"
-                  ? "bg-[#D96A32] text-white"
-                  : "text-gray-600 hover:bg-gray-100"
-              }`}
-            >
-              All {items.length > 0 && `(${items.length})`}
-            </button>
-            {SUBCATEGORIES.map((sub) => {
-              const count = itemsByCategory.find(c => c.value === sub.value)?.items.length || 0;
-              return (
-                <button
-                  key={sub.value}
-                  onClick={() => setSelectedCategory(sub.value)}
-                  className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
-                    selectedCategory === sub.value
-                      ? "bg-[#D96A32] text-white"
-                      : "text-gray-600 hover:bg-gray-100"
-                  }`}
-                >
-                  {sub.label} {count > 0 && `(${count})`}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Content */}
+      {/* Featured Cards */}
       <div className="mx-auto max-w-6xl px-4 py-8">
-        {loading ? (
-          <div className="py-20 text-center">
-            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div>
-          </div>
-        ) : filteredItems.length === 0 ? (
-          <div className="py-20 text-center text-gray-500">
-            <p className="text-lg">No performances available in this category.</p>
-            <button onClick={() => setSelectedCategory("all")} className="mt-4 text-[#D96A32] hover:underline">
-              View all performances
-            </button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredItems.map((item) => (
-              <a
-                key={item.id}
-                href={`/performance/${item.category}/${item.id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group flex h-full flex-col overflow-hidden rounded-xl border border-hmc-placeholder-border bg-white shadow-sm transition-shadow hover:shadow-md cursor-pointer"
-              >
-                <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">
-                  {item.coverImage ? (
-                    <img
-                      src={item.coverImage}
-                      alt={item.title}
-                      className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center bg-gray-200">
-                      <span className="text-gray-400">No Image</span>
-                    </div>
-                  )}
-                </div>
-                <div className="flex flex-1 flex-col gap-2 p-4">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">
-                      {SUBCATEGORIES.find((c) => c.value === item.category)?.label || item.category}
-                    </span>
-                    {getDisplayStatus(item.eventDate) === "upcoming" && (
-                      <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-600">Upcoming</span>
-                    )}
-                    {getDisplayStatus(item.eventDate) === "recent" && (
-                      <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-600">Recent</span>
-                    )}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {featuredItems.map((item) => (
+            <a
+              key={item.id}
+              href={`/performance/${item.category}/${item.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex h-full flex-col overflow-hidden rounded-xl border border-hmc-placeholder-border bg-white shadow-sm transition-shadow hover:shadow-md cursor-pointer"
+            >
+              <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">
+                {item.coverImage ? (
+                  <img
+                    src={item.coverImage}
+                    alt={item.title}
+                    className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center bg-gray-200">
+                    <span className="text-gray-400">No Image</span>
                   </div>
-                  <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors group-hover:text-[#C8102E]">
-                    {item.title}
-                  </h3>
-                  {item.eventDate && (
-                    <time className="text-xs text-hmc-text-muted">{formatDate(item.eventDate)}</time>
-                  )}
-                  {item.description && (
-                    <p className="text-xs text-gray-500 line-clamp-2">{item.description.replace(/<[^>]*>/g, "")}</p>
+                )}
+              </div>
+              <div className="flex flex-1 flex-col gap-2 p-4">
+                <div className="flex items-center gap-2">
+                  <span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">
+                    {CATEGORY_LABELS[item.category] || item.category}
+                  </span>
+                  {item.status === "upcoming" && (
+                    <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-600">Upcoming</span>
                   )}
                 </div>
-              </a>
-            ))}
-          </div>
-        )}
+                <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors group-hover:text-[#C8102E]">
+                  {item.title}
+                </h3>
+                {item.eventDate && (
+                  <time className="text-xs text-hmc-text-muted">{formatDate(item.eventDate)}</time>
+                )}
+                {item.description && (
+                  <p className="text-xs text-gray-500 line-clamp-2">
+                    {item.description.replace(/<[^>]*>/g, "")}
+                  </p>
+                )}
+              </div>
+            </a>
+          ))}
+        </div>
       </div>
     </main>
   );

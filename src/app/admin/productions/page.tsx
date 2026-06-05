@@ -229,6 +229,10 @@ export default function StageProductionsPage() {
   const [dataSource, setDataSource] = useState<DataSource>("admin");
   const [isMerging, setIsMerging] = useState(false);
 
+  // Featured performances state
+  const [featuredIds, setFeaturedIds] = useState<string[]>([]);
+  const FEATURED_STORAGE_KEY = "hmc_featured_performances";
+
   // Comment management state
   const [comments, setComments] = useState<Comment[]>([]);
   const [bannedUsers, setBannedUsers] = useState<BanEntry[]>([]);
@@ -247,11 +251,17 @@ export default function StageProductionsPage() {
   // Load data on mount
   useEffect(() => {
     loadAllData();
-    
+
     // Load banned users
     const banned = localStorage.getItem("performance_banned_users");
     if (banned) {
       setBannedUsers(JSON.parse(banned));
+    }
+
+    // Load featured IDs
+    const featured = localStorage.getItem(FEATURED_STORAGE_KEY);
+    if (featured) {
+      setFeaturedIds(JSON.parse(featured));
     }
   }, []);
 
@@ -494,6 +504,28 @@ export default function StageProductionsPage() {
     setShowForm(true);
   };
 
+  // Toggle featured status
+  const toggleFeatured = (itemId: string) => {
+    let updated: string[];
+    if (featuredIds.includes(itemId)) {
+      updated = featuredIds.filter(id => id !== itemId);
+    } else {
+      if (featuredIds.length >= 9) {
+        setMessage({ type: "error", text: "Maximum 9 featured items allowed" });
+        return;
+      }
+      updated = [...featuredIds, itemId];
+    }
+    setFeaturedIds(updated);
+    localStorage.setItem(FEATURED_STORAGE_KEY, JSON.stringify(updated));
+    // Notify frontend pages
+    window.dispatchEvent(new Event("featuredUpdated"));
+    setMessage({
+      type: "success",
+      text: featuredIds.includes(itemId) ? "Removed from Featured" : "Added to Featured"
+    });
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -601,6 +633,9 @@ export default function StageProductionsPage() {
           <div className="mt-2 flex items-center gap-4">
             <span className="text-sm">
               Total: <span className="font-semibold">{items.length}</span> items
+            </span>
+            <span className="text-sm">
+              Featured: <span className={`font-semibold ${featuredIds.length > 0 ? "text-yellow-600" : "text-gray-400"}`}>{featuredIds.length}/9</span>
             </span>
             <span className="text-xs text-gray-400">
               (Source: {dataSource === "ticketmaster" ? "Ticketmaster API" : "Admin + Ticketmaster"})
@@ -940,6 +975,17 @@ export default function StageProductionsPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
+                          <button
+                            onClick={() => toggleFeatured(item.id)}
+                            className={`px-3 py-1 text-xs font-medium rounded ${
+                              featuredIds.includes(item.id)
+                                ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                                : "text-gray-400 hover:text-yellow-600 hover:bg-gray-100"
+                            }`}
+                            title={featuredIds.includes(item.id) ? "Remove from Featured" : "Add to Featured"}
+                          >
+                            {featuredIds.includes(item.id) ? "★" : "☆"}
+                          </button>
                           <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
                           <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
                         </div>
