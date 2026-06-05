@@ -1,9 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { api } from "@/lib/convex";
 import { useQuery_experimental } from "@/lib/convex";
+import {
+  getInteractionCategoryLabel,
+  INTERACTION_CATEGORY_KEYS,
+  normalizeInteractionCategory,
+  parseInteractionItems,
+} from "@/lib/interaction";
 
 // Wrapper to safely call useQuery without crashing on errors
 function useAdminPosts() {
@@ -29,14 +35,16 @@ interface Post {
   createdAt: number;
 }
 
-const ALL_CATEGORIES = [
-  { value: "software", label: "Software", icon: "💻" },
-  { value: "hardware", label: "Hardware", icon: "🎛️" },
-  { value: "music", label: "Music", icon: "🎵" },
-  { value: "production", label: "Production", icon: "🎬" },
-  { value: "artical", label: "Article", icon: "📝" },
-  { value: "others", label: "Others", icon: "💬" },
-];
+const ALL_CATEGORIES = INTERACTION_CATEGORY_KEYS.map((value) => ({
+  value,
+  label: getInteractionCategoryLabel(value),
+  icon:
+    value === "software" ? "💻" :
+    value === "hardware" ? "🎛️" :
+    value === "music" ? "🎵" :
+    value === "production" ? "🎬" :
+    value === "article" ? "📝" : "💬",
+}));
 
 // Placeholder posts data
 const PLACEHOLDER_POSTS = [
@@ -85,16 +93,16 @@ const PLACEHOLDER_POSTS = [
   { id: "ph-prod-9", title: "Live mixing techniques for bands", author: "LiveMixer", replies: 52, views: 2180, category: "production", createdAt: Date.now() - 3600000 * 102 },
   { id: "ph-prod-10", title: "Stage management best practices", author: "ProManager", replies: 19, views: 890, category: "production", createdAt: Date.now() - 3600000 * 114 },
   // Article (10)
-  { id: "ph-art-1", title: "The rich history of musical theater", author: "TheaterBuff", replies: 94, views: 3560, category: "artical", createdAt: Date.now() - 3600000 * 7 },
-  { id: "ph-art-2", title: "The evolution of recording technology", author: "HistoryNerd", replies: 71, views: 2780, category: "artical", createdAt: Date.now() - 3600000 * 19 },
-  { id: "ph-art-3", title: "The 10 most influential composers of the 21st century", author: "MusicScholar", replies: 118, views: 4560, category: "artical", createdAt: Date.now() - 3600000 * 31 },
-  { id: "ph-art-4", title: "Psychoacoustics: how the brain processes music", author: "ScienceGuy", replies: 63, views: 2450, category: "artical", createdAt: Date.now() - 3600000 * 43 },
-  { id: "ph-art-5", title: "Music therapy research — evidence-based practice", author: "Therapist", replies: 45, views: 1890, category: "artical", createdAt: Date.now() - 3600000 * 55 },
-  { id: "ph-art-6", title: "Copyright law for independent musicians", author: "LegalEagle", replies: 82, views: 3240, category: "artical", createdAt: Date.now() - 3600000 * 67 },
-  { id: "ph-art-7", title: "The streaming era — understanding music economics", author: "EconMajor", replies: 97, views: 3780, category: "artical", createdAt: Date.now() - 3600000 * 79 },
-  { id: "ph-art-8", title: "AI in music composition", author: "AITech", replies: 156, views: 5890, category: "artical", createdAt: Date.now() - 3600000 * 91 },
-  { id: "ph-art-9", title: "The future of live music performances", author: "Futurist", replies: 74, views: 2890, category: "artical", createdAt: Date.now() - 3600000 * 103 },
-  { id: "ph-art-10", title: "Music education trends and innovations", author: "EduExpert", replies: 38, views: 1560, category: "artical", createdAt: Date.now() - 3600000 * 115 },
+  { id: "ph-art-1", title: "The rich history of musical theater", author: "TheaterBuff", replies: 94, views: 3560, category: "article", createdAt: Date.now() - 3600000 * 7 },
+  { id: "ph-art-2", title: "The evolution of recording technology", author: "HistoryNerd", replies: 71, views: 2780, category: "article", createdAt: Date.now() - 3600000 * 19 },
+  { id: "ph-art-3", title: "The 10 most influential composers of the 21st century", author: "MusicScholar", replies: 118, views: 4560, category: "article", createdAt: Date.now() - 3600000 * 31 },
+  { id: "ph-art-4", title: "Psychoacoustics: how the brain processes music", author: "ScienceGuy", replies: 63, views: 2450, category: "article", createdAt: Date.now() - 3600000 * 43 },
+  { id: "ph-art-5", title: "Music therapy research — evidence-based practice", author: "Therapist", replies: 45, views: 1890, category: "article", createdAt: Date.now() - 3600000 * 55 },
+  { id: "ph-art-6", title: "Copyright law for independent musicians", author: "LegalEagle", replies: 82, views: 3240, category: "article", createdAt: Date.now() - 3600000 * 67 },
+  { id: "ph-art-7", title: "The streaming era — understanding music economics", author: "EconMajor", replies: 97, views: 3780, category: "article", createdAt: Date.now() - 3600000 * 79 },
+  { id: "ph-art-8", title: "AI in music composition", author: "AITech", replies: 156, views: 5890, category: "article", createdAt: Date.now() - 3600000 * 91 },
+  { id: "ph-art-9", title: "The future of live music performances", author: "Futurist", replies: 74, views: 2890, category: "article", createdAt: Date.now() - 3600000 * 103 },
+  { id: "ph-art-10", title: "Music education trends and innovations", author: "EduExpert", replies: 38, views: 1560, category: "article", createdAt: Date.now() - 3600000 * 115 },
   // Others (10)
   { id: "ph-oth-1", title: "Community guidelines — keeping our forum respectful", author: "Admin", replies: 12, views: 890, category: "others", createdAt: Date.now() - 3600000 * 168 },
   { id: "ph-oth-2", title: "Community event calendar — upcoming meetups", author: "EventLead", replies: 45, views: 1890, category: "others", createdAt: Date.now() - 3600000 * 72 },
@@ -128,9 +136,8 @@ export default function InteractionCategoryPage({ params }: PageProps) {
   const [currentCategory, setCurrentCategory] = useState<string | null>(null);
   const [posts, setPosts] = useState<any[]>([]);
   const [sortBy, setSortBy] = useState<"latest" | "popular">("latest");
-  const [timeFilter, setTimeFilter] = useState("all");
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeTab, setActiveTab] = useState("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -144,59 +151,77 @@ export default function InteractionCategoryPage({ params }: PageProps) {
 
   // Load posts from Convex or localStorage
   const allPosts = useAdminPosts();
+  const localPosts = useMemo(() => {
+    if (typeof window === "undefined") return [] as any[];
+    return parseInteractionItems(localStorage.getItem("admin_interaction")).map((p: any) => ({
+      ...p,
+      category: normalizeInteractionCategory(p.category),
+    }));
+  }, []);
 
-  useEffect(() => {
-    if (!currentCategory) return;
-
-    // First try Convex (only if we got data back without error)
-    if (allPosts && allPosts.length > 0) {
-      const filtered = allPosts.filter((p: Post) => p.category === currentCategory);
-      setPosts(filtered.map((p: Post) => ({
+  const dataSourcePosts = allPosts && allPosts.length > 0
+    ? allPosts.map((p: Post) => ({
         id: p._id,
         title: p.title,
         content: p.content,
-        category: p.category,
+        category: normalizeInteractionCategory(p.category),
         author: p.authorUsername || "Anonymous",
         replies: 0,
         views: Math.floor(Math.random() * 5000),
         createdAt: p.createdAt || Date.now(),
-      })));
+      }))
+    : localPosts.length > 0
+      ? localPosts
+      : PLACEHOLDER_POSTS;
+
+  const categoryCounts = useMemo(() => {
+    return ALL_CATEGORIES.reduce<Record<string, number>>((acc, cat) => {
+      acc[cat.value] = dataSourcePosts.filter((post) => normalizeInteractionCategory(post.category) === cat.value).length;
+      return acc;
+    }, {});
+  }, [dataSourcePosts]);
+
+  useEffect(() => {
+    if (!currentCategory) return;
+
+    const normalizedCurrentCategory = normalizeInteractionCategory(currentCategory);
+
+    if (allPosts && allPosts.length > 0) {
+      const filtered = dataSourcePosts.filter((p: any) => normalizeInteractionCategory(p.category) === normalizedCurrentCategory);
+      setPosts(filtered);
     } else {
-      // Fall back to localStorage (admin-created posts)
-      const stored = localStorage.getItem("admin_interaction");
-      if (stored) {
-        const localPosts = JSON.parse(stored);
-        const filtered = currentCategory
-          ? localPosts.filter((p: any) => p.category === currentCategory)
-          : localPosts;
-        setPosts(filtered);
-      } else {
-        // Final fallback to placeholders
-        const filtered = currentCategory
-          ? PLACEHOLDER_POSTS.filter(p => p.category === currentCategory)
-          : PLACEHOLDER_POSTS;
-        setPosts(filtered);
-      }
+      const filtered = normalizedCurrentCategory
+        ? dataSourcePosts.filter((p: any) => normalizeInteractionCategory(p.category) === normalizedCurrentCategory)
+        : dataSourcePosts;
+      setPosts(filtered);
     }
-  }, [allPosts, currentCategory]);
+  }, [allPosts, currentCategory, dataSourcePosts]);
 
   // Filter and sort posts
-  const filteredPosts = posts.filter(post => {
+  const filteredPosts = posts.filter((post) => {
     if (searchQuery && !post.title.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
-    if (timeFilter !== "all") {
-      const now = Date.now();
-      const age = now - post.createdAt;
-      const day = 24 * 3600000;
-      switch (timeFilter) {
-        case "today": if (age > day) return false; break;
-        case "week": if (age > 7 * day) return false; break;
-        case "month": if (age > 30 * day) return false; break;
-        case "year": if (age > 365 * day) return false; break;
+
+    const now = Date.now();
+    const postDate = new Date(post.createdAt);
+
+    switch (timeFilter) {
+      case "today": {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        return post.createdAt >= startOfDay.getTime();
       }
+      case "week":
+        return now - post.createdAt <= 7 * 24 * 60 * 60 * 1000;
+      case "month":
+        return postDate.getFullYear() === new Date(now).getFullYear() && postDate.getMonth() === new Date(now).getMonth();
+      case "year":
+        return postDate.getFullYear() === new Date(now).getFullYear();
+      case "all":
+      default:
+        return true;
     }
-    return true;
   });
 
   const sortedPosts = [...filteredPosts].sort((a, b) => {
@@ -217,6 +242,8 @@ export default function InteractionCategoryPage({ params }: PageProps) {
   const currentCategoryInfo = currentCategory ? ALL_CATEGORIES.find(c => c.value === currentCategory) : null;
   const currentCategoryLabel = currentCategoryInfo?.label?.toUpperCase() || "INTERACTION";
 
+  const currentCategoryCount = currentCategory ? categoryCounts[currentCategory] || 0 : dataSourcePosts.length;
+
   return (
     <main className="min-h-screen bg-gray-100">
       {/* Top Header */}
@@ -232,25 +259,8 @@ export default function InteractionCategoryPage({ params }: PageProps) {
               <h1 className="text-2xl font-bold text-gray-900">{currentCategoryLabel}</h1>
             </div>
             <div className="text-sm text-gray-500">
-              45,987 Members | {posts.length} Topics
+              45,987 Members | {currentCategoryCount} Topics
             </div>
-          </div>
-
-          {/* Tabs */}
-          <div className="flex gap-1 border-b border-gray-200 -mb-px">
-            {["All Topics", "By Category", "Latest"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab.toLowerCase().replace(" ", "-"))}
-                className={`px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-                  activeTab === tab.toLowerCase().replace(" ", "-")
-                    ? "border-[#D96A32] text-[#D96A32]"
-                    : "border-transparent text-gray-500 hover:text-gray-700"
-                }`}
-              >
-                {tab}
-              </button>
-            ))}
           </div>
         </div>
       </div>
@@ -285,7 +295,7 @@ export default function InteractionCategoryPage({ params }: PageProps) {
           {/* Time Filter */}
           <select
             value={timeFilter}
-            onChange={(e) => setTimeFilter(e.target.value)}
+            onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
             className="px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none"
           >
             <option value="all">All Time</option>
@@ -294,11 +304,6 @@ export default function InteractionCategoryPage({ params }: PageProps) {
             <option value="month">This Month</option>
             <option value="year">This Year</option>
           </select>
-
-          {/* Filter Button */}
-          <button className="px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50 transition-colors">
-            Filter
-          </button>
 
           {/* Spacer */}
           <div className="flex-1" />
@@ -337,14 +342,19 @@ export default function InteractionCategoryPage({ params }: PageProps) {
                   <Link
                     key={cat.value}
                     href={`/interaction/${cat.value}`}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
+                    className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
                       currentCategory === cat.value
                         ? "bg-[#D96A32]/10 text-[#D96A32] font-medium"
                         : "text-gray-700 hover:bg-gray-50"
                     }`}
                   >
-                    <span>{cat.icon}</span>
-                    <span>{cat.label}</span>
+                    <span className="flex items-center gap-3 min-w-0">
+                      <span>{cat.icon}</span>
+                      <span>{cat.label}</span>
+                    </span>
+                    <span className={`text-xs ${currentCategory === cat.value ? "text-[#D96A32]" : "text-gray-400"}`}>
+                      {categoryCounts[cat.value] || 0}
+                    </span>
                   </Link>
                 ))}
               </div>
@@ -356,7 +366,7 @@ export default function InteractionCategoryPage({ params }: PageProps) {
             <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
               {sortedPosts.length === 0 ? (
                 <div className="p-12 text-center">
-                  <p className="text-gray-500">No topics found. Be the first to start a discussion!</p>
+                  <p className="text-gray-500">No topics yet.</p>
                 </div>
               ) : (
                 sortedPosts.map((post, index) => {
@@ -365,8 +375,6 @@ export default function InteractionCategoryPage({ params }: PageProps) {
                     <Link
                       key={post.id}
                       href={`/interaction/${post.category}/${post.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className={`block px-4 py-4 hover:bg-gray-50 transition-colors ${
                         index !== sortedPosts.length - 1 ? "border-b border-gray-100" : ""
                       }`}
@@ -415,19 +423,6 @@ export default function InteractionCategoryPage({ params }: PageProps) {
             </div>
 
             {/* Pagination */}
-            {sortedPosts.length > 0 && (
-              <div className="mt-4 flex justify-center">
-                <div className="flex items-center gap-2">
-                  <button className="px-3 py-1.5 text-sm text-gray-500 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50" disabled>
-                    Previous
-                  </button>
-                  <span className="px-3 py-1.5 text-sm text-gray-700">Page 1 of 1</span>
-                  <button className="px-3 py-1.5 text-sm text-gray-500 bg-white border border-gray-200 rounded-md hover:bg-gray-50 disabled:opacity-50" disabled>
-                    Next
-                  </button>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Sidebar - Quick Stats */}
@@ -438,7 +433,7 @@ export default function InteractionCategoryPage({ params }: PageProps) {
               </div>
               <div className="p-4 space-y-4">
                 <div className="text-center">
-                  <div className="text-2xl font-bold text-[#D96A32]">{posts.length}</div>
+                  <div className="text-2xl font-bold text-[#D96A32]">{currentCategoryCount}</div>
                   <div className="text-xs text-gray-500">Topics</div>
                 </div>
                 <div className="text-center">

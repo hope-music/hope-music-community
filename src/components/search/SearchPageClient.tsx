@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { useQuery } from "@/lib/convex";
-import { api } from "@/lib/convex";
+import { normalizeInteractionCategory, parseInteractionItems } from "@/lib/interaction";
 import { useEffect, useMemo, useState } from "react";
+import {
+  PERFORMANCE_CATEGORY_LABELS,
+  STAGE_PRODUCTION_CATEGORY_LABELS,
+  INTERACTION_CATEGORY_LABELS,
+} from "@/lib/constants";
 
 type SearchResult = {
   id: string;
@@ -149,24 +154,14 @@ const PERFORMANCE_CATEGORY_LABELS: Record<string, string> = {
 };
 
 const STAGE_CATEGORY_LABELS: Record<string, string> = {
-  sets: "Sets",
-  lighting: "Lighting",
-  sound: "Sound",
-  projection: "Projection",
-  scenery: "Scenery",
-  others: "Others",
+  ...STAGE_PRODUCTION_CATEGORY_LABELS,
+  sets: "Stage",
+  sound: "Audio",
+  projection: "Video",
+  scenery: "Effects",
 };
 
-const INTERACTION_CATEGORY_LABELS: Record<string, string> = {
-  software: "Software",
-  hardware: "Hardware",
-  music: "Music",
-  production: "Stage Production",
-  resources: "Resources",
-  other: "Other",
-  artical: "Artical",
-  others: "Others",
-};
+const INTERACTION_CATEGORY_LABELS_LOCAL = INTERACTION_CATEGORY_LABELS;
 
 const DEFAULT_HOPE_STUDIO_ITEMS: HopeStudioItem[] = [
   {
@@ -294,21 +289,16 @@ function loadStageProductionResults(): SearchResult[] {
 
 function loadInteractionResults(): SearchResult[] {
   try {
-    const stored = localStorage.getItem("admin_interaction");
-    const parsed = stored ? JSON.parse(stored) : [];
-    const items: InteractionItem[] = Array.isArray(parsed)
-      ? parsed
-      : parsed && Array.isArray(parsed.posts)
-        ? parsed.posts
-        : [];
+    const items = parseInteractionItems<InteractionItem>(localStorage.getItem("admin_interaction"));
 
     return items.map((item) => {
-      const categoryLabel = INTERACTION_CATEGORY_LABELS[item.category] ?? item.category;
+      const normalizedCat = normalizeInteractionCategory(item.category);
+      const categoryLabel = INTERACTION_CATEGORY_LABELS[normalizedCat] ?? INTERACTION_CATEGORY_LABELS[item.category] ?? item.category;
       const description = stripHtml(item.description) || `${categoryLabel} discussion topic`;
       return {
         id: `interaction-${item.id}`,
         title: item.title,
-        href: `/interaction/${item.category}/${item.id}`,
+        href: `/interaction/${normalizedCat}/${item.id}`,
         description,
         section: "Interaction",
         meta: [categoryLabel, item.author].filter(Boolean).join(" • "),

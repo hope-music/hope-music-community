@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getInteractionCategoryLabel, INTERACTION_STORAGE_KEY, normalizeInteractionCategory, readInteractionItems } from "@/lib/interaction";
 
 interface Post {
   id: string;
@@ -13,15 +14,6 @@ interface Post {
   authorEmail: string;
   createdAt: number;
 }
-
-const CATEGORY_MAP: Record<string, { label: string; icon: string }> = {
-  software: { label: "Software", icon: "💻" },
-  hardware: { label: "Hardware", icon: "🎛️" },
-  music: { label: "Music", icon: "🎵" },
-  production: { label: "Production", icon: "🎬" },
-  resources: { label: "Resources", icon: "📚" },
-  other: { label: "Other", icon: "💬" },
-};
 
 interface PageProps {
   params: Promise<{ category: string }>;
@@ -37,7 +29,7 @@ export default function NewPostPage({ params }: PageProps) {
 
   useEffect(() => {
     params.then(({ category }) => {
-      setCurrentCategory(category);
+      setCurrentCategory(normalizeInteractionCategory(category));
     });
   }, [params]);
 
@@ -61,26 +53,25 @@ export default function NewPostPage({ params }: PageProps) {
 
     setSubmitting(true);
 
-    const stored = localStorage.getItem("forum_posts");
-    const posts: Post[] = stored ? JSON.parse(stored) : [];
+    const posts = readInteractionItems<Post>();
 
     const newPost: Post = {
       id: Date.now().toString(),
       title: title.trim(),
       content: content.trim(),
-      category: currentCategory,
+      category: normalizeInteractionCategory(currentCategory),
       authorName: currentUser.username,
       authorEmail: currentUser.email,
       createdAt: Date.now(),
     };
 
     posts.unshift(newPost);
-    localStorage.setItem("forum_posts", JSON.stringify(posts));
+    localStorage.setItem(INTERACTION_STORAGE_KEY, JSON.stringify(posts));
 
-    router.push(`/interaction/${currentCategory}/${newPost.id}`);
+    router.push(`/interaction/${newPost.category}/${newPost.id}`);
   };
 
-  const categoryInfo = CATEGORY_MAP[currentCategory] || { label: currentCategory, icon: "💬" };
+  const categoryLabel = getInteractionCategoryLabel(currentCategory);
 
   if (!currentUser) {
     return (
@@ -98,7 +89,7 @@ export default function NewPostPage({ params }: PageProps) {
             <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back to {categoryInfo.label}
+            Back to {categoryLabel}
           </Link>
         </div>
       </div>
@@ -107,7 +98,7 @@ export default function NewPostPage({ params }: PageProps) {
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900">New Topic</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Posting in <span className="font-medium">{categoryInfo.label}</span> as <span className="font-medium">{currentUser.username}</span>
+            Posting in <span className="font-medium">{categoryLabel}</span> as <span className="font-medium">{currentUser.username}</span>
           </p>
         </div>
 
@@ -150,7 +141,7 @@ export default function NewPostPage({ params }: PageProps) {
               disabled={submitting || !title.trim() || !content.trim()}
               className="rounded-md bg-[#D96A32] px-6 py-2 text-sm font-medium text-white hover:bg-[#c45a28] disabled:opacity-50"
             >
-              {submitting ? "Posting..." : "Post Topic"}
+              {submitting ? "Posting..." : "Create"}
             </button>
           </div>
         </form>

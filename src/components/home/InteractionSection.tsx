@@ -6,6 +6,8 @@ import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { ViewMoreButton } from "@/components/ui/ViewMoreButton";
 import { CategoryBox } from "@/components/ui/CategoryBox";
+import { INTERACTION_CATEGORY_LABELS } from "@/lib/constants";
+import { INTERACTION_CATEGORY_KEYS, normalizeInteractionItems, readInteractionItems } from "@/lib/interaction";
 
 interface InteractionItem {
   id: string;
@@ -17,16 +19,9 @@ interface InteractionItem {
   createdAt: number;
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  software: "Software",
-  hardware: "Hardware",
-  music: "Music",
-  production: "Stage Production",
-  artical: "Artical",
-  others: "Others",
-};
+const CATEGORY_LABELS = INTERACTION_CATEGORY_LABELS;
 
-const CATEGORY_KEYS = ["software", "hardware", "music", "production", "artical", "others"];
+const CATEGORY_KEYS = INTERACTION_CATEGORY_KEYS;
 
 const PLACEHOLDER_POSTS: Record<string, { id: string; title: string }[]> = {
   software: [
@@ -77,7 +72,7 @@ const PLACEHOLDER_POSTS: Record<string, { id: string; title: string }[]> = {
     { id: "ph-prod-9", title: "Live mixing techniques for bands" },
     { id: "ph-prod-10", title: "Stage management best practices" },
   ],
-  artical: [
+  article: [
     { id: "ph-art-1", title: "The rich history of musical theater" },
     { id: "ph-art-2", title: "The evolution of recording technology" },
     { id: "ph-art-3", title: "The 10 most influential composers of the 21st century" },
@@ -120,8 +115,6 @@ function TopicList({
         <li key={item.id}>
           <Link
             href={`/interaction/${category}/${item.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
             className="group flex items-start gap-2 rounded px-2 py-1.5 text-sm text-hmc-text transition-colors duration-150 hover:bg-amber-50/50 hover:text-[#C8102E]"
           >
             <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#D96A32] transition-colors duration-150 group-hover:bg-[#C8102E]" />
@@ -139,21 +132,7 @@ export function InteractionSection() {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("admin_interaction");
-      if (!stored) {
-        setAllItems([]);
-        setLoading(false);
-        return;
-      }
-
-      const data = JSON.parse(stored);
-      if (Array.isArray(data)) {
-        setAllItems(data);
-      } else if (data && Array.isArray(data.posts)) {
-        setAllItems(data.posts);
-      } else {
-        setAllItems([]);
-      }
+      setAllItems(normalizeInteractionItems(readInteractionItems<InteractionItem>()));
     } catch (e) {
       console.error("Failed to parse interaction data", e);
       setAllItems([]);

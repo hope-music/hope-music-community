@@ -37,6 +37,22 @@ export const PERFORMANCE_CATEGORY_OPTIONS = [
   { value: "others", label: "Others" },
 ] as const;
 
+export const STAGE_PRODUCTION_CATEGORY_OPTIONS = [
+  { value: "stage", label: "Stage" },
+  { value: "video", label: "Video" },
+  { value: "lighting", label: "Lighting" },
+  { value: "audio", label: "Audio" },
+  { value: "effects", label: "Effects" },
+  { value: "costumes", label: "Costumes" },
+  { value: "props", label: "Props" },
+  { value: "makeup", label: "Makeup" },
+  { value: "others", label: "Others" },
+] as const;
+
+export const STAGE_PRODUCTION_CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  STAGE_PRODUCTION_CATEGORY_OPTIONS.map(({ value, label }) => [value, label])
+);
+
 export const PERFORMANCE_CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
   PERFORMANCE_CATEGORY_OPTIONS.map(({ value, label }) => [value, label])
 );
@@ -45,12 +61,34 @@ export const PERFORMANCE_CATEGORY_SLUG_MAP: Record<string, string> = Object.from
   PERFORMANCE_CATEGORY_OPTIONS.map(({ value, label }) => [label, value])
 );
 
+export const INTERACTION_CATEGORY_OPTIONS = [
+  { value: "software", label: "Software" },
+  { value: "hardware", label: "Hardware" },
+  { value: "music", label: "Music" },
+  { value: "production", label: "Stage Production" },
+  { value: "article", label: "Article" },
+  { value: "others", label: "Others" },
+] as const;
+
+export const INTERACTION_CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  INTERACTION_CATEGORY_OPTIONS.map(({ value, label }) => [value, label])
+);
+
+export const LEGACY_INTERACTION_CATEGORY_MAP: Record<string, string> = {
+  resources: "article",
+  artical: "article",
+  other: "others",
+  "stage-production": "production",
+  stageProduction: "production",
+  "stage_production": "production",
+};
+
 export const INTERACTION_CATEGORIES = [
   "Software",
   "Hardware",
   "Music",
   "Stage Production",
-  "Artical",
+  "Article",
   "Others",
 ] as const;
 

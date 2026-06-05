@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { INTERACTION_CATEGORY_OPTIONS } from "@/lib/constants";
+import {
+  getInteractionCategoryLabel,
+  normalizeInteractionItems,
+  readInteractionItems,
+} from "@/lib/interaction";
 
 interface Interaction {
   id: string;
@@ -13,22 +19,14 @@ interface Interaction {
   createdAt: number;
 }
 
-const CATEGORIES = [
-  { value: "software", label: "Software" },
-  { value: "hardware", label: "Hardware" },
-  { value: "music", label: "Music" },
-  { value: "production", label: "Production" },
-  { value: "resources", label: "Resources" },
-  { value: "other", label: "Other" },
-];
+const CATEGORIES = INTERACTION_CATEGORY_OPTIONS;
 
 export default function InteractionPage() {
   const [items, setItems] = useState<Interaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("admin_interaction");
-    if (stored) setItems(JSON.parse(stored));
+    setItems(normalizeInteractionItems(readInteractionItems<Interaction>()));
     setLoading(false);
   }, []);
 
@@ -44,7 +42,7 @@ export default function InteractionPage() {
         {loading ? (
           <div className="py-20 text-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div></div>
         ) : items.length === 0 ? (
-          <div className="py-20 text-center text-gray-500"><p className="text-lg">No items available yet.</p></div>
+          <div className="py-20 text-center text-gray-500"><p className="text-lg">No topics yet.</p></div>
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
@@ -57,7 +55,7 @@ export default function InteractionPage() {
                   )}
                 </div>
                 <div className="flex flex-1 flex-col gap-2 p-4">
-                  <span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">{CATEGORIES.find((c) => c.value === item.category)?.label || item.category}</span>
+                  <span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">{getInteractionCategoryLabel(item.category)}</span>
                   <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors group-hover:text-[#C8102E]">{item.title}</h3>
                   {item.author && <p className="text-xs text-gray-500">by {item.author}</p>}
                   {item.description && <p className="text-xs text-gray-500 line-clamp-2">{item.description.replace(/<[^>]*>/g, "")}</p>}

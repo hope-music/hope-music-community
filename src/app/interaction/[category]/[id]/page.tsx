@@ -2,6 +2,11 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import {
+  getInteractionCategoryLabel,
+  normalizeInteractionCategory,
+  parseInteractionItems,
+} from "@/lib/interaction";
 
 interface Post {
   _id: string;
@@ -30,12 +35,12 @@ interface BanEntry {
 }
 
 const CATEGORIES = [
-  { value: "software", label: "Software" },
-  { value: "hardware", label: "Hardware" },
-  { value: "music", label: "Music" },
-  { value: "production", label: "Production" },
-  { value: "artical", label: "Article" },
-  { value: "others", label: "Others" },
+  { value: "software", label: getInteractionCategoryLabel("software") },
+  { value: "hardware", label: getInteractionCategoryLabel("hardware") },
+  { value: "music", label: getInteractionCategoryLabel("music") },
+  { value: "production", label: getInteractionCategoryLabel("production") },
+  { value: "article", label: getInteractionCategoryLabel("article") },
+  { value: "others", label: getInteractionCategoryLabel("others") },
 ];
 
 // Default comments
@@ -178,9 +183,10 @@ export default function InteractionDetailPage({ params }: PageProps) {
   useEffect(() => {
     async function loadParams() {
       const resolved = await params;
-      setCategory(resolved.category);
+      setCategory(normalizeInteractionCategory(resolved.category));
       setPostId(resolved.id);
-      setCategoryLabel(CATEGORIES.find((c) => c.value === resolved.category)?.label || resolved.category);
+      const normalizedCategory = normalizeInteractionCategory(resolved.category);
+      setCategoryLabel(CATEGORIES.find((c) => c.value === normalizedCategory)?.label || normalizedCategory);
     }
     loadParams();
   }, [params]);
@@ -219,16 +225,15 @@ export default function InteractionDetailPage({ params }: PageProps) {
       return;
     }
 
-    const stored = localStorage.getItem("admin_interaction");
-    if (stored) {
-      const data = JSON.parse(stored);
-      const found = data.find((p: any) => p.id === postId && p.category === category);
+    const localPosts = parseInteractionItems(localStorage.getItem("admin_interaction"));
+    if (localPosts.length > 0) {
+      const found = localPosts.find((p: any) => p.id === postId && normalizeInteractionCategory(p.category) === category);
       if (found) {
         setPost({
           _id: found.id,
           title: found.title,
           content: found.content,
-          category: found.category,
+          category: normalizeInteractionCategory(found.category),
           authorUsername: found.author || "Anonymous",
           authorAvatar: found.coverImage || "",
           authorEmail: "",
@@ -371,7 +376,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
                       category === cat.value ? "bg-[#D96A32]/10 text-[#D96A32] font-medium" : "text-gray-700 hover:bg-gray-50"
                     }`}
                   >
-                    <span>{cat.value === "software" ? "💻" : cat.value === "hardware" ? "🎛️" : cat.value === "music" ? "🎵" : cat.value === "production" ? "🎬" : cat.value === "artical" ? "📝" : "💬"}</span>
+                    <span>{cat.value === "software" ? "💻" : cat.value === "hardware" ? "🎛️" : cat.value === "music" ? "🎵" : cat.value === "production" ? "🎬" : cat.value === "article" ? "📝" : "💬"}</span>
                     <span>{cat.label}</span>
                   </Link>
                 ))}
@@ -458,7 +463,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
                       href="/login"
                       className="px-4 py-2 text-sm font-medium text-[#D96A32] border border-[#D96A32] rounded-full hover:bg-[#D96A32]/10 transition-colors"
                     >
-                      Log In
+                      Sign In
                     </Link>
                     <Link
                       href="/registration"
@@ -475,7 +480,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
             <div className="space-y-3">
               {comments.length === 0 ? (
                 <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
-                  <p className="text-gray-500">No comments yet. Be the first to share your thoughts!</p>
+                  <p className="text-gray-500">No comments yet.</p>
                 </div>
               ) : (
                 comments.map((comment) => (
@@ -489,14 +494,14 @@ export default function InteractionDetailPage({ params }: PageProps) {
                           <span>{formatTimeAgo(comment.createdAt)}</span>
                         </div>
                         <p className="text-sm text-gray-800 mb-2">{comment.content}</p>
-                        <button onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)} className="text-xs text-gray-500 hover:text-[#D96A32] font-medium">Reply</button>
+                        <button onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)} className="text-xs text-gray-500 hover:text-[#D96A32] font-medium">Post Comment</button>
 
                         {replyingTo === comment.id && (
                           <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="mt-3">
                             <input type="text" value={replyAuthor} onChange={(e) => setReplyAuthor(e.target.value)} placeholder="Your name" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none" required />
                             <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="Write a reply..." rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none resize-none" required />
                             <div className="flex gap-2">
-                              <button type="submit" className="px-3 py-1 bg-[#D96A32] text-white text-xs font-medium rounded-full hover:bg-[#c45a28]">Reply</button>
+                              <button type="submit" className="px-3 py-1 bg-[#D96A32] text-white text-xs font-medium rounded-full hover:bg-[#c45a28]">Post Comment</button>
                               <button type="button" onClick={() => { setReplyingTo(null); setReplyContent(""); setReplyAuthor(""); }} className="px-3 py-1 bg-gray-200 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-300">Cancel</button>
                             </div>
                           </form>

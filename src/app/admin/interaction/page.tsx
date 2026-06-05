@@ -2,6 +2,18 @@
 
 import { useState, useEffect, useRef } from "react";
 import { ViolationModal, type ViolationAction } from "@/components/ui/ViolationModal";
+import { INTERACTION_CATEGORY_OPTIONS } from "@/lib/constants";
+import {
+  INTERACTION_STORAGE_KEY,
+  normalizeInteractionCategory,
+  normalizeInteractionItems,
+  parseInteractionItems,
+} from "@/lib/interaction";
+
+type TimeFilter = "all" | "today" | "week" | "month" | "year";
+
+const CATEGORIES = INTERACTION_CATEGORY_OPTIONS;
+const CATEGORY_OPTIONS = INTERACTION_CATEGORY_OPTIONS;
 
 // ============================================
 // TYPES
@@ -44,25 +56,6 @@ interface BanEntry {
 // ============================================
 // CONSTANTS
 // ============================================
-const CATEGORIES = [
-  { value: "all", label: "All Categories" },
-  { value: "software", label: "Software" },
-  { value: "hardware", label: "Hardware" },
-  { value: "music", label: "Music" },
-  { value: "production", label: "Production" },
-  { value: "resources", label: "Resources" },
-  { value: "other", label: "Other" },
-];
-
-const CATEGORY_OPTIONS = [
-  { value: "software", label: "Software" },
-  { value: "hardware", label: "Hardware" },
-  { value: "music", label: "Music" },
-  { value: "production", label: "Production" },
-  { value: "resources", label: "Resources" },
-  { value: "other", label: "Other" },
-];
-
 // Default comments
 const DEFAULT_COMMENTS: Comment[] = [
   {
@@ -167,9 +160,9 @@ export default function AdminInteractionPage() {
   const [isInitialized, setIsInitialized] = useState(false);
 
   // Filter state
-  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>(CATEGORIES[0]?.value ?? "software");
   const [searchQuery, setSearchQuery] = useState("");
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
+  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -208,25 +201,31 @@ export default function AdminInteractionPage() {
   // Load data
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("admin_interaction");
+      const stored = localStorage.getItem(INTERACTION_STORAGE_KEY);
       if (stored) {
         try {
-          const parsed = JSON.parse(stored);
+          const data = parseInteractionItems<Interaction>(stored);
+          const normalizedData = normalizeInteractionItems(data);
+
           // If data is corrupted or too few, reset to default
-          if (!Array.isArray(parsed) || parsed.length < 10) {
+          if (!normalizedData || normalizedData.length < 10) {
             console.log("Interaction data insufficient, restoring defaults...");
-            setItems(getDefaultPosts());
-            localStorage.setItem("admin_interaction", JSON.stringify(getDefaultPosts()));
+            const defaults = getDefaultPosts();
+            setItems(defaults);
+            localStorage.setItem(INTERACTION_STORAGE_KEY, JSON.stringify(defaults));
           } else {
-            setItems(parsed);
+            setItems(normalizedData);
+            localStorage.setItem(INTERACTION_STORAGE_KEY, JSON.stringify(normalizedData));
           }
         } catch {
-          setItems(getDefaultPosts());
-          localStorage.setItem("admin_interaction", JSON.stringify(getDefaultPosts()));
+          const defaults = getDefaultPosts();
+          setItems(defaults);
+          localStorage.setItem(INTERACTION_STORAGE_KEY, JSON.stringify(defaults));
         }
       } else {
-        setItems(getDefaultPosts());
-        localStorage.setItem("admin_interaction", JSON.stringify(getDefaultPosts()));
+        const defaults = getDefaultPosts();
+        setItems(defaults);
+        localStorage.setItem("admin_interaction", JSON.stringify(defaults));
       }
       setIsInitialized(true);
     }
@@ -244,7 +243,7 @@ export default function AdminInteractionPage() {
   // STORAGE HELPERS
   // ============================================
   const saveToStorage = (data: Interaction[]) => {
-    localStorage.setItem("admin_interaction", JSON.stringify(data));
+    localStorage.setItem(INTERACTION_STORAGE_KEY, JSON.stringify(data));
     setItems(data);
   };
 
@@ -491,7 +490,7 @@ export default function AdminInteractionPage() {
     setTitle("");
     setDescription("");
     setContent("");
-    setCategory(filterCategory !== "all" ? filterCategory : "software");
+    setCategory(filterCategory || "software");
     setAuthor("");
     setCoverImage("");
     setCoverPreview(null);
@@ -596,35 +595,54 @@ export default function AdminInteractionPage() {
   // ============================================
   // FILTERED DATA
   // ============================================
-  const itemsByCategory = CATEGORY_OPTIONS.map((cat) => ({
+  const itemsByCategory = CATEGORIES.map((cat) => ({
     ...cat,
     items: items.filter((p) => p.category === cat.value),
   }));
 
-  const filteredItems = searchQuery.trim()
-    ? items.filter((p) => {
-        const query = searchQuery.toLowerCase();
-        return (
-          p.title.toLowerCase().includes(query) ||
-          p.author.toLowerCase().includes(query) ||
-          p.description?.toLowerCase().includes(query)
-        );
-      })
-    : items;
+  const isWithinTimeFilter = (timestamp: number): boolean => {
+    const now = Date.now();
+    const itemDate = new Date(timestamp);
 
-  const filteredItemsByCategory = searchQuery.trim()
-    ? itemsByCategory.map((cat) => ({
-        ...cat,
-        items: cat.items.filter((p) => {
-          const query = searchQuery.toLowerCase();
-          return (
-            p.title.toLowerCase().includes(query) ||
-            p.author.toLowerCase().includes(query) ||
-            p.description?.toLowerCase().includes(query)
-          );
-        }),
-      })).filter((cat) => cat.items.length > 0)
-    : itemsByCategory.filter((cat) => filterCategory === "all" || cat.value === filterCategory);
+    switch (timeFilter) {
+      case "today": {
+        const startOfDay = new Date();
+        startOfDay.setHours(0, 0, 0, 0);
+        return timestamp >= startOfDay.getTime();
+      }
+      case "week": {
+        return now - timestamp <= 7 * 24 * 60 * 60 * 1000;
+      }
+      case "month": {
+        return itemDate.getFullYear() === new Date(now).getFullYear() && itemDate.getMonth() === new Date(now).getMonth();
+      }
+      case "year": {
+        return itemDate.getFullYear() === new Date(now).getFullYear();
+      }
+      case "all":
+      default:
+        return true;
+    }
+  };
+
+  const filteredItems = items.filter((p) => {
+    const matchesTime = isWithinTimeFilter(p.createdAt);
+    if (!matchesTime) return false;
+
+    if (!searchQuery.trim()) return true;
+
+    const query = searchQuery.toLowerCase();
+    return (
+      p.title.toLowerCase().includes(query) ||
+      p.author.toLowerCase().includes(query) ||
+      p.description?.toLowerCase().includes(query)
+    );
+  });
+
+  const filteredItemsByCategory = itemsByCategory.map((cat) => ({
+    ...cat,
+    items: filteredItems.filter((p) => p.category === cat.value),
+  })).filter((cat) => cat.value === filterCategory || (searchQuery.trim() || timeFilter !== "all") && cat.items.length > 0);
 
   // ============================================
   // RENDER
@@ -643,9 +661,9 @@ export default function AdminInteractionPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Interaction</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage resources and posts</p>
+          <p className="mt-1 text-sm text-gray-500">Manage interaction posts</p>
         </div>
-        <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">+ New Resource</button>
+        <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">+ New Topic</button>
       </div>
 
       {/* Tabs and Filters */}
@@ -653,7 +671,7 @@ export default function AdminInteractionPage() {
         {/* Category Filter Tabs */}
         <div className="flex flex-wrap gap-2">
           {CATEGORIES.map((cat) => {
-            const count = cat.value === "all" ? items.length : itemsByCategory.find((c) => c.value === cat.value)?.items.length || 0;
+            const count = itemsByCategory.find((c) => c.value === cat.value)?.items.length || 0;
             const isActive = filterCategory === cat.value;
             return (
               <button
@@ -677,10 +695,23 @@ export default function AdminInteractionPage() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search resources..."
+            placeholder="Search posts..."
             className="w-full rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
         </div>
+
+        {/* Time Filter */}
+        <select
+          value={timeFilter}
+          onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
+          className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        >
+          <option value="all">All Time</option>
+          <option value="today">Today</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="year">This Year</option>
+        </select>
       </div>
 
       {/* Batch Actions Bar */}
@@ -730,7 +761,7 @@ export default function AdminInteractionPage() {
       {/* Form Modal */}
       {showForm && (
         <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="mb-4 text-lg font-semibold">{editingItem ? "Edit" : "New"} Resource</h2>
+          <h2 className="mb-4 text-lg font-semibold">{editingItem ? "Edit" : "New"} Topic</h2>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
@@ -879,119 +910,105 @@ export default function AdminInteractionPage() {
         </div>
       )}
 
-      {/* Category Accordion */}
+      {/* Category Posts */}
       <div className="space-y-6">
         {filteredItemsByCategory.map((cat) => {
           const categoryItems = searchQuery.trim()
             ? filteredItems.filter((p) => p.category === cat.value)
             : cat.items;
 
-          if (!searchQuery.trim() && filterCategory !== "all" && filterCategory !== cat.value) return null;
-
           const allSelected = categoryItems.length > 0 && categoryItems.every((p) => selectedIds.has(p.id));
 
           return (
             <div key={cat.value} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <button
-                onClick={() => setExpandedCategory(expandedCategory === cat.value ? null : cat.value)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg">{expandedCategory === cat.value ? "▼" : "▶"}</span>
                   <input
                     type="checkbox"
                     checked={allSelected}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      toggleSelectAllInCategory(cat.value);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
+                    onChange={() => toggleSelectAllInCategory(cat.value)}
                     className="h-4 w-4 rounded border-gray-300 text-blue-600"
                   />
                   <span className="font-medium text-gray-900">{cat.label}</span>
                   <span className="text-sm text-gray-500">({categoryItems.length})</span>
                 </div>
-              </button>
+              </div>
 
-              {expandedCategory === cat.value && (
-                <div className="divide-y divide-gray-100">
-                  {categoryItems.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-gray-500 text-sm">
-                      No items in this category
-                    </div>
-                  ) : (
-                    categoryItems.map((item) => (
-                      <div key={item.id} className={`px-4 py-3 flex items-center justify-between hover:bg-gray-50 ${selectedIds.has(item.id) ? "bg-blue-50/30" : ""}`}>
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          <input
-                            type="checkbox"
-                            checked={selectedIds.has(item.id)}
-                            onChange={() => toggleSelect(item.id)}
-                            className="h-4 w-4 rounded border-gray-300 text-blue-600"
-                          />
-                          {item.coverImage && (
-                            <img src={item.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900 truncate">{item.title}</span>
-                              {item.author && <span className="text-xs text-gray-400">by {item.author}</span>}
-                            </div>
-                            <span className="text-xs text-gray-400 truncate">{formatDate(item.createdAt)}</span>
+              <div className="divide-y divide-gray-100">
+                {categoryItems.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                    No topics in this category
+                  </div>
+                ) : (
+                  categoryItems.map((item) => (
+                    <div key={item.id} className={`px-4 py-3 flex items-center justify-between hover:bg-gray-50 ${selectedIds.has(item.id) ? "bg-blue-50/30" : ""}`}>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(item.id)}
+                          onChange={() => toggleSelect(item.id)}
+                          className="h-4 w-4 rounded border-gray-300 text-blue-600"
+                        />
+                        {item.coverImage && (
+                          <img src={item.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 truncate">{item.title}</span>
+                            {item.author && <span className="text-xs text-gray-400">by {item.author}</span>}
                           </div>
-                        </div>
-                        <div className="flex items-center gap-1 ml-4">
-                          {item.isPinned && (
-                            <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">Pinned</span>
-                          )}
-                          {item.isFeatured && (
-                            <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded">Featured</span>
-                          )}
-                          <button
-                            onClick={() => togglePin(item.id)}
-                            className={`px-2 py-1 text-xs font-medium rounded ${item.isPinned ? "bg-blue-100 text-blue-700" : "text-blue-600 hover:bg-blue-50"}`}
-                          >
-                            {item.isPinned ? "Unpin" : "Pin"}
-                          </button>
-                          <button
-                            onClick={() => toggleFeatured(item.id)}
-                            className={`px-2 py-1 text-xs font-medium rounded ${item.isFeatured ? "bg-yellow-100 text-yellow-700" : "text-yellow-600 hover:bg-yellow-50"}`}
-                          >
-                            {item.isFeatured ? "Unhighlight" : "Highlight"}
-                          </button>
-                          <select
-                            value={item.category}
-                            onChange={(e) => {
-                              e.stopPropagation();
-                              if (e.target.value !== item.category) {
-                                moveCategory(item.id, e.target.value);
-                              }
-                            }}
-                            className="px-2 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-50"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            {CATEGORY_OPTIONS.map((c) => (
-                              <option key={c.value} value={c.value}>{c.label}</option>
-                            ))}
-                          </select>
-                          {item.isHidden ? (
-                            <span className="px-2 py-1 text-xs font-medium text-yellow-600 bg-yellow-50 rounded">Hidden</span>
-                          ) : (
-                            <button
-                              onClick={() => openViolationModal("post", item.id, item.title, item.author || "Unknown")}
-                              className="px-2 py-1 text-xs font-medium text-orange-600 hover:bg-orange-50 rounded"
-                            >
-                              Handle
-                            </button>
-                          )}
-                          <button onClick={() => handleEdit(item)} className="px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
-                          <button onClick={() => handleDelete(item.id)} className="px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                          <span className="text-xs text-gray-400 truncate">{formatDate(item.createdAt)}</span>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              )}
+                      <div className="flex items-center gap-1 ml-4">
+                        {item.isPinned && (
+                          <span className="px-2 py-0.5 text-xs bg-blue-100 text-blue-700 rounded">Pinned</span>
+                        )}
+                        {item.isFeatured && (
+                          <span className="px-2 py-0.5 text-xs bg-yellow-100 text-yellow-700 rounded">Featured</span>
+                        )}
+                        <button
+                          onClick={() => togglePin(item.id)}
+                          className={`px-2 py-1 text-xs font-medium rounded ${item.isPinned ? "bg-blue-100 text-blue-700" : "text-blue-600 hover:bg-blue-50"}`}
+                        >
+                          {item.isPinned ? "Unpin" : "Pin"}
+                        </button>
+                        <button
+                          onClick={() => toggleFeatured(item.id)}
+                          className={`px-2 py-1 text-xs font-medium rounded ${item.isFeatured ? "bg-yellow-100 text-yellow-700" : "text-yellow-600 hover:bg-yellow-50"}`}
+                        >
+                          {item.isFeatured ? "Unhighlight" : "Highlight"}
+                        </button>
+                        <select
+                          value={item.category}
+                          onChange={(e) => {
+                            if (e.target.value !== item.category) {
+                              moveCategory(item.id, e.target.value);
+                            }
+                          }}
+                          className="px-2 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-50"
+                        >
+                          {CATEGORY_OPTIONS.map((c) => (
+                            <option key={c.value} value={c.value}>{c.label}</option>
+                          ))}
+                        </select>
+                        {item.isHidden ? (
+                          <span className="px-2 py-1 text-xs font-medium text-yellow-600 bg-yellow-50 rounded">Hidden</span>
+                        ) : (
+                          <button
+                            onClick={() => openViolationModal("post", item.id, item.title, item.author || "Unknown")}
+                            className="px-2 py-1 text-xs font-medium text-orange-600 hover:bg-orange-50 rounded"
+                          >
+                            Handle
+                          </button>
+                        )}
+                        <button onClick={() => handleEdit(item)} className="px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                        <button onClick={() => handleDelete(item.id)} className="px-2 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           );
         })}
@@ -1050,27 +1067,27 @@ function getDefaultPosts(): Interaction[] {
     { id: "ph-prod-8", title: "Pyrotechnics and special effects safety", author: "FXTech", description: "FX safety guide", coverImage: "", content: "<p>Guide...</p>", category: "production", createdAt: now - 3600000 * 90, updatedAt: now - 3600000 * 90 },
     { id: "ph-prod-9", title: "Live mixing techniques for bands", author: "LiveMixer", description: "Live mixing tips", coverImage: "", content: "<p>Tips...</p>", category: "production", createdAt: now - 3600000 * 102, updatedAt: now - 3600000 * 102 },
     { id: "ph-prod-10", title: "Stage management best practices", author: "ProManager", description: "Stage management guide", coverImage: "", content: "<p>Guide...</p>", category: "production", createdAt: now - 3600000 * 114, updatedAt: now - 3600000 * 114 },
-    // Resources
-    { id: "ph-res-1", title: "The rich history of musical theater", author: "TheaterBuff", description: "Musical theater history", coverImage: "", content: "<p>History...</p>", category: "resources", createdAt: now - 3600000 * 7, updatedAt: now - 3600000 * 7 },
-    { id: "ph-res-2", title: "The evolution of recording technology", author: "HistoryNerd", description: "Recording tech history", coverImage: "", content: "<p>History...</p>", category: "resources", createdAt: now - 3600000 * 19, updatedAt: now - 3600000 * 19 },
-    { id: "ph-res-3", title: "The 10 most influential composers of the 21st century", author: "MusicScholar", description: "Influential composers", coverImage: "", content: "<p>List...</p>", category: "resources", createdAt: now - 3600000 * 31, updatedAt: now - 3600000 * 31 },
-    { id: "ph-res-4", title: "Psychoacoustics: how the brain processes music", author: "ScienceGuy", description: "Psychoacoustics guide", coverImage: "", content: "<p>Guide...</p>", category: "resources", createdAt: now - 3600000 * 43, updatedAt: now - 3600000 * 43 },
-    { id: "ph-res-5", title: "Music therapy research — evidence-based practice", author: "Therapist", description: "Music therapy research", coverImage: "", content: "<p>Research...</p>", category: "resources", createdAt: now - 3600000 * 55, updatedAt: now - 3600000 * 55 },
-    { id: "ph-res-6", title: "Copyright law for independent musicians", author: "LegalEagle", description: "Copyright guide", coverImage: "", content: "<p>Guide...</p>", category: "resources", createdAt: now - 3600000 * 67, updatedAt: now - 3600000 * 67 },
-    { id: "ph-res-7", title: "The streaming era — understanding music economics", author: "EconMajor", description: "Music economics", coverImage: "", content: "<p>Analysis...</p>", category: "resources", createdAt: now - 3600000 * 79, updatedAt: now - 3600000 * 79 },
-    { id: "ph-res-8", title: "AI in music composition", author: "AITech", description: "AI music tools", coverImage: "", content: "<p>Overview...</p>", category: "resources", createdAt: now - 3600000 * 91, updatedAt: now - 3600000 * 91 },
-    { id: "ph-res-9", title: "The future of live music performances", author: "Futurist", description: "Future of live music", coverImage: "", content: "<p>Predictions...</p>", category: "resources", createdAt: now - 3600000 * 103, updatedAt: now - 3600000 * 103 },
-    { id: "ph-res-10", title: "Music education trends and innovations", author: "EduExpert", description: "Music education trends", coverImage: "", content: "<p>Trends...</p>", category: "resources", createdAt: now - 3600000 * 115, updatedAt: now - 3600000 * 115 },
-    // Other
-    { id: "ph-oth-1", title: "Community guidelines — keeping our forum respectful", author: "Admin", description: "Forum guidelines", coverImage: "", content: "<p>Guidelines...</p>", category: "other", createdAt: now - 3600000 * 168, updatedAt: now - 3600000 * 168 },
-    { id: "ph-oth-2", title: "Community event calendar — upcoming meetups", author: "EventLead", description: "Event calendar", coverImage: "", content: "<p>Events...</p>", category: "other", createdAt: now - 3600000 * 72, updatedAt: now - 3600000 * 72 },
-    { id: "ph-oth-3", title: "Weekly feedback thread — share your tracks", author: "WeeklyHost", description: "Weekly feedback thread", coverImage: "", content: "<p>Thread...</p>", category: "other", createdAt: now - 3600000 * 168, updatedAt: now - 3600000 * 168 },
-    { id: "ph-oth-4", title: "Best resources for learning music theory from scratch", author: "TheoryNewbie", description: "Theory resources", coverImage: "", content: "<p>Resources...</p>", category: "other", createdAt: now - 3600000 * 96, updatedAt: now - 3600000 * 96 },
-    { id: "ph-oth-5", title: "Recommended YouTube channels for audio engineering", author: "VideoFan", description: "YouTube recommendations", coverImage: "", content: "<p>Recommendations...</p>", category: "other", createdAt: now - 3600000 * 120, updatedAt: now - 3600000 * 120 },
-    { id: "ph-oth-6", title: "Collaborative projects — find your bandmates here", author: "CollabKing", description: "Collaboration thread", coverImage: "", content: "<p>Thread...</p>", category: "other", createdAt: now - 3600000 * 144, updatedAt: now - 3600000 * 144 },
-    { id: "ph-oth-7", title: "Monthly challenges — May 2026: Ambient Soundscapes", author: "ChallengeHost", description: "Monthly challenge", coverImage: "", content: "<p>Challenge...</p>", category: "other", createdAt: now - 3600000 * 96, updatedAt: now - 3600000 * 96 },
-    { id: "ph-oth-8", title: "Show off your home studio setup!", author: "SetupShare", description: "Studio setup showcase", coverImage: "", content: "<p>Showcase...</p>", category: "other", createdAt: now - 3600000 * 168, updatedAt: now - 3600000 * 168 },
-    { id: "ph-oth-9", title: "Tips for performing musicians on tour", author: "TourVet", description: "Touring tips", coverImage: "", content: "<p>Tips...</p>", category: "other", createdAt: now - 3600000 * 192, updatedAt: now - 3600000 * 192 },
-    { id: "ph-oth-10", title: "How to deal with performance anxiety", author: "MindsetCoach", description: "Performance anxiety guide", coverImage: "", content: "<p>Guide...</p>", category: "other", createdAt: now - 3600000 * 216, updatedAt: now - 3600000 * 216 },
+    // Article
+    { id: "ph-res-1", title: "The rich history of musical theater", author: "TheaterBuff", description: "Musical theater history", coverImage: "", content: "<p>History...</p>", category: "article", createdAt: now - 3600000 * 7, updatedAt: now - 3600000 * 7 },
+    { id: "ph-res-2", title: "The evolution of recording technology", author: "HistoryNerd", description: "Recording tech history", coverImage: "", content: "<p>History...</p>", category: "article", createdAt: now - 3600000 * 19, updatedAt: now - 3600000 * 19 },
+    { id: "ph-res-3", title: "The 10 most influential composers of the 21st century", author: "MusicScholar", description: "Influential composers", coverImage: "", content: "<p>List...</p>", category: "article", createdAt: now - 3600000 * 31, updatedAt: now - 3600000 * 31 },
+    { id: "ph-res-4", title: "Psychoacoustics: how the brain processes music", author: "ScienceGuy", description: "Psychoacoustics guide", coverImage: "", content: "<p>Guide...</p>", category: "article", createdAt: now - 3600000 * 43, updatedAt: now - 3600000 * 43 },
+    { id: "ph-res-5", title: "Music therapy research — evidence-based practice", author: "Therapist", description: "Music therapy research", coverImage: "", content: "<p>Research...</p>", category: "article", createdAt: now - 3600000 * 55, updatedAt: now - 3600000 * 55 },
+    { id: "ph-res-6", title: "Copyright law for independent musicians", author: "LegalEagle", description: "Copyright guide", coverImage: "", content: "<p>Guide...</p>", category: "article", createdAt: now - 3600000 * 67, updatedAt: now - 3600000 * 67 },
+    { id: "ph-res-7", title: "The streaming era — understanding music economics", author: "EconMajor", description: "Music economics", coverImage: "", content: "<p>Analysis...</p>", category: "article", createdAt: now - 3600000 * 79, updatedAt: now - 3600000 * 79 },
+    { id: "ph-res-8", title: "AI in music composition", author: "AITech", description: "AI music tools", coverImage: "", content: "<p>Overview...</p>", category: "article", createdAt: now - 3600000 * 91, updatedAt: now - 3600000 * 91 },
+    { id: "ph-res-9", title: "The future of live music performances", author: "Futurist", description: "Future of live music", coverImage: "", content: "<p>Predictions...</p>", category: "article", createdAt: now - 3600000 * 103, updatedAt: now - 3600000 * 103 },
+    { id: "ph-res-10", title: "Music education trends and innovations", author: "EduExpert", description: "Music education trends", coverImage: "", content: "<p>Trends...</p>", category: "article", createdAt: now - 3600000 * 115, updatedAt: now - 3600000 * 115 },
+    // Others
+    { id: "ph-oth-1", title: "Community guidelines — keeping our forum respectful", author: "Admin", description: "Forum guidelines", coverImage: "", content: "<p>Guidelines...</p>", category: "others", createdAt: now - 3600000 * 168, updatedAt: now - 3600000 * 168 },
+    { id: "ph-oth-2", title: "Community event calendar — upcoming meetups", author: "EventLead", description: "Event calendar", coverImage: "", content: "<p>Events...</p>", category: "others", createdAt: now - 3600000 * 72, updatedAt: now - 3600000 * 72 },
+    { id: "ph-oth-3", title: "Weekly feedback thread — share your tracks", author: "WeeklyHost", description: "Weekly feedback thread", coverImage: "", content: "<p>Thread...</p>", category: "others", createdAt: now - 3600000 * 168, updatedAt: now - 3600000 * 168 },
+    { id: "ph-oth-4", title: "Best resources for learning music theory from scratch", author: "TheoryNewbie", description: "Theory resources", coverImage: "", content: "<p>Resources...</p>", category: "others", createdAt: now - 3600000 * 96, updatedAt: now - 3600000 * 96 },
+    { id: "ph-oth-5", title: "Recommended YouTube channels for audio engineering", author: "VideoFan", description: "YouTube recommendations", coverImage: "", content: "<p>Recommendations...</p>", category: "others", createdAt: now - 3600000 * 120, updatedAt: now - 3600000 * 120 },
+    { id: "ph-oth-6", title: "Collaborative projects — find your bandmates here", author: "CollabKing", description: "Collaboration thread", coverImage: "", content: "<p>Thread...</p>", category: "others", createdAt: now - 3600000 * 144, updatedAt: now - 3600000 * 144 },
+    { id: "ph-oth-7", title: "Monthly challenges — May 2026: Ambient Soundscapes", author: "ChallengeHost", description: "Monthly challenge", coverImage: "", content: "<p>Challenge...</p>", category: "others", createdAt: now - 3600000 * 96, updatedAt: now - 3600000 * 96 },
+    { id: "ph-oth-8", title: "Show off your home studio setup!", author: "SetupShare", description: "Studio setup showcase", coverImage: "", content: "<p>Showcase...</p>", category: "others", createdAt: now - 3600000 * 168, updatedAt: now - 3600000 * 168 },
+    { id: "ph-oth-9", title: "Tips for performing musicians on tour", author: "TourVet", description: "Touring tips", coverImage: "", content: "<p>Tips...</p>", category: "others", createdAt: now - 3600000 * 192, updatedAt: now - 3600000 * 192 },
+    { id: "ph-oth-10", title: "How to deal with performance anxiety", author: "MindsetCoach", description: "Performance anxiety guide", coverImage: "", content: "<p>Guide...</p>", category: "others", createdAt: now - 3600000 * 216, updatedAt: now - 3600000 * 216 },
   ];
 }
