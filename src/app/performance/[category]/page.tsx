@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
+import { PERFORMANCE_CATEGORY_OPTIONS } from "@/lib/constants";
 
 interface Production {
   id: string;
@@ -30,18 +31,6 @@ interface FilterGroup {
 type TimeFilter = "all" | "week" | "month";
 
 type DisplayStatus = "upcoming" | "recent" | "archived";
-
-const SUBCATEGORIES = [
-  { value: "legend-hall-of-fame", label: "Legend Hall of Fame" },
-  { value: "musical", label: "Musical" },
-  { value: "classical", label: "Classical" },
-  { value: "edm", label: "EDM" },
-  { value: "legendary-rock", label: "Legendary Rock" },
-  { value: "legendary-pop", label: "Legendary Pop" },
-  { value: "festival", label: "Festival" },
-  { value: "ballet", label: "Ballet" },
-  { value: "others", label: "Others" },
-];
 
 const ITEMS_PER_PAGE = 20;
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
@@ -197,7 +186,7 @@ export default function PerformanceCategoryPage() {
       const category = params.category as string;
       if (!category) return;
 
-      const sub = SUBCATEGORIES.find((c) => c.value === category);
+      const sub = PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.value === category);
       setCategoryName(sub?.label || category);
 
       try {

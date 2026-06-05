@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
+import { PERFORMANCE_CATEGORY_LABELS } from "@/lib/constants";
 
 interface Production {
   id: string;
@@ -13,18 +13,6 @@ interface Production {
   eventDate?: string;
   createdAt: number;
 }
-
-const CATEGORY_LABELS: Record<string, string> = {
-  "legend-hall-of-fame": "Legend Hall of Fame",
-  "musical": "Musical",
-  "classical": "Classical",
-  "edm": "EDM",
-  "legendary-rock": "Legendary Rock",
-  "legendary-pop": "Legendary Pop",
-  "festival": "Festival",
-  "ballet": "Ballet",
-  "others": "Others",
-};
 
 const FEATURED_STORAGE_KEY = "hmc_featured_performances";
 
@@ -167,7 +155,7 @@ export default function FeaturedPage() {
               <div className="flex flex-1 flex-col gap-2 p-4">
                 <div className="flex items-center gap-2">
                   <span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">
-                    {CATEGORY_LABELS[item.category] || item.category}
+                    {PERFORMANCE_CATEGORY_LABELS[item.category] || item.category}
                   </span>
                   {item.status === "upcoming" && (
                     <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-600">Upcoming</span>

@@ -25,6 +25,26 @@ export const PERFORMANCE_CATEGORIES = [
   "Others",
 ] as const;
 
+export const PERFORMANCE_CATEGORY_OPTIONS = [
+  { value: "legend-hall-of-fame", label: "Legend Hall of Fame" },
+  { value: "musical", label: "Musical" },
+  { value: "classical", label: "Classical" },
+  { value: "edm", label: "EDM" },
+  { value: "legendary-rock", label: "Legendary Rock" },
+  { value: "legendary-pop", label: "Legendary Pop" },
+  { value: "festival", label: "Festival" },
+  { value: "ballet", label: "Ballet" },
+  { value: "others", label: "Others" },
+] as const;
+
+export const PERFORMANCE_CATEGORY_LABELS: Record<string, string> = Object.fromEntries(
+  PERFORMANCE_CATEGORY_OPTIONS.map(({ value, label }) => [value, label])
+);
+
+export const PERFORMANCE_CATEGORY_SLUG_MAP: Record<string, string> = Object.fromEntries(
+  PERFORMANCE_CATEGORY_OPTIONS.map(({ value, label }) => [label, value])
+);
+
 export const INTERACTION_CATEGORIES = [
   "Software",
   "Hardware",

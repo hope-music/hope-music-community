@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { PERFORMANCE_CATEGORY_OPTIONS } from "@/lib/constants";
 
 // Rich text editor
 function RichTextEditor({
@@ -142,19 +143,6 @@ const DEFAULT_COMMENTS: Comment[] = [
     createdAt: Date.now() - 86400000 * 7,
     replies: [],
   },
-];
-
-// Subcategories for Performance
-const SUBCATEGORIES = [
-  { value: "legend-hall-of-fame", label: "Legend Hall of Fame" },
-  { value: "musical", label: "Musical" },
-  { value: "classical", label: "Classical" },
-  { value: "edm", label: "EDM" },
-  { value: "legendary-rock", label: "Legendary Rock" },
-  { value: "legendary-pop", label: "Legendary Pop" },
-  { value: "festival", label: "Festival" },
-  { value: "ballet", label: "Ballet" },
-  { value: "others", label: "Others" },
 ];
 
 const COMMENTS_STORAGE_KEY = "performance_comments";
@@ -444,7 +432,7 @@ export default function StageProductionsPage() {
   });
 
   // Group items by category
-  const itemsByCategory = SUBCATEGORIES.map((sub) => ({
+  const itemsByCategory = PERFORMANCE_CATEGORY_OPTIONS.map((sub) => ({
     ...sub,
     items: items.filter((p) => p.category === sub.value),
   }));
@@ -662,7 +650,7 @@ export default function StageProductionsPage() {
           <label className="block text-xs text-gray-500 mb-1">Filter by Subcategory</label>
           <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
             <option value="all">All Subcategories</option>
-            {SUBCATEGORIES.map((cat) => (
+            {PERFORMANCE_CATEGORY_OPTIONS.map((cat) => (
               <option key={cat.value} value={cat.value}>{cat.label} ({itemsByCategory.find(c => c.value === cat.value)?.items.length || 0})</option>
             ))}
           </select>
@@ -698,7 +686,7 @@ export default function StageProductionsPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Subcategory</label>
                 <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">
-                  {SUBCATEGORIES.map((cat) => (
+                  {PERFORMANCE_CATEGORY_OPTIONS.map((cat) => (
                     <option key={cat.value} value={cat.value}>{cat.label}</option>
                   ))}
                 </select>

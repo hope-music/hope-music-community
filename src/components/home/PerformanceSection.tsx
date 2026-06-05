@@ -6,31 +6,7 @@ import Image from "next/image";
 import { CategoryBox } from "@/components/ui/CategoryBox";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { PLACEHOLDER_ARTICLE } from "@/lib/constants";
-
-const PERFORMANCE_CATEGORIES = [
-  "Legend Hall of Fame",
-  "Musical",
-  "Classical",
-  "EDM",
-  "Legendary Rock",
-  "Legendary Pop",
-  "Festival",
-  "Ballet",
-  "Others",
-];
-
-const CATEGORY_SLUG_MAP: Record<string, string> = {
-  "Legend Hall of Fame": "legend-hall-of-fame",
-  Musical: "musical",
-  Classical: "classical",
-  EDM: "edm",
-  "Legendary Rock": "legendary-rock",
-  "Legendary Pop": "legendary-pop",
-  Festival: "festival",
-  Ballet: "ballet",
-  Others: "others",
-};
+import { PERFORMANCE_CATEGORIES, PERFORMANCE_CATEGORY_SLUG_MAP, PLACEHOLDER_ARTICLE } from "@/lib/constants";
 
 interface PerformanceItem {
   id: string;
@@ -56,7 +32,7 @@ async function loadCategoryData(): Promise<Record<string, CategoryData>> {
 
     const result: Record<string, CategoryData> = {};
     PERFORMANCE_CATEGORIES.forEach((category) => {
-      const slug = CATEGORY_SLUG_MAP[category];
+      const slug = PERFORMANCE_CATEGORY_SLUG_MAP[category];
       const categoryItems = events.filter((item) => item.category === slug);
 
       if (categoryItems.length > 0) {
@@ -82,7 +58,7 @@ async function loadCategoryData(): Promise<Record<string, CategoryData>> {
 }
 
 function CategoryCard({ category, data }: { category: string; data: CategoryData }) {
-  const categorySlug = CATEGORY_SLUG_MAP[category];
+  const categorySlug = PERFORMANCE_CATEGORY_SLUG_MAP[category];
   const categoryHref = `/performance/${categorySlug}`;
   const item = data?.latest;
   const total = data?.total || 0;
