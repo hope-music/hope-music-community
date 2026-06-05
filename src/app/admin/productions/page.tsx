@@ -467,48 +467,31 @@ export default function StageProductionsPage() {
     setShowForm(true);
   };
 
+  // Convert date string to YYYY-MM-DD format for HTML date input
+  const formatDateForInput = (dateStr?: string): string => {
+    if (!dateStr) return "";
+    try {
+      const date = new Date(dateStr);
+      if (isNaN(date.getTime())) return "";
+      return date.toISOString().split("T")[0];
+    } catch {
+      return "";
+    }
+  };
+
   const handleEdit = (item: Production) => {
-    alert("Edit clicked: " + item.title);
-
-    // Check if item is from API (not in localStorage)
-    const stored = localStorage.getItem("admin_performance");
-    let adminItems: Production[] = [];
-    if (stored) {
-      try {
-        adminItems = JSON.parse(stored);
-      } catch (e) {}
-    }
-    const isFromApi = !adminItems.some(i => i.id === item.id);
-
-    // If from API, add to localStorage first
-    if (isFromApi) {
-      const updatedAdminItems = [item, ...adminItems];
-      localStorage.setItem("admin_performance", JSON.stringify(updatedAdminItems));
-    }
-
     setEditingId(item.id);
     setTitle(item.title || "");
     setDescription(item.description || "");
     setContent(item.content || "");
     setCategory(item.category || "musical");
     setStatus(item.status || "draft");
-    setEventDate(item.eventDate || "");
+    setEventDate(formatDateForInput(item.eventDate));
     setCoverImage(item.coverImage || "");
     setCoverPreview(item.coverImage || null);
 
-    // Load comments for this item
-    try {
-      loadComments(item.id);
-    } catch (e) {
-      setComments([]);
-    }
-
-    // Use setTimeout to ensure state updates are processed
-    setTimeout(() => {
-      setShowForm(true);
-      // Scroll to form
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }, 0);
+    loadComments(item.id);
+    setShowForm(true);
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -668,7 +651,7 @@ export default function StageProductionsPage() {
       )}
 
       {/* Form */}
-      {showForm ? (
+      {showForm && (
         <div className="rounded-lg border border-gray-200 bg-white p-6">
           <h2 className="mb-4 text-lg font-semibold">{editingId ? "Edit" : "New"} Performance</h2>
           <form onSubmit={handleSave} className="space-y-4">
@@ -957,8 +940,8 @@ export default function StageProductionsPage() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 ml-4">
-                          <button type="button" onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
-                          <button type="button" onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                          <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                          <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
                         </div>
                       </div>
                     ))
