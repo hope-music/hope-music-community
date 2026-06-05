@@ -163,7 +163,7 @@ function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolea
           <a
             key={item.slug || "featured"}
             href={item.isFeatured ? "/performance" : `/performance/${item.slug}`}
-            target={item.isFeatured ? "_self" : "_blank"}
+            target="_blank"
             rel="noopener noreferrer"
             className={`flex items-center px-5 py-3 text-[13px] font-medium transition-colors duration-150 ${
               item.isFeatured
