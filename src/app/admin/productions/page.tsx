@@ -724,8 +724,6 @@ export default function StageProductionsPage() {
               </button>
             </div>
           </form>
-        </div>
-      ) : null}
 
           {/* Comment Management Section - Only show when editing */}
           {editingId && (
