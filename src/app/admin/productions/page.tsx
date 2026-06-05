@@ -468,6 +468,8 @@ export default function StageProductionsPage() {
   };
 
   const handleEdit = (item: Production) => {
+    alert("Edit clicked: " + item.title);
+
     // Check if item is from API (not in localStorage)
     const stored = localStorage.getItem("admin_performance");
     let adminItems: Production[] = [];
@@ -666,7 +668,7 @@ export default function StageProductionsPage() {
       )}
 
       {/* Form */}
-      {showForm && (
+      {showForm ? (
         <div className="rounded-lg border border-gray-200 bg-white p-6">
           <h2 className="mb-4 text-lg font-semibold">{editingId ? "Edit" : "New"} Performance</h2>
           <form onSubmit={handleSave} className="space-y-4">
@@ -722,6 +724,8 @@ export default function StageProductionsPage() {
               </button>
             </div>
           </form>
+        </div>
+      ) : null}
 
           {/* Comment Management Section - Only show when editing */}
           {editingId && (
