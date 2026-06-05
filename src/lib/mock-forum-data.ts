@@ -1720,7 +1720,7 @@ Picks up front and back equally, rejects sides. Ribbon mics commonly have this p
 Use for: Mid-side recording, interview setups, acoustic guitar and vocal booth
 Avoid when: Room reflections are problematic
 
-**5. Variable/L可调 Patterns**
+**5. Variable/Adjustable Patterns**
 Multi-pattern condensers let you dial in any pattern between omni and figure-8.
 Use for: Versatile studios, matching mic to source
 Avoid when: You only need one pattern (save money, buy a fixed-pattern mic)
@@ -2136,7 +2136,7 @@ Best for: Classical/jazz pianists, anyone who needs authentic piano feel
 - USB-C for modern computers
 - Traditional USB-B still works
 - MIDI DIN outputs for hardware synths (essential for some setups)
-- Expression/延音 pedal inputs
+- Expression/Sustain pedal inputs
 
 **My Top Picks by Category**
 
@@ -3251,7 +3251,7 @@ Play everything slightly behind. Notice how it creates space and tension.
 **Exercise 4: The Syncopation**
 Play on the off-beats. The spaces between the beats become as important as the beats themselves.
 
-**The Polyrhythm入门**
+**Polyrhythm Basics**
 Polyrhythms (playing two different rhythms simultaneously) expand your rhythmic vocabulary. Start with 3 against 2 — clap 3 times in the same time it takes to clap twice.
 
 **Feel vs. Precision**
@@ -3536,7 +3536,7 @@ Restrict yourself deliberately. Write only using three notes. Make a song in onl
 
 Story: An electronic producer friend challenged himself to make a track with only the drums from a single sample. The result became his most-streamed song.
 
-**Strategy 3: The拾荒者 (Scavenger)**
+**Strategy 3: The Scavenger**
 Go through your unfinished projects. Find one that's 70% done. Force yourself to finish it today. Sometimes the hard part is already done — you just need to push through.
 
 **Strategy 4: Change the Input**

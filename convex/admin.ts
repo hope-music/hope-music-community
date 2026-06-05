@@ -38,7 +38,7 @@ const ADMIN_EMAILS = ["admin@hopemusic.com"];
 
 async function requireSuperAdmin(ctx: any, email: string | null): Promise<any> {
   if (!email) {
-    throw new Error("请先登录");
+    throw new Error("Please log in first");
   }
   
   // Allow special admin emails to bypass database check (they're protected by password login)
@@ -55,13 +55,13 @@ async function requireSuperAdmin(ctx: any, email: string | null): Promise<any> {
   const allUsers = await ctx.db.query("users").collect();
   const user = allUsers.find((u: any) => u.email === email);
   if (!user) {
-    throw new Error("用户不存在");
+    throw new Error("User not found");
   }
   if (user.role !== "super_admin") {
-    throw new Error("权限不足，需要 Super Admin 权限");
+    throw new Error("Insufficient permissions: Super Admin access required");
   }
   if (user.status === "disabled") {
-    throw new Error("您的账号已被禁用");
+    throw new Error("Your account has been disabled");
   }
   return user;
 }
@@ -141,12 +141,12 @@ export const createEmployee = mutation({
     
     // Check if email exists
     if (allUsers.some((u: any) => u.email === args.email)) {
-      throw new Error("该邮箱已被注册");
+      throw new Error("This email is already registered");
     }
     
     // Check if username exists
     if (allUsers.some((u: any) => u.username === args.username)) {
-      throw new Error("该用户名已被使用");
+      throw new Error("This username is already in use");
     }
     
     const userId = await ctx.db.insert("users", {
@@ -180,12 +180,12 @@ export const toggleUserStatus = mutation({
     const allUsers = await ctx.db.query("users").collect();
     const caller = allUsers.find((u: any) => u.email === args.callerEmail);
     if (caller && caller._id === args.userId) {
-      throw new Error("不能禁用自己的账号");
+      throw new Error("You cannot disable your own account");
     }
     
     const user = await ctx.db.get(args.userId);
     if (!user) {
-      throw new Error("用户不存在");
+      throw new Error("User not found");
     }
     
     const newStatus = user.status === "disabled" ? "active" : "disabled";
@@ -193,7 +193,7 @@ export const toggleUserStatus = mutation({
     
     return { 
       success: true, 
-      message: `用户状态已更新为：${newStatus === "active" ? "启用" : "禁用"}` 
+      message: `User status updated to: ${newStatus === "active" ? "Active" : "Disabled"}` 
     };
   },
 });
@@ -216,11 +216,11 @@ export const updateUserRole = mutation({
     const allUsers = await ctx.db.query("users").collect();
     const caller = allUsers.find((u: any) => u.email === args.callerEmail);
     if (caller && caller._id === args.userId && args.newRole !== "super_admin") {
-      throw new Error("不能修改自己的超级管理员角色");
+      throw new Error("You cannot change your own Super Admin role");
     }
     
     await ctx.db.patch(args.userId, { role: args.newRole });
-    return { success: true, message: `用户角色已更新为：${args.newRole}` };
+    return { success: true, message: `User role updated to: ${args.newRole}` };
   },
 });
 
@@ -237,11 +237,11 @@ export const deleteUser = mutation({
     const allUsers = await ctx.db.query("users").collect();
     const caller = allUsers.find((u: any) => u.email === args.callerEmail);
     if (caller && caller._id === args.userId) {
-      throw new Error("不能删除自己的账号");
+      throw new Error("You cannot delete your own account");
     }
     
     await ctx.db.delete(args.userId);
-    return { success: true, message: "用户已删除" };
+    return { success: true, message: "User deleted successfully" };
   },
 });
 
@@ -298,10 +298,10 @@ export const register = mutation({
     const allUsers = await ctx.db.query("users").collect();
     
     if (allUsers.some((u: any) => u.email === args.email)) {
-      throw new Error("邮箱已被注册");
+      throw new Error("Email is already registered");
     }
     if (allUsers.some((u: any) => u.username === args.username)) {
-      throw new Error("用户名已被使用");
+      throw new Error("Username is already in use");
     }
     
     // First user becomes super_admin automatically
@@ -324,7 +324,7 @@ export const register = mutation({
       username: args.username, 
       avatar: args.avatar,
       role: role,
-      message: isFirstUser ? "恭喜！您成为系统第一个用户，已被设为超级管理员" : "注册成功"
+      message: isFirstUser ? "Congratulations! You are the first user and have been assigned as Super Admin" : "Registration successful"
     };
   },
 });
@@ -339,17 +339,17 @@ export const login = query({
     const user = allUsers.find((u: any) => u.email === args.email);
     
     if (!user) {
-      throw new Error("邮箱不存在");
+      throw new Error("Email does not exist");
     }
     
     // Check if disabled
     if (user.status === "disabled") {
-      throw new Error("您的账号已被禁用，请联系管理员");
+      throw new Error("Your account has been disabled. Please contact the administrator");
     }
     
     // Check if banned (legacy field)
     if (user.isBanned) {
-      throw new Error("您的账号已被封禁");
+      throw new Error("Your account has been banned");
     }
     
     return {
