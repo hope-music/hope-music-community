@@ -233,6 +233,7 @@ export default function StageProductionsPage() {
   const [category, setCategory] = useState("musical");
   const [status, setStatus] = useState<"upcoming" | "past" | "draft">("draft");
   const [eventDate, setEventDate] = useState("");
+  const [eventTime, setEventTime] = useState("");
   const [url, setUrl] = useState("");
   const [coverImage, setCoverImage] = useState("");
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -461,6 +462,7 @@ export default function StageProductionsPage() {
     setCategory(filterCategory);
     setStatus("draft");
     setEventDate("");
+    setEventTime("");
     setUrl("");
     setCoverImage("");
     setCoverPreview(null);
@@ -487,7 +489,9 @@ export default function StageProductionsPage() {
     setContent(item.content || "");
     setCategory(item.category || "musical");
     setStatus(item.status || "draft");
-    setEventDate(formatDateForInput(item.eventDate));
+    const dateVal = formatDateForInput(item.eventDate);
+    setEventDate(dateVal);
+    setEventTime(dateVal && item.eventDate?.includes("T") ? item.eventDate.split("T")[1]?.slice(0, 5) || "" : "");
     setUrl(item.url || "");
     setCoverImage(item.coverImage || "");
     setCoverPreview(item.coverImage || null);
@@ -539,7 +543,7 @@ export default function StageProductionsPage() {
               content,
               category,
               status,
-              eventDate,
+              eventDate: eventDate && eventTime ? `${eventDate}T${eventTime}:00` : eventDate || "",
               url,
               coverImage,
               updatedAt: now
@@ -707,6 +711,10 @@ export default function StageProductionsPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Event Date</label>
                 <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Event Time</label>
+                <input type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Ticket URL</label>

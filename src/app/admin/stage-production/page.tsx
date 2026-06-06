@@ -140,6 +140,7 @@ export default function AdminStageProductionsPage() {
   const [category, setCategory] = useState("stage");
   const [status, setStatus] = useState<"upcoming" | "past" | "draft">("draft");
   const [eventDate, setEventDate] = useState("");
+  const [eventTime, setEventTime] = useState("");
   const [coverImage, setCoverImage] = useState("");
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -298,6 +299,7 @@ export default function AdminStageProductionsPage() {
     setCategory(filterCategory !== "all" ? filterCategory : "stage");
     setStatus("draft");
     setEventDate("");
+    setEventTime("");
     setCoverImage("");
     setCoverPreview(null);
     setShowForm(true);
@@ -310,7 +312,10 @@ export default function AdminStageProductionsPage() {
     setContent(item.content || "");
     setCategory(item.category || "stage");
     setStatus(item.status || "draft");
-    setEventDate(item.eventDate || "");
+    const dateOnly = item.eventDate ? item.eventDate.split("T")[0] : "";
+    const timeOnly = item.eventDate && item.eventDate.includes("T") ? item.eventDate.split("T")[1]?.slice(0, 5) : "";
+    setEventDate(dateOnly);
+    setEventTime(timeOnly);
     setCoverImage(item.coverImage || "");
     setCoverPreview(item.coverImage || null);
     loadComments(`stage-production-${item.id}`);
@@ -323,12 +328,13 @@ export default function AdminStageProductionsPage() {
     setLoading(true);
     try {
       const now = Date.now();
+      const fullEventDate = eventDate && eventTime ? `${eventDate}T${eventTime}:00` : eventDate || "";
       if (editingId) {
-        const updated = items.map((item) => item.id === editingId ? { ...item, title: title.trim(), description, content, category, status, eventDate, coverImage, updatedAt: now } : item);
+        const updated = items.map((item) => item.id === editingId ? { ...item, title: title.trim(), description, content, category, status, eventDate: fullEventDate, coverImage, updatedAt: now } : item);
         saveToStorage(updated);
         setMessage({ type: "success", text: "Updated successfully!" });
       } else {
-        const newItem: StageProduction = { id: now.toString(), title: title.trim(), category, description, content, coverImage, status, eventDate, createdAt: now, updatedAt: now };
+        const newItem: StageProduction = { id: now.toString(), title: title.trim(), category, description, content, coverImage, status, eventDate: fullEventDate, createdAt: now, updatedAt: now };
         saveToStorage([newItem, ...items]);
         setMessage({ type: "success", text: "Created successfully!" });
       }
@@ -396,6 +402,7 @@ export default function AdminStageProductionsPage() {
               <div><label className="mb-1 block text-sm font-medium text-gray-700">Category</label><select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">{CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}</select></div>
               <div><label className="mb-1 block text-sm font-medium text-gray-700">Status</label><select value={status} onChange={(e) => setStatus(e.target.value as any)} className="w-full rounded-md border border-gray-300 px-3 py-2"><option value="draft">Draft</option><option value="upcoming">Upcoming</option><option value="past">Past</option></select></div>
               <div><label className="mb-1 block text-sm font-medium text-gray-700">Event Date</label><input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
+              <div><label className="mb-1 block text-sm font-medium text-gray-700">Event Time</label><input type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
               <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium text-gray-700">Cover Image</label><input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverSelect} className="hidden" /><button type="button" onClick={() => coverInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Choose Image</button>{coverPreview && <div className="mt-2 flex items-center gap-4"><img src={coverPreview} alt="Preview" className="h-20 w-32 rounded-md object-cover" /><button type="button" onClick={() => { setCoverImage(""); setCoverPreview(null); }} className="text-sm text-red-500 hover:text-red-700">Remove</button></div>}</div>
               <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium text-gray-700">Summary (for list display)</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full rounded-md border border-gray-300 px-3 py-2" /></div>
               <div className="md:col-span-2"><label className="mb-1 block text-sm font-medium text-gray-700">Full Content</label><RichTextEditor content={content} onChange={setContent} /></div>

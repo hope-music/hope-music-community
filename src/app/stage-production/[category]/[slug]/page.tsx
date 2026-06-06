@@ -57,6 +57,13 @@ export default function StageProductionDetailPage() {
   }, [params.slug]);
 
   const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" }) : "";
+  const formatTime = (d?: string) => d ? new Date(d).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }) : "";
+  const formatDateTime = (d?: string) => {
+    if (!d) return "";
+    const date = new Date(d);
+    return date.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) +
+      " at " + date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-hmc-orange"></div></div>;
   if (!item) return <div className="min-h-screen flex flex-col items-center justify-center py-20"><h1 className="text-2xl font-bold mb-4">Not Found</h1><Link href="/stage-production" className="px-4 py-2 bg-hmc-orange text-white rounded-md">Back</Link></div>;
@@ -67,7 +74,14 @@ export default function StageProductionDetailPage() {
       <article className="max-w-4xl mx-auto px-4 py-12">
         <div className="text-sm font-semibold text-red-600 uppercase tracking-wider mb-2">{STAGE_PRODUCTION_CATEGORY_LABELS[LEGACY_CATEGORY_MAP[item.category] ?? item.category] || item.category}</div>
         <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 leading-tight mb-4">{item.title}</h1>
-        {item.eventDate && <div className="text-gray-500 text-sm mb-6">Event Date: <time className="font-medium text-gray-700">{formatDate(item.eventDate)}</time></div>}
+        {item.eventDate && (
+          <div className="mb-6 flex items-center gap-3">
+            <div className="px-6 py-4 bg-hmc-orange text-white rounded-2xl shadow-lg shadow-orange-500/20">
+              <p className="text-xl font-bold">{formatDate(item.eventDate)}</p>
+              <p className="text-base opacity-90 mt-0.5">⏰ {formatTime(item.eventDate)}</p>
+            </div>
+          </div>
+        )}
         {item.coverImage && <img src={item.coverImage} alt={item.title} className="w-full aspect-[16/9] object-cover rounded-xl shadow-md mb-8" />}
         {item.content && <div className="prose lg:prose-lg text-gray-700 max-w-none space-y-6 leading-relaxed" dangerouslySetInnerHTML={{ __html: item.content }} />}
       </article>

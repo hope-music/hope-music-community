@@ -153,9 +153,21 @@ export default function PerformanceDetailPage() {
     return new Date(dateStr).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   };
 
+  const formatTime = (dateStr?: string) => {
+    if (!dateStr) return "";
+    return new Date(dateStr).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  };
+
   const formatShortDate = (dateStr?: string) => {
     if (!dateStr) return "";
     return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  };
+
+  const formatDateTime = (dateStr?: string) => {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" }) +
+      " at " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
   };
 
   const categoryLabel = useMemo(() => 
@@ -277,16 +289,18 @@ export default function PerformanceDetailPage() {
               {item.title}
             </h1>
 
+            {/* Prominent Time Display */}
+            {item.eventDate && (
+              <div className="mb-6 flex items-center gap-3">
+                <div className="px-5 py-3 bg-hmc-orange text-white rounded-2xl shadow-lg shadow-orange-500/30">
+                  <p className="text-2xl font-bold">{formatDate(item.eventDate)}</p>
+                  <p className="text-sm opacity-90 mt-0.5">{formatTime(item.eventDate)}</p>
+                </div>
+              </div>
+            )}
+
             {/* Quick Info Pills */}
             <div className="flex flex-wrap items-center gap-4">
-              {item.eventDate && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white">
-                  <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                  <span className="font-medium">{formatShortDate(item.eventDate)}</span>
-                </div>
-              )}
               {item.venue && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white">
                   <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -362,8 +376,9 @@ export default function PerformanceDetailPage() {
                           </svg>
                         </div>
                         <div>
-                          <p className="text-xs text-white/40">Date</p>
+                          <p className="text-xs text-white/40">Date & Time</p>
                           <p className="font-medium">{formatDate(item.eventDate)}</p>
+                          <p className="font-semibold text-hmc-orange text-lg">{formatTime(item.eventDate)}</p>
                         </div>
                       </div>
                     )}
