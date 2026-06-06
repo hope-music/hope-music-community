@@ -49,7 +49,6 @@ export default function StageProductionCategoryPage() {
         setItems([]);
       }
     } catch (error) {
-      console.error("Error loading stage production category:", error);
       setItems([]);
     } finally {
       setLoading(false);

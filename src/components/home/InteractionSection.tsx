@@ -136,7 +136,6 @@ export function InteractionSection() {
     try {
       setAllItems(normalizeInteractionItems(readInteractionItems<InteractionItem>()));
     } catch (e) {
-      console.error("Failed to parse interaction data", e);
       setAllItems([]);
     }
     setLoading(false);

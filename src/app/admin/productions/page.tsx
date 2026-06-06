@@ -171,7 +171,6 @@ async function loadItemsFromApi(): Promise<Production[]> {
       updatedAt: event.updatedAt || Date.now(),
     }));
   } catch (e) {
-    console.error("Error loading events from API:", e);
     return [];
   }
 }
@@ -195,7 +194,6 @@ function loadItemsFromStorage(): Production[] {
       }));
     }
   } catch (e) {
-    console.error("Error parsing performance data:", e);
   }
   return [];
 }
@@ -308,7 +306,6 @@ export default function StageProductionsPage() {
       try {
         adminItems = JSON.parse(stored);
       } catch (e) {
-        console.error("Error parsing stored data:", e);
       }
     }
     
@@ -572,7 +569,6 @@ export default function StageProductionsPage() {
       }
       setShowForm(false);
     } catch (err) {
-      console.error("Save error:", err);
       setMessage({ type: "error", text: "Failed to save" });
     } finally {
       setLoading(false);

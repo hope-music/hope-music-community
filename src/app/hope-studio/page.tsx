@@ -34,7 +34,7 @@ export default function HopeStudioPage() {
             setItems(parsed);
           }
         } catch (e) {
-          console.error("Failed to parse stored data", e);
+          // Silent fail - will use empty state
         }
       }
     };

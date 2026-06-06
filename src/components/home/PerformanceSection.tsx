@@ -53,7 +53,6 @@ async function loadCategoryData(): Promise<Record<string, CategoryData>> {
 
     return result;
   } catch (e) {
-    console.error("Error loading category data:", e);
     return {};
   }
 }
@@ -77,7 +76,7 @@ function CategoryCard({ category, data }: { category: string; data: CategoryData
           <h3 className="line-clamp-3 text-left text-xs font-semibold leading-snug text-hmc-text">
             {item ? item.title : PLACEHOLDER_ARTICLE.title}
           </h3>
-          <time className="text-left text-[10px] text-hmc-text-muted" dateTime="2024-05-15">
+          <time className="text-left text-[10px] text-hmc-text-muted" dateTime="2026-05-15">
             {item ? new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : PLACEHOLDER_ARTICLE.date}
           </time>
           <div className="aspect-[4/3] w-full overflow-hidden bg-hmc-placeholder">

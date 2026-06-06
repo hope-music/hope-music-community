@@ -45,7 +45,6 @@ export default function AdminCooperationPage() {
       setCooperationSubmissions(cooperation);
       setBusinessSubmissions(business);
     } catch (e) {
-      console.error("Failed to load submissions", e);
     }
     setIsLoading(false);
   };

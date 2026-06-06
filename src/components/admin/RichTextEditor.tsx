@@ -86,7 +86,6 @@ export function RichTextEditor({
         const imageUrl = `${process.env.NEXT_PUBLIC_CONVEX_URL}/api/storage/${storageId}`;
         editor.chain().focus().setImage({ src: imageUrl }).run();
       } catch (err) {
-        console.error("Image upload failed:", err);
         alert("Failed to upload image");
       }
 

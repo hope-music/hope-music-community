@@ -23,7 +23,6 @@ function loadFeaturedIds(): string[] {
       return JSON.parse(stored);
     }
   } catch (e) {
-    console.error("Error loading featured IDs:", e);
   }
   return [];
 }
@@ -60,7 +59,6 @@ export default function FeaturedPage() {
         const featured = events.filter((item: Production) => featuredIds.includes(item.id));
         setFeaturedItems(featured);
       } catch (e) {
-        console.error("Error loading data:", e);
       } finally {
         setLoading(false);
       }

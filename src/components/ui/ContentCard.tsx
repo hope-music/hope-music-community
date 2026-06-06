@@ -39,7 +39,7 @@ export function ContentCard({
           <h3 className="line-clamp-3 text-left text-xs font-semibold leading-snug text-hmc-text">
             {title}
           </h3>
-          <time className="text-left text-[10px] text-hmc-text-muted" dateTime="2024-05-15">
+          <time className="text-left text-[10px] text-hmc-text-muted" dateTime="2026-05-15">
             {date}
           </time>
           <div className="aspect-[4/3] w-full overflow-hidden bg-hmc-placeholder">

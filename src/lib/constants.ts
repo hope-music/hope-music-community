@@ -95,7 +95,7 @@ export const INTERACTION_CATEGORIES = [
 export const PLACEHOLDER_ARTICLE = {
   title:
     "Celebrate Teacher Appreciation Week by Announcing New Back to School Campaign",
-  date: "May 15, 2024",
+  date: "May 15, 2026",
 } as const;
 
 export const SOFTWARE_PLACEHOLDER_ITEMS = [

@@ -40,7 +40,6 @@ export default function StageProductionPage() {
         setItems([]);
       }
     } catch (error) {
-      console.error("Error loading stage productions:", error);
       setItems([]);
     } finally {
       setLoading(false);

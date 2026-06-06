@@ -12,9 +12,9 @@ import { CommentSection } from "@/components/comments/CommentSection";
 const DEMO_ARTICLES: Record<string, { id: string; title: string; coverImage: string; content: string; createdAt: number }> = {
   "demo-1": {
     id: "demo-1",
-    title: "Announcing the 2024 Global Musicals Gala line-up",
+    title: "Announcing the 2026 Global Musicals Gala line-up",
     coverImage: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=1200",
-    content: `<p class="font-semibold text-lg text-gray-800">We are thrilled to officially announce the lineup for the 2024 Global Musicals Gala, featuring world-renowned performers and groundbreaking theatrical productions from across the globe.</p>
+    content: `<p class="font-semibold text-lg text-gray-800">We are thrilled to officially announce the lineup for the 2026 Global Musicals Gala, featuring world-renowned performers and groundbreaking theatrical productions from across the globe.</p>
     <p>This year's gala promises to be the most ambitious yet, bringing together award-winning composers, directors, and performers from Broadway, West End, and international stages. Audiences can expect exclusive previews of upcoming productions, live performances of classic musical numbers, and behind-the-scenes insights into the creative process.</p>
     <p>"This Gala represents the pinnacle of musical theater excellence," noted the artistic director. "We've curated a program that celebrates both timeless classics and innovative new works that push the boundaries of what musical theater can achieve."</p>
     <p>Stay tuned for detailed schedule announcements, ticket availability, and special VIP experiences. For group bookings and institutional partnerships, please reach out through our collaboration portals.</p>`,

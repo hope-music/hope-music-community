@@ -39,7 +39,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (error) {
-      console.error("Resend error:", error);
       return NextResponse.json(
         { error: "Failed to send verification email" },
         { status: 500 }

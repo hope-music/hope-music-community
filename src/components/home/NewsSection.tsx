@@ -34,7 +34,7 @@ export function NewsSection() {
   const displayItems = newsItems.length > 0 ? newsItems : [
     {
       id: "demo-1",
-      title: "Announcing the 2024 Global Musicals Gala line-up",
+      title: "Announcing the 2026 Global Musicals Gala line-up",
       date: "June 25, 2026",
       image: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=500",
       href: "/news/demo-1",

@@ -98,7 +98,6 @@ export default function PerformanceDetailPage() {
         }
       }
     } catch (e) {
-      console.error("Error loading from API:", e);
     }
 
     // Fallback to localStorage for backwards compatibility
@@ -137,7 +136,6 @@ export default function PerformanceDetailPage() {
         }
       }
     } catch (e) {
-      console.error("Error loading data:", e);
       setItem(null);
     }
 

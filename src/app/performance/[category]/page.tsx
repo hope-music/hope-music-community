@@ -208,7 +208,6 @@ export default function PerformanceCategoryPage() {
           }
         }
       } catch (e) {
-        console.error("Error loading from API:", e);
       }
 
       try {
@@ -242,7 +241,6 @@ export default function PerformanceCategoryPage() {
           setItems(filtered);
         }
       } catch (e) {
-        console.error("Error loading:", e);
       }
       setLoading(false);
     };

@@ -189,7 +189,7 @@ export const MOCK_INTERACTION_ITEMS: ListingItem[] = [
 export const MOCK_NEWS_ITEMS: ListingItem[] = [
   {
     id: "1",
-    title: "Announcing the 2024 Global Musicals Gala line-up",
+    title: "Announcing the 2026 Global Musicals Gala line-up",
     date: "June 25, 2026",
     imageUrl: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=600",
   },

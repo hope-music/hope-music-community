@@ -40,7 +40,7 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
           const found = items.find(i => i.id === id);
           if (found) setItem(found);
         } catch (e) {
-          console.error("Failed to parse stored data", e);
+          // Silent fail - will use empty state
         }
       }
     };

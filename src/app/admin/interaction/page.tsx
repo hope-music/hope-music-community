@@ -209,7 +209,6 @@ export default function AdminInteractionPage() {
 
           // If data is corrupted or too few, reset to default
           if (!normalizedData || normalizedData.length < 10) {
-            console.log("Interaction data insufficient, restoring defaults...");
             const defaults = getDefaultPosts();
             setItems(defaults);
             localStorage.setItem(INTERACTION_STORAGE_KEY, JSON.stringify(defaults));
