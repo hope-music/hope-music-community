@@ -76,16 +76,16 @@ export default function NewPostPage({ params }: PageProps) {
   if (!currentUser) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]" />
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-hmc-orange" />
       </div>
     );
   }
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="border-b border-t border-[#D96A32]">
+      <div className="border-b border-t border-hmc-orange">
         <div className="mx-auto max-w-4xl px-4 py-4">
-          <Link href={`/interaction/${currentCategory}`} className="inline-flex items-center text-sm text-gray-500 hover:text-[#D96A32]">
+          <Link href={`/interaction/${currentCategory}`} className="inline-flex items-center text-sm text-gray-500 hover:text-hmc-orange">
             <svg className="mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
@@ -110,7 +110,7 @@ export default function NewPostPage({ params }: PageProps) {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What's your topic about?"
-              className="w-full rounded-md border border-gray-300 px-4 py-3 focus:border-[#D96A32] focus:outline-none focus:ring-1 focus:ring-[#D96A32]"
+              className="w-full rounded-md border border-gray-300 px-4 py-3 focus:border-hmc-orange focus:outline-none focus:ring-1 focus:ring-hmc-orange"
               required
               maxLength={200}
             />
@@ -124,7 +124,7 @@ export default function NewPostPage({ params }: PageProps) {
               onChange={(e) => setContent(e.target.value)}
               placeholder="Share your thoughts, questions, or ideas..."
               rows={10}
-              className="w-full rounded-md border border-gray-300 px-4 py-3 focus:border-[#D96A32] focus:outline-none focus:ring-1 focus:ring-[#D96A32] resize-none"
+              className="w-full rounded-md border border-gray-300 px-4 py-3 focus:border-hmc-orange focus:outline-none focus:ring-1 focus:ring-hmc-orange resize-none"
               required
             />
           </div>
@@ -139,7 +139,7 @@ export default function NewPostPage({ params }: PageProps) {
             <button
               type="submit"
               disabled={submitting || !title.trim() || !content.trim()}
-              className="rounded-md bg-[#D96A32] px-6 py-2 text-sm font-medium text-white hover:bg-[#c45a28] disabled:opacity-50"
+              className="rounded-md bg-hmc-orange px-6 py-2 text-sm font-medium text-white hover:bg-hmc-orange disabled:opacity-50"
             >
               {submitting ? "Posting..." : "Create"}
             </button>

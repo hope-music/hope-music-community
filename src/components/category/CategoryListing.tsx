@@ -53,9 +53,9 @@ export function CategoryListing({
   return (
     <main className="min-h-screen bg-white">
       {/* Page Title */}
-      <div className="border-b border-t border-[#D96A32] bg-white">
+      <div className="border-b border-t border-hmc-orange bg-white">
         <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">
+          <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">
             {category}
           </h1>
         </div>
@@ -85,7 +85,7 @@ export function CategoryListing({
                 <time className="text-xs text-hmc-text-muted" dateTime="2026-06-25">
                   {item.date}
                 </time>
-                <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors duration-150 group-hover:text-[#C8102E]">
+                <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors duration-150 group-hover:text-hmc-red">
                   {item.title}
                 </h3>
               </div>
@@ -103,7 +103,7 @@ export function CategoryListing({
                   onClick={() => setCurrentPage(page)}
                   className={`min-w-[36px] rounded-md px-3 py-2 text-sm font-medium transition-colors duration-150 ${
                     currentPage === page
-                      ? "bg-[#C8102E] text-white"
+                      ? "bg-hmc-red text-white"
                       : "bg-white text-hmc-text hover:bg-gray-100"
                   }`}
                 >

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { STAGE_PRODUCTION_CATEGORY_LABELS, STAGE_PRODUCTION_CATEGORY_OPTIONS } from "@/lib/constants";
 
 interface StageProduction {
   id: string;
@@ -14,26 +15,36 @@ interface StageProduction {
   createdAt: number;
 }
 
-const CATEGORIES = [
-  { value: "sets", label: "Sets" },
-  { value: "lighting", label: "Lighting" },
-  { value: "sound", label: "Sound" },
-  { value: "projection", label: "Projection" },
-  { value: "scenery", label: "Scenery" },
-  { value: "others", label: "Others" },
-];
+const LEGACY_CATEGORY_MAP: Record<string, string> = {
+  sets: "stage",
+  sound: "audio",
+  projection: "video",
+  scenery: "effects",
+};
 
 export default function StageProductionPage() {
   const [items, setItems] = useState<StageProduction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = localStorage.getItem("admin_stage_production");
-    if (stored) {
-      const data = JSON.parse(stored);
-      setItems(data.filter((item: StageProduction) => item.status !== "draft"));
+    try {
+      const stored = localStorage.getItem("admin_stage_production");
+      if (stored) {
+        const data = JSON.parse(stored);
+        const normalized = data.map((item: StageProduction) => ({
+          ...item,
+          category: LEGACY_CATEGORY_MAP[item.category] ?? item.category,
+        }));
+        setItems(normalized.filter((item: StageProduction) => item.status !== "draft"));
+      } else {
+        setItems([]);
+      }
+    } catch (error) {
+      console.error("Error loading stage productions:", error);
+      setItems([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const formatDate = (dateStr?: string) => {
@@ -43,19 +54,36 @@ export default function StageProductionPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="border-b border-t border-[#D96A32] bg-white">
+      <div className="border-b border-t border-hmc-orange bg-white">
         <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">Stage Production</h1>
+          <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">Stage Production</h1>
         </div>
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-8">
         {loading ? (
-          <div className="py-20 text-center"><div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div></div>
+          <div className="py-20 text-center"><div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-hmc-orange"></div></div>
         ) : items.length === 0 ? (
-          <div className="py-20 text-center text-gray-500"><p className="text-lg">No stage productions yet.</p></div>
+          <div className="py-20 text-center text-gray-500"><p className="text-lg">No stage productions found.</p></div>
         ) : (
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <>
+            <div className="mb-8 flex flex-wrap items-center justify-center gap-2">
+              {STAGE_PRODUCTION_CATEGORY_OPTIONS.map((category) => {
+                const count = items.filter((item) => item.category === category.value).length;
+                return (
+                  <Link
+                    key={category.value}
+                    href={`/stage-production/${category.value}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full border border-hmc-orange/20 bg-hmc-orange/5 px-3 py-1 text-sm font-medium text-hmc-orange transition-colors hover:bg-hmc-orange hover:text-white"
+                  >
+                    {category.label} {count > 0 ? `(${count})` : ""}
+                  </Link>
+                );
+              })}
+            </div>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
               <Link key={item.id} href={`/stage-production/${item.category}/${item.id}`} target="_blank" rel="noopener noreferrer" className="group flex h-full flex-col overflow-hidden rounded-xl border border-hmc-placeholder-border bg-white shadow-sm transition-shadow hover:shadow-md">
                 <div className="aspect-[4/3] w-full overflow-hidden bg-gray-100">
@@ -63,16 +91,17 @@ export default function StageProductionPage() {
                 </div>
                 <div className="flex flex-1 flex-col gap-2 p-4">
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">{CATEGORIES.find((c) => c.value === item.category)?.label || item.category}</span>
+                    <span className="rounded bg-hmc-orange/10 px-2 py-0.5 text-xs font-medium text-hmc-orange">{STAGE_PRODUCTION_CATEGORY_LABELS[item.category] || item.category}</span>
                     {item.status === "upcoming" && <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-600">Upcoming</span>}
                   </div>
-                  <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors group-hover:text-[#C8102E]">{item.title}</h3>
+                  <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors group-hover:text-hmc-red">{item.title}</h3>
                   {item.eventDate && <time className="text-xs text-hmc-text-muted">{formatDate(item.eventDate)}</time>}
                   {item.description && <p className="text-xs text-gray-500 line-clamp-2">{item.description.replace(/<[^>]*>/g, "")}</p>}
                 </div>
               </Link>
             ))}
-          </div>
+            </div>
+          </>
         )}
       </div>
     </main>

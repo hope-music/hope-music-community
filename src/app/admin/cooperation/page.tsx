@@ -118,7 +118,7 @@ export default function AdminCooperationPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Cooperation Submissions</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage Musical Performance Team & Business Cooperation inquiries</p>
+          <p className="mt-1 text-sm text-gray-500">Manage cooperation submissions</p>
         </div>
       </div>
 
@@ -176,7 +176,7 @@ export default function AdminCooperationPage() {
           </div>
           <div className="divide-y divide-gray-100 max-h-[500px] overflow-y-auto">
             {(activeTab === "cooperation" ? cooperationSubmissions : businessSubmissions).length === 0 ? (
-              <div className="px-4 py-8 text-center text-gray-500">No submissions found</div>
+              <div className="px-4 py-8 text-center text-gray-500">No submissions yet</div>
             ) : (
               (activeTab === "cooperation" ? cooperationSubmissions : businessSubmissions).map((item) => (
                 <div

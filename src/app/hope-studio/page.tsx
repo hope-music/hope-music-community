@@ -55,9 +55,9 @@ export default function HopeStudioPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="border-b border-t border-[#D96A32]">
+      <div className="border-b border-t border-hmc-orange">
         <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">Hope Studio</h1>
+          <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">Hope Studio</h1>
         </div>
       </div>
 
@@ -81,7 +81,7 @@ export default function HopeStudioPage() {
                 />
               </div>
               <div className="mt-4 text-center">
-                <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#C8102E]">
+                <h3 className="text-lg font-semibold text-gray-900 group-hover:text-hmc-red">
                   {item.title}
                 </h3>
                 <p className="mt-2 text-sm text-gray-500 line-clamp-2">

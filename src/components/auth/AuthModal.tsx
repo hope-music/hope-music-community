@@ -225,7 +225,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
 
   const renderAvatar = (avatar: typeof ALL_AVATARS[0], isSelected: boolean) => {
     const borderClass = isSelected
-      ? "border-2 border-[#D96A32] bg-[#D96A32]/10 ring-2 ring-[#D96A32] ring-offset-1"
+      ? "border-2 border-hmc-orange bg-hmc-orange/10 ring-2 ring-hmc-orange ring-offset-1"
       : "border-2 border-gray-200 hover:border-gray-400";
 
     return (
@@ -255,14 +255,14 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter your username or email"
-                  className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-[#D96A32] focus:outline-none focus:ring-1 focus:ring-[#D96A32]"
+                  className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-hmc-orange focus:outline-none focus:ring-1 focus:ring-hmc-orange"
                   onKeyDown={(e) => e.key === "Enter" && handleLogin()}
                 />
               </div>
               {error && <p className="text-sm text-red-500">{error}</p>}
               <button
                 onClick={handleLogin}
-                className="w-full rounded-md bg-[#D96A32] py-2 font-medium text-white transition hover:bg-[#c45a28]"
+                className="w-full rounded-md bg-hmc-orange py-2 font-medium text-white transition hover:bg-hmc-orange"
               >
                 Sign In
               </button>
@@ -270,7 +270,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                 New user?{" "}
                 <button
                   onClick={() => { setMode("register"); setError(""); }}
-                  className="text-[#D96A32] hover:underline"
+                  className="text-hmc-orange hover:underline"
                 >
                   Sign Up
                 </button>
@@ -288,7 +288,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Create your username"
-                  className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-[#D96A32] focus:outline-none focus:ring-1 focus:ring-[#D96A32]"
+                  className="w-full rounded-md border border-gray-300 px-4 py-2 focus:border-hmc-orange focus:outline-none focus:ring-1 focus:ring-hmc-orange"
                 />
               </div>
               <div>
@@ -303,7 +303,7 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                       setIsEmailVerified(false);
                     }}
                     placeholder="Enter your email"
-                    className="flex-1 rounded-md border border-gray-300 px-4 py-2 focus:border-[#D96A32] focus:outline-none focus:ring-1 focus:ring-[#D96A32]"
+                    className="flex-1 rounded-md border border-gray-300 px-4 py-2 focus:border-hmc-orange focus:outline-none focus:ring-1 focus:ring-hmc-orange"
                     disabled={isCodeSent && !isEmailVerified}
                   />
                   {!isCodeSent ? (
@@ -338,13 +338,13 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
                       value={verificationCode}
                       onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       placeholder="Enter 6-digit code"
-                      className="flex-1 rounded-md border border-gray-300 px-4 py-2 focus:border-[#D96A32] focus:outline-none focus:ring-1 focus:ring-[#D96A32]"
+                      className="flex-1 rounded-md border border-gray-300 px-4 py-2 focus:border-hmc-orange focus:outline-none focus:ring-1 focus:ring-hmc-orange"
                       maxLength={6}
                     />
                     <button
                       onClick={handleVerifyCode}
                       disabled={isVerifying || verificationCode.length !== 6}
-                      className="rounded-md bg-[#D96A32] px-4 py-2 text-sm font-medium text-white transition hover:bg-[#c45a28] disabled:opacity-50"
+                      className="rounded-md bg-hmc-orange px-4 py-2 text-sm font-medium text-white transition hover:bg-hmc-orange disabled:opacity-50"
                     >
                       {isVerifying ? "Verifying..." : "Verify"}
                     </button>
@@ -396,15 +396,15 @@ export function AuthModal({ isOpen, onClose, initialMode = "login" }: AuthModalP
               <button
                 onClick={handleRegister}
                 disabled={!isEmailVerified}
-                className="w-full rounded-md bg-[#D96A32] py-2 font-medium text-white transition hover:bg-[#c45a28] disabled:bg-gray-300"
+                className="w-full rounded-md bg-hmc-orange py-2 font-medium text-white transition hover:bg-hmc-orange disabled:bg-gray-300"
               >
-                Create Account
+                Sign Up
               </button>
               <p className="text-center text-sm text-gray-500">
                 Already have an account?{" "}
                 <button
                   onClick={() => { setMode("login"); setError(""); }}
-                  className="text-[#D96A32] hover:underline"
+                  className="text-hmc-orange hover:underline"
                 >
                   Sign In
                 </button>

@@ -55,7 +55,7 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
       <main className="min-h-screen bg-white">
         <div className="mx-auto max-w-4xl px-4 py-20 text-center">
           <h1 className="text-2xl font-bold text-gray-900">Page Not Found</h1>
-          <Link href="/hope-studio" className="mt-4 inline-block text-[#D96A32] hover:underline">
+          <Link href="/hope-studio" className="mt-4 inline-block text-hmc-orange hover:underline">
             ← Back to Hope Studio
           </Link>
         </div>
@@ -65,9 +65,9 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="border-b border-t border-[#D96A32]">
+      <div className="border-b border-t border-hmc-orange">
         <div className="mx-auto max-w-4xl px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">
+          <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">
             {item.title}
           </h1>
         </div>
@@ -92,7 +92,7 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
         <div className="mt-10 border-t pt-6">
           <Link
             href="/hope-studio"
-            className="inline-flex items-center gap-2 text-[#D96A32] hover:text-[#c45a28]"
+            className="inline-flex items-center gap-2 text-hmc-orange hover:text-hmc-orange"
           >
             ← Back to Hope Studio
           </Link>

@@ -2,6 +2,13 @@
 
 import { useEffect } from "react";
 
+const STAGE_PRODUCTION_LEGACY_CATEGORY_MAP: Record<string, string> = {
+  sets: "stage",
+  sound: "audio",
+  projection: "video",
+  scenery: "effects",
+};
+
 const demoData = {
   admin_news: [
     {
@@ -135,18 +142,108 @@ const demoData = {
     },
     {
       id: "demo-s2",
-      title: "Scenic Design: 'A Midsummer Night's Dream'",
-      category: "sets",
+      title: "Modular Stage Design for 'A Midsummer Night's Dream'",
+      category: "stage",
       coverImage: "https://images.unsplash.com/photo-1514539079130-25950c84af65?w=800",
-      description: "Transforming the stage into an enchanted forest with movable set pieces and projections.",
-      content: `<h2>Bringing the Forest to Life</h2>
-      <p>Our scenic design team created an immersive forest environment using a combination of physical set pieces and projection mapping.</p>
-      <p>The design allowed for quick scene changes while maintaining the magical atmosphere of Shakespeare's comedy.</p>`,
+      description: "Transforming the venue with movable stage platforms and scenic architecture tailored for immersive blocking.",
+      content: `<h2>Building a Flexible Stage World</h2>
+      <p>Our stage team created a layered modular platform system that let performers move fluidly between forest clearings, royal court scenes, and elevated dream sequences.</p>
+      <p>The design emphasized fast transitions, performer safety, and strong sightlines for every section of the audience.</p>
+      <h3>Stage Highlights</h3>
+      <ul>
+        <li>Reconfigurable risers and rolling decks</li>
+        <li>Integrated trap and reveal moments</li>
+        <li>Textured surfaces for light and shadow play</li>
+      </ul>`,
       status: "past",
       eventDate: "2024-07-22",
       createdAt: Date.now() - 86400000 * 90,
       updatedAt: Date.now() - 86400000 * 90,
     },
+    {
+      id: "demo-s3",
+      title: "Multi-Camera Capture Workflow for Live Concert Broadcast",
+      category: "video",
+      coverImage: "https://images.unsplash.com/photo-1574717024653-61fd2cf4d44d?w=800",
+      description: "A behind-the-scenes look at coordinating projection feeds, switching, and archival capture for a live show.",
+      content: `<h2>From Lens to Live Screen</h2>
+      <p>Our video team deployed a multi-camera workflow to support live IMAG, archival recording, and online distribution without disrupting the audience experience.</p>
+      <p>We synchronized camera operators, switchers, and playback systems to keep visuals aligned with cues from the production booth.</p>`,
+      status: "past",
+      eventDate: "2024-08-05",
+      createdAt: Date.now() - 86400000 * 65,
+      updatedAt: Date.now() - 86400000 * 65,
+    },
+    {
+      id: "demo-s4",
+      title: "Front-of-House Audio Tuning for a 1,200-Seat Musical",
+      category: "audio",
+      coverImage: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800",
+      description: "Balancing vocal clarity, orchestra warmth, and consistent coverage across a large room.",
+      content: `<h2>Dialing In the Mix</h2>
+      <p>Our audio department tuned the PA for even coverage, speech intelligibility, and controlled low-end buildup in a challenging proscenium space.</p>
+      <p>The result was a mix that felt powerful without masking dialogue or orchestral detail.</p>`,
+      status: "past",
+      eventDate: "2024-09-01",
+      createdAt: Date.now() - 86400000 * 50,
+      updatedAt: Date.now() - 86400000 * 50,
+    },
+    {
+      id: "demo-s5",
+      title: "Practical Atmospherics and Pyro Cue Planning",
+      category: "effects",
+      coverImage: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800",
+      description: "How haze, sparks, and timed scenic effects were coordinated safely for dramatic impact.",
+      content: `<h2>Creating Spectacle Safely</h2>
+      <p>Our effects crew designed a cue stack combining haze, spark fountains, and timed scenic reveals to heighten the emotional peaks of the production.</p>
+      <p>Every effect was pre-visualized, rehearsed, and cleared with venue safety protocols.</p>`,
+      status: "past",
+      eventDate: "2024-06-28",
+      createdAt: Date.now() - 86400000 * 72,
+      updatedAt: Date.now() - 86400000 * 72,
+    },
+    {
+      id: "demo-s6",
+      title: "Quick-Change Costume Strategy for Ensemble Performers",
+      category: "costumes",
+      coverImage: "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?w=800",
+      description: "Designing durable wardrobes that support rapid backstage changes and strong visual storytelling.",
+      content: `<h2>Costumes That Move With the Show</h2>
+      <p>The costume department engineered layered garments, hidden closures, and labeled presets so ensemble members could move through multiple looks in minutes.</p>
+      <p>Each costume balanced visual richness with comfort and repeatability across a long run.</p>`,
+      status: "past",
+      eventDate: "2024-07-11",
+      createdAt: Date.now() - 86400000 * 58,
+      updatedAt: Date.now() - 86400000 * 58,
+    },
+    {
+      id: "demo-s7",
+      title: "Hero Props Build for Fantasy Adventure Production",
+      category: "props",
+      coverImage: "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=800",
+      description: "Fabricating hand props and signature set pieces that withstand rehearsal, travel, and nightly use.",
+      content: `<h2>Props With Character</h2>
+      <p>Our props shop combined foam carving, lightweight armatures, and scenic finishing to build durable hero objects for close audience viewing.</p>
+      <p>The final pieces matched the design world while remaining practical for repeated stage action.</p>`,
+      status: "past",
+      eventDate: "2024-08-18",
+      createdAt: Date.now() - 86400000 * 40,
+      updatedAt: Date.now() - 86400000 * 40,
+    },
+    {
+      id: "demo-s8",
+      title: "Character Aging and Prosthetic Workflow for Lead Cast",
+      category: "makeup",
+      coverImage: "https://images.unsplash.com/photo-1596755389378-c31d21fd1273?w=800",
+      description: "A makeup pipeline for expressive stage looks that still read clearly under intense lighting.",
+      content: `<h2>Designing Faces for the Stage</h2>
+      <p>The makeup team developed prosthetic and aging applications that could be reset nightly while preserving comfort and expressive range for performers.</p>
+      <p>Looks were tested directly under show lighting to ensure believable detail from every seat.</p>`,
+      status: "past",
+      eventDate: "2024-09-12",
+      createdAt: Date.now() - 86400000 * 35,
+      updatedAt: Date.now() - 86400000 * 35,
+    }
   ],
 
   admin_hope_studio: [
@@ -266,6 +363,33 @@ export default function DemoDataInitializer() {
   useEffect(() => {
     Object.entries(demoData).forEach(([key, value]) => {
       const existing = localStorage.getItem(key);
+
+      if (key === "admin_stage_production") {
+        try {
+          const parsed = existing ? JSON.parse(existing) : [];
+          const normalized = Array.isArray(parsed)
+            ? parsed.map((item) => ({
+                ...item,
+                category: STAGE_PRODUCTION_LEGACY_CATEGORY_MAP[item.category] ?? item.category,
+              }))
+            : [];
+
+          const needsSeed = !Array.isArray(parsed) || parsed.length === 0;
+          const hasNewTaxonomyData = normalized.some(
+            (item) => item && typeof item.category === "string" && item.category !== "others"
+          );
+
+          if (needsSeed || !hasNewTaxonomyData) {
+            localStorage.setItem(key, JSON.stringify(value));
+          } else if (JSON.stringify(normalized) !== JSON.stringify(parsed)) {
+            localStorage.setItem(key, JSON.stringify(normalized));
+          }
+        } catch {
+          localStorage.setItem(key, JSON.stringify(value));
+        }
+        return;
+      }
+
       if (!existing || JSON.parse(existing).length === 0) {
         localStorage.setItem(key, JSON.stringify(value));
       }

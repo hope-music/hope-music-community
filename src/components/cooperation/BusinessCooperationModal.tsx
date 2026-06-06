@@ -136,7 +136,7 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
       <div ref={modalRef} className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
         {/* Colorful header bar */}
-        <div className="h-2 rounded-t-2xl bg-gradient-to-r from-[#D96A32] via-[#E8854A] to-[#F0A068]" />
+        <div className="h-2 rounded-t-2xl bg-gradient-to-r from-hmc-orange via-[#E8854A] to-[#F0A068]" />
         {submitted ? (
           <div className="p-8 text-center">
             <div className="mb-4 flex justify-center">
@@ -150,7 +150,7 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
             <p className="mb-6 text-gray-600">Your cooperation request has been submitted successfully.</p>
             <button
               onClick={handleClose}
-              className="rounded-full bg-[#D96A32] px-6 py-2.5 font-medium text-white transition hover:bg-[#c45a28]"
+              className="rounded-full bg-hmc-orange px-6 py-2.5 font-medium text-white transition hover:bg-hmc-orange"
             >
               Close
             </button>
@@ -184,8 +184,8 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Your full name"
-                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 ${
-                      errors.name ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-hmc-orange/20 ${
+                      errors.name ? "border-red-500" : "border-gray-300 focus:border-hmc-orange"
                     }`}
                   />
                   {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
@@ -200,8 +200,8 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 cursor-pointer ${
-                      errors.country ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-hmc-orange/20 cursor-pointer ${
+                      errors.country ? "border-red-500" : "border-gray-300 focus:border-hmc-orange"
                     } ${!formData.country ? "text-gray-400" : "text-gray-900"}`}
                   >
                     {COUNTRIES.map(c => (
@@ -223,8 +223,8 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
                       value={formData.phone}
                       onChange={handleChange}
                       placeholder="+1 234 567"
-                      className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 ${
-                        errors.phone ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                      className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-hmc-orange/20 ${
+                        errors.phone ? "border-red-500" : "border-gray-300 focus:border-hmc-orange"
                       }`}
                     />
                     {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
@@ -239,8 +239,8 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@email.com"
-                      className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 ${
-                        errors.email ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                      className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-hmc-orange/20 ${
+                        errors.email ? "border-red-500" : "border-gray-300 focus:border-hmc-orange"
                       }`}
                     />
                     {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
@@ -258,8 +258,8 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
                     value={formData.projectType}
                     onChange={handleChange}
                     placeholder="e.g. Live performance, Music production, Tour management..."
-                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 ${
-                      errors.projectType ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-hmc-orange/20 ${
+                      errors.projectType ? "border-red-500" : "border-gray-300 focus:border-hmc-orange"
                     }`}
                   />
                   {errors.projectType && <p className="mt-1 text-xs text-red-500">{errors.projectType}</p>}
@@ -276,8 +276,8 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
                     onChange={handleChange}
                     placeholder="Tell us about your cooperation proposal..."
                     rows={3}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 resize-none ${
-                      errors.message ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-hmc-orange/20 resize-none ${
+                      errors.message ? "border-red-500" : "border-gray-300 focus:border-hmc-orange"
                     }`}
                   />
                   {errors.message && <p className="mt-1 text-xs text-red-500">{errors.message}</p>}
@@ -287,7 +287,7 @@ export function BusinessCooperationModal({ isOpen, onClose }: BusinessCooperatio
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full rounded-full bg-[#D96A32] py-2.5 text-sm font-medium text-white transition hover:bg-[#c45a28] disabled:opacity-50"
+                  className="w-full rounded-full bg-hmc-orange py-2.5 text-sm font-medium text-white transition hover:bg-hmc-orange disabled:opacity-50"
                 >
                   {submitting ? "Submitting..." : "Submit"}
                 </button>

@@ -5,7 +5,7 @@ function ShangriLaBanner() {
   return (
     <div className="mx-auto max-w-6xl px-4 lg:px-8 py-6">
       {/* The Main Red Card - Aligned with CooperationBar width */}
-      <div className="w-full bg-[#C8102E] rounded-2xl shadow-md px-8 md:px-12 py-12 md:py-16 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="w-full bg-hmc-red rounded-2xl shadow-md px-8 md:px-12 py-12 md:py-16 flex flex-col md:flex-row justify-between items-center gap-6">
         
         {/* Left Text Side */}
         <div className="max-w-3xl flex-1 text-center md:text-left">

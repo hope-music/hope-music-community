@@ -6,9 +6,11 @@
   --hmc-primary-dark: #164a96;
   --hmc-nav-accent: #5daae2;
   --hmc-mainnav-bg: #28779E;
-  --hmc-orange: #e8751a;
-  --hmc-red: #c41e24;
-  --hmc-red-hover: #a8181d;
+  --hmc-nav-border: #60A5FA;
+  --hmc-dropdown-bg: #4A9BC8;
+  --hmc-orange: #D96A32;
+  --hmc-red: #C8102E;
+  --hmc-red-hover: #c45a28;
   --hmc-subnav: #e5e5e5;
   --hmc-placeholder: #f2f2f2;
   --hmc-placeholder-border: #d8d8d8;
@@ -37,6 +39,9 @@
   --color-hmc-footer: var(--hmc-footer);
   --color-hmc-text: var(--hmc-text);
   --color-hmc-text-muted: var(--hmc-text-muted);
+  --color-hmc-nav-border: var(--hmc-nav-border);
+  --color-hmc-dropdown-bg: var(--hmc-dropdown-bg);
+  --color-hmc-mainnav-bg: var(--hmc-mainnav-bg);
   --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     Arial, Helvetica, sans-serif;
   --font-hope-studio: "Brush Script MT", "Segoe Script", "Snell Roundhand",

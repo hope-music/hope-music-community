@@ -89,7 +89,7 @@ export default function FeaturedPage() {
     return (
       <main className="min-h-screen bg-white">
         <div className="mx-auto max-w-6xl px-4 py-20 text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-hmc-orange"></div>
         </div>
       </main>
     );
@@ -99,9 +99,9 @@ export default function FeaturedPage() {
     return (
       <main className="min-h-screen bg-white">
         {/* Header */}
-        <div className="border-b border-t border-[#D96A32] bg-white">
+        <div className="border-b border-t border-hmc-orange bg-white">
           <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-            <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">Featured</h1>
+            <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">Featured</h1>
           </div>
         </div>
 
@@ -122,9 +122,9 @@ export default function FeaturedPage() {
   return (
     <main className="min-h-screen bg-white">
       {/* Header */}
-      <div className="border-b border-t border-[#D96A32] bg-white">
+      <div className="border-b border-t border-hmc-orange bg-white">
         <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">Featured</h1>
+          <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">Featured</h1>
         </div>
       </div>
 
@@ -154,14 +154,14 @@ export default function FeaturedPage() {
               </div>
               <div className="flex flex-1 flex-col gap-2 p-4">
                 <div className="flex items-center gap-2">
-                  <span className="rounded bg-[#D96A32]/10 px-2 py-0.5 text-xs font-medium text-[#D96A32]">
+                  <span className="rounded bg-hmc-orange/10 px-2 py-0.5 text-xs font-medium text-hmc-orange">
                     {PERFORMANCE_CATEGORY_LABELS[item.category] || item.category}
                   </span>
                   {item.status === "upcoming" && (
                     <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-600">Upcoming</span>
                   )}
                 </div>
-                <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors group-hover:text-[#C8102E]">
+                <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors group-hover:text-hmc-red">
                   {item.title}
                 </h3>
                 {item.eventDate && (

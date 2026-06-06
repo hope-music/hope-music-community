@@ -21,6 +21,7 @@ interface Performance {
   priceRange?: string;
   artist?: string;
   duration?: string;
+  url?: string;
   createdAt: number;
 }
 
@@ -40,6 +41,13 @@ function getDisplayStatus(eventDate?: string): DisplayStatus {
 
 function isVisible(eventDate?: string): boolean {
   return getDisplayStatus(eventDate) !== "archived";
+}
+
+function canBookTickets(eventDate?: string): boolean {
+  if (!eventDate) return false;
+  const eventTime = new Date(eventDate).getTime();
+  const now = Date.now();
+  return eventTime >= now;
 }
 
 export default function PerformanceDetailPage() {
@@ -155,26 +163,34 @@ export default function PerformanceDetailPage() {
     [item?.category]
   );
 
-  const statusConfig = useMemo(() => {
-    if (!item) return null;
-    const displayStatus = getDisplayStatus(item.eventDate);
-    switch (displayStatus) {
-      case "upcoming":
-        return { label: "Upcoming", color: "bg-emerald-500", textColor: "text-emerald-600", bgColor: "bg-emerald-50" };
-      case "recent":
-        return { label: "Recent", color: "bg-blue-500", textColor: "text-blue-600", bgColor: "bg-blue-50" };
-      default:
-        return { label: "Archived", color: "bg-gray-400", textColor: "text-gray-500", bgColor: "bg-gray-50" };
-    }
-  }, [item]);
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="relative">
-          <div className="h-16 w-16 rounded-full border-4 border-orange-200 border-t-[#D96A32] animate-spin"></div>
+          <div className="h-16 w-16 rounded-full border-4 border-orange-200 border-t-hmc-orange animate-spin"></div>
           <div className="absolute inset-0 h-16 w-16 rounded-full border-4 border-transparent border-b-orange-300 animate-spin" style={{ animationDirection: "reverse", animationDuration: "1.5s" }}></div>
         </div>
+      </div>
+    );
+  }
+
+  // If item is found but archived, redirect to category page
+  if (item && getDisplayStatus(item.eventDate) === "archived") {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-6">
+          <svg className="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <h1 className="text-3xl font-bold text-gray-900 mb-3">This Event Has Been Archived</h1>
+        <p className="text-gray-500 mb-8">Events are archived 2 weeks after completion.</p>
+        <Link href={`/performance/${item.category}`} className="group px-6 py-3 bg-hmc-orange text-white rounded-full hover:bg-hmc-orange transition-all duration-300 flex items-center gap-2 shadow-lg shadow-orange-200">
+          <svg className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to {categoryLabel}
+        </Link>
       </div>
     );
   }
@@ -189,7 +205,7 @@ export default function PerformanceDetailPage() {
         </div>
         <h1 className="text-3xl font-bold text-gray-900 mb-3">Performance Not Found</h1>
         <p className="text-gray-500 mb-8">The performance you&apos;re looking for doesn&apos;t exist.</p>
-        <Link href="/performance" className="group px-6 py-3 bg-[#D96A32] text-white rounded-full hover:bg-[#c45a28] transition-all duration-300 flex items-center gap-2 shadow-lg shadow-orange-200">
+        <Link href="/performance" className="group px-6 py-3 bg-hmc-orange text-white rounded-full hover:bg-hmc-orange transition-all duration-300 flex items-center gap-2 shadow-lg shadow-orange-200">
           <svg className="w-4 h-4 transform group-hover:-translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
@@ -204,7 +220,7 @@ export default function PerformanceDetailPage() {
       {/* Reading Progress Bar */}
       <div className="fixed top-0 left-0 right-0 h-1 bg-gray-100 z-50">
         <div 
-          className="h-full bg-gradient-to-r from-[#D96A32] to-orange-400 transition-all duration-150"
+          className="h-full bg-gradient-to-r from-hmc-orange to-orange-400 transition-all duration-150"
           style={{ width: `${scrollProgress}%` }}
         />
       </div>
@@ -249,16 +265,11 @@ export default function PerformanceDetailPage() {
               <span className="text-white/40 truncate max-w-[200px]">{item.title}</span>
             </nav>
 
-            {/* Category & Status Badge */}
+            {/* Category Badge */}
             <div className="flex items-center gap-3 mb-4">
-              <span className="px-3 py-1 bg-[#D96A32] text-white text-xs font-semibold rounded-full uppercase tracking-wider">
+              <span className="px-3 py-1 bg-hmc-orange text-white text-xs font-semibold rounded-full uppercase tracking-wider">
                 {categoryLabel}
               </span>
-              {statusConfig && (
-                <span className={`px-3 py-1 ${statusConfig.bgColor} ${statusConfig.textColor} text-xs font-medium rounded-full`}>
-                  {statusConfig.label}
-                </span>
-              )}
             </div>
 
             {/* Title */}
@@ -270,7 +281,7 @@ export default function PerformanceDetailPage() {
             <div className="flex flex-wrap items-center gap-4">
               {item.eventDate && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white">
-                  <svg className="w-5 h-5 text-[#D96A32]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   <span className="font-medium">{formatShortDate(item.eventDate)}</span>
@@ -278,7 +289,7 @@ export default function PerformanceDetailPage() {
               )}
               {item.venue && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white">
-                  <svg className="w-5 h-5 text-[#D96A32]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                   </svg>
@@ -287,7 +298,7 @@ export default function PerformanceDetailPage() {
               )}
               {item.city && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white">
-                  <svg className="w-5 h-5 text-[#D96A32]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                   </svg>
                   <span>{item.city}</span>
@@ -315,7 +326,7 @@ export default function PerformanceDetailPage() {
               <div className="lg:col-span-2 space-y-6">
                 <div>
                   <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                    <span className="w-1 h-6 bg-[#D96A32] rounded-full"></span>
+                    <span className="w-1 h-6 bg-hmc-orange rounded-full"></span>
                     About This Performance
                   </h2>
                   <div className="bg-gradient-to-br from-gray-50 to-orange-50/30 rounded-xl p-6 border border-gray-100">
@@ -328,7 +339,7 @@ export default function PerformanceDetailPage() {
                 {item.content && (
                   <div>
                     <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                      <span className="w-1 h-6 bg-[#D96A32] rounded-full"></span>
+                      <span className="w-1 h-6 bg-hmc-orange rounded-full"></span>
                       Event Details
                     </h2>
                     <div className="prose prose-lg max-w-none text-gray-600 leading-relaxed" dangerouslySetInnerHTML={{ __html: item.content }} />
@@ -345,8 +356,8 @@ export default function PerformanceDetailPage() {
                   <div className="space-y-4">
                     {item.eventDate && (
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[#D96A32]/20 flex items-center justify-center flex-shrink-0">
-                          <svg className="w-5 h-5 text-[#D96A32]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 rounded-lg bg-hmc-orange/20 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                           </svg>
                         </div>
@@ -359,8 +370,8 @@ export default function PerformanceDetailPage() {
 
                     {item.venue && (
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[#D96A32]/20 flex items-center justify-center flex-shrink-0">
-                          <svg className="w-5 h-5 text-[#D96A32]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 rounded-lg bg-hmc-orange/20 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                           </svg>
@@ -374,8 +385,8 @@ export default function PerformanceDetailPage() {
 
                     {item.city && (
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[#D96A32]/20 flex items-center justify-center flex-shrink-0">
-                          <svg className="w-5 h-5 text-[#D96A32]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 rounded-lg bg-hmc-orange/20 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                           </svg>
                         </div>
@@ -388,8 +399,8 @@ export default function PerformanceDetailPage() {
 
                     {item.priceRange && (
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[#D96A32]/20 flex items-center justify-center flex-shrink-0">
-                          <svg className="w-5 h-5 text-[#D96A32]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 rounded-lg bg-hmc-orange/20 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
@@ -402,8 +413,8 @@ export default function PerformanceDetailPage() {
 
                     {item.duration && (
                       <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-[#D96A32]/20 flex items-center justify-center flex-shrink-0">
-                          <svg className="w-5 h-5 text-[#D96A32]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div className="w-10 h-10 rounded-lg bg-hmc-orange/20 flex items-center justify-center flex-shrink-0">
+                          <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
                         </div>
@@ -415,13 +426,13 @@ export default function PerformanceDetailPage() {
                     )}
                   </div>
 
-                  {/* CTA Button - Only show for upcoming events */}
-                  {getDisplayStatus(item.eventDate) === "upcoming" && item.status !== "draft" && (
+                  {/* CTA Button */}
+                  {canBookTickets(item.eventDate) && item.status !== "draft" && (
                     <a
                       href={item.url || "https://www.ticketmaster.com"}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="w-full mt-6 px-6 py-4 bg-[#D96A32] hover:bg-[#c45a28] text-white font-semibold rounded-xl transition-all duration-300 flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-0.5"
+                      className="mt-4 flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-semibold text-hmc-orange transition-colors hover:bg-white/90"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
@@ -429,28 +440,29 @@ export default function PerformanceDetailPage() {
                       Book Tickets
                     </a>
                   )}
-                  {/* Archive Notice */}
-                  {getDisplayStatus(item.eventDate) === "archived" && (
-                    <div className="mt-6 px-4 py-3 bg-gray-100 rounded-xl text-center">
-                      <p className="text-xs text-gray-500">This event has been archived</p>
+
+                  {/* Draft Notice */}
+                  {item.status === "draft" && (
+                    <div className="mt-4 px-4 py-3 bg-white/20 rounded-xl text-center">
+                      <p className="text-xs text-white/60">This is a draft event</p>
                     </div>
                   )}
-                </div>
 
-                {/* Share & Actions */}
-                <div className="flex items-center gap-2">
-                  <button className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors flex items-center justify-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                    </svg>
-                    Share
-                  </button>
-                  <button className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors flex items-center justify-center gap-2">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                    </svg>
-                    Save
-                  </button>
+                  {/* Share & Actions */}
+                  <div className="flex items-center gap-2 mt-4">
+                    <button className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                      </svg>
+                      Share
+                    </button>
+                    <button className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors flex items-center justify-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                      </svg>
+                      Save
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -463,7 +475,7 @@ export default function PerformanceDetailPage() {
         <section className="bg-gradient-to-b from-gray-50 to-white py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center gap-3 mb-8">
-              <div className="h-8 w-1.5 bg-[#D96A32] rounded-full"></div>
+              <div className="h-8 w-1.5 bg-hmc-orange rounded-full"></div>
               <h2 className="text-2xl font-bold text-gray-900">More {categoryLabel}</h2>
               <div className="flex-1 h-px bg-gradient-to-r from-gray-200 to-transparent"></div>
             </div>
@@ -473,6 +485,8 @@ export default function PerformanceDetailPage() {
                 <Link
                   key={related.id}
                   href={`/performance/${related.category}/${related.id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="group block"
                 >
                   <div className="relative aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 mb-3">
@@ -493,7 +507,7 @@ export default function PerformanceDetailPage() {
                       </span>
                     </div>
                   </div>
-                  <h3 className="font-semibold text-gray-900 group-hover:text-[#D96A32] transition-colors line-clamp-2">
+                  <h3 className="font-semibold text-gray-900 group-hover:text-hmc-orange transition-colors line-clamp-2">
                     {related.title}
                   </h3>
                   {related.venue && (
@@ -510,7 +524,7 @@ export default function PerformanceDetailPage() {
       <section className="py-16 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3 mb-8">
-            <div className="h-8 w-1.5 bg-[#D96A32] rounded-full"></div>
+            <div className="h-8 w-1.5 bg-hmc-orange rounded-full"></div>
             <h2 className="text-2xl font-bold text-gray-900">Comments</h2>
           </div>
 
@@ -529,7 +543,7 @@ export default function PerformanceDetailPage() {
       {/* Back to Top Button */}
       <button
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        className="fixed bottom-8 right-8 w-12 h-12 bg-[#D96A32] text-white rounded-full shadow-lg shadow-orange-500/30 flex items-center justify-center hover:bg-[#c45a28] transition-all duration-300 hover:-translate-y-1 opacity-0 pointer-events-none"
+        className="fixed bottom-8 right-8 w-12 h-12 bg-hmc-orange text-white rounded-full shadow-lg shadow-orange-500/30 flex items-center justify-center hover:bg-hmc-orange transition-all duration-300 hover:-translate-y-1 opacity-0 pointer-events-none"
         id="back-to-top"
         style={{ opacity: scrollProgress > 10 ? 1 : 0, pointerEvents: scrollProgress > 10 ? "auto" : "none" }}
       >

@@ -15,6 +15,7 @@ interface PerformanceItem {
   coverImage: string;
   description: string;
   status: string;
+  eventDate?: string;
   createdAt: number;
 }
 
@@ -96,9 +97,9 @@ function CategoryCard({ category, data }: { category: string; data: CategoryData
             href={categoryHref}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex-1 rounded bg-[#D96A32] px-3 py-1.5 text-center text-xs font-medium text-white hover:bg-[#c45a28] transition-colors"
+            className="flex-1 rounded bg-hmc-orange px-3 py-1.5 text-center text-xs font-medium text-white hover:bg-hmc-orange/90 transition-colors"
           >
-            View More {total > 0 && `(${total})`}
+            View Details {total > 0 && `(${total})`}
           </a>
         </div>
       </article>

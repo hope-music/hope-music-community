@@ -1,12 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { AuthModal } from "@/components/auth/AuthModal";
 
 export default function RegistrationPage() {
-  const [showModal, setShowModal] = useState(true);
-
   return (
     <div className="min-h-[calc(100vh-200px)] flex flex-col items-center justify-center py-12 px-4">
       <div className="mb-8 text-center">
@@ -14,12 +11,12 @@ export default function RegistrationPage() {
         <p className="text-gray-500">Create an account to share and discuss music</p>
       </div>
       
-      <AuthModal isOpen={showModal} onClose={() => setShowModal(false)} initialMode="register" />
+      <AuthModal isOpen={true} onClose={() => window.history.back()} initialMode="register" />
       
       <p className="mt-8 text-center text-sm text-gray-500">
         Already have an account?{" "}
-        <Link href="/login" className="text-[#D96A32] hover:underline font-medium">
-          Sign in
+        <Link href="/login" className="text-hmc-orange hover:underline font-medium">
+          Sign In
         </Link>
       </p>
     </div>

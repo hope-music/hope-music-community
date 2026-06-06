@@ -159,7 +159,7 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
       <div ref={modalRef} className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl">
         {/* Colorful header bar */}
-        <div className="h-2 rounded-t-2xl bg-gradient-to-r from-[#D96A32] via-[#E8854A] to-[#F0A068]" />
+        <div className="h-2 rounded-t-2xl bg-gradient-to-r from-hmc-orange via-[#E8854A] to-[#F0A068]" />
         {submitted ? (
           <div className="p-8 text-center">
             <div className="mb-4 flex justify-center">
@@ -173,7 +173,7 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
             <p className="mb-6 text-gray-600">Your cooperation request has been submitted successfully.</p>
             <button
               onClick={handleClose}
-              className="rounded-full bg-[#D96A32] px-6 py-2.5 font-medium text-white transition hover:bg-[#c45a28]"
+              className="rounded-full bg-hmc-orange px-6 py-2.5 font-medium text-white transition hover:bg-hmc-orange"
             >
               Close
             </button>
@@ -207,8 +207,8 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
                     value={formData.name}
                     onChange={handleChange}
                     placeholder="Your full name"
-                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 ${
-                      errors.name ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-hmc-orange/20 ${
+                      errors.name ? "border-red-500" : "border-gray-300 focus:border-hmc-orange"
                     }`}
                   />
                   {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
@@ -228,7 +228,7 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
                           value={g}
                           checked={formData.gender === g}
                           onChange={handleChange}
-                          className="h-4 w-4 accent-[#D96A32]"
+                          className="h-4 w-4 accent-hmc-orange"
                         />
                         <span className="text-sm text-gray-700 capitalize">{g}</span>
                       </label>
@@ -246,8 +246,8 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 cursor-pointer ${
-                      errors.country ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-hmc-orange/20 cursor-pointer ${
+                      errors.country ? "border-red-500" : "border-gray-300 focus:border-hmc-orange"
                     } ${!formData.country ? "text-gray-400" : "text-gray-900"}`}
                   >
                     {COUNTRIES.map(c => (
@@ -269,8 +269,8 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
                       value={formData.phone}
                       onChange={handleChange}
                       placeholder="+1 234 567"
-                      className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 ${
-                        errors.phone ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                      className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-hmc-orange/20 ${
+                        errors.phone ? "border-red-500" : "border-gray-300 focus:border-hmc-orange"
                       }`}
                     />
                     {errors.phone && <p className="mt-1 text-xs text-red-500">{errors.phone}</p>}
@@ -285,8 +285,8 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="you@email.com"
-                      className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 ${
-                        errors.email ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                      className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-hmc-orange/20 ${
+                        errors.email ? "border-red-500" : "border-gray-300 focus:border-hmc-orange"
                       }`}
                     />
                     {errors.email && <p className="mt-1 text-xs text-red-500">{errors.email}</p>}
@@ -304,7 +304,7 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
                     value={formData.socialMedia}
                     onChange={handleChange}
                     placeholder="Instagram, YouTube, TikTok, etc."
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-[#D96A32] focus:ring-2 focus:ring-[#D96A32]/20"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20"
                   />
                 </div>
 
@@ -317,8 +317,8 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
                     name="musicCategory"
                     value={formData.musicCategory}
                     onChange={handleChange}
-                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-[#D96A32]/20 cursor-pointer ${
-                      errors.musicCategory ? "border-red-500" : "border-gray-300 focus:border-[#D96A32]"
+                    className={`w-full rounded-lg border px-3 py-2 text-sm outline-none transition focus:ring-2 focus:ring-hmc-orange/20 cursor-pointer ${
+                      errors.musicCategory ? "border-red-500" : "border-gray-300 focus:border-hmc-orange"
                     } ${!formData.musicCategory ? "text-gray-400" : "text-gray-900"}`}
                   >
                     {MUSIC_CATEGORIES.map(c => (
@@ -339,7 +339,7 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
                     onChange={handleChange}
                     placeholder="Tell us about yourself..."
                     rows={3}
-                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-[#D96A32] focus:ring-2 focus:ring-[#D96A32]/20 resize-none"
+                    className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 resize-none"
                   />
                 </div>
 
@@ -347,7 +347,7 @@ export function CooperationModal({ isOpen, onClose }: CooperationModalProps) {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full rounded-full bg-[#D96A32] py-2.5 text-sm font-medium text-white transition hover:bg-[#c45a28] disabled:opacity-50"
+                  className="w-full rounded-full bg-hmc-orange py-2.5 text-sm font-medium text-white transition hover:bg-hmc-orange disabled:opacity-50"
                 >
                   {submitting ? "Submitting..." : "Submit"}
                 </button>

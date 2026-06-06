@@ -222,9 +222,9 @@ export function CommentSection({ pageId, storageKey, bannedUsersKey, defaultComm
             {!isReply && (
               <button
                 onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
-                className="text-xs text-[#D96A32] hover:text-[#c45a28] font-medium"
+                className="text-xs text-hmc-orange hover:text-hmc-orange font-medium"
               >
-                Reply
+                Post Comment
               </button>
             )}
 
@@ -235,7 +235,7 @@ export function CommentSection({ pageId, storageKey, bannedUsersKey, defaultComm
                   onChange={(e) => setReplyContent(e.target.value)}
                   placeholder="Write a reply..."
                   rows={2}
-                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-[#D96A32] resize-none"
+                  className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm outline-none focus:ring-1 focus:ring-hmc-orange resize-none"
                   required
                 />
                 <div className="flex justify-end gap-2">
@@ -249,9 +249,9 @@ export function CommentSection({ pageId, storageKey, bannedUsersKey, defaultComm
                   <button
                     type="submit"
                     disabled={submitting || !replyContent.trim()}
-                    className="px-3 py-1 bg-[#D96A32] text-white text-xs font-medium rounded-full hover:bg-[#c45a28] disabled:opacity-50"
+                    className="px-3 py-1 bg-hmc-orange text-white text-xs font-medium rounded-full hover:bg-hmc-orange disabled:opacity-50"
                   >
-                    Reply
+                    Post Comment
                   </button>
                 </div>
               </form>
@@ -298,14 +298,14 @@ export function CommentSection({ pageId, storageKey, bannedUsersKey, defaultComm
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="Share your thoughts..."
                 rows={3}
-                className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#D96A32] resize-none"
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-hmc-orange resize-none"
                 required
               />
               <div className="flex justify-end">
                 <button
                   type="submit"
                   disabled={submitting || !newComment.trim()}
-                  className="px-5 py-2 bg-[#D96A32] text-white text-sm font-medium rounded-full hover:bg-[#c45a28] disabled:opacity-50 transition-colors"
+                  className="px-5 py-2 bg-hmc-orange text-white text-sm font-medium rounded-full hover:bg-hmc-orange disabled:opacity-50 transition-colors"
                 >
                   Post Comment
                 </button>
@@ -318,7 +318,7 @@ export function CommentSection({ pageId, storageKey, bannedUsersKey, defaultComm
             onChange={(e) => setNewComment(e.target.value)}
             placeholder="Write a comment..."
             rows={3}
-            className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#D96A32] resize-none"
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-hmc-orange resize-none"
             required
           />
         )}
@@ -327,7 +327,7 @@ export function CommentSection({ pageId, storageKey, bannedUsersKey, defaultComm
             <button
               type="submit"
               disabled={submitting || !newComment.trim()}
-              className="px-5 py-2 bg-[#D96A32] text-white text-sm font-medium rounded-full hover:bg-[#c45a28] disabled:opacity-50 transition-colors"
+              className="px-5 py-2 bg-hmc-orange text-white text-sm font-medium rounded-full hover:bg-hmc-orange disabled:opacity-50 transition-colors"
             >
               Post Comment
             </button>
@@ -337,7 +337,7 @@ export function CommentSection({ pageId, storageKey, bannedUsersKey, defaultComm
 
       <div className="space-y-4">
         {comments.length === 0 ? (
-          <p className="text-center text-gray-500 py-8 text-sm">No comments yet. Be the first!</p>
+          <p className="text-center text-gray-500 py-8 text-sm">No comments yet.</p>
         ) : (
           comments.map((comment) => renderComment(comment))
         )}

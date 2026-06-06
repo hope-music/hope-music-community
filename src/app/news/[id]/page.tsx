@@ -71,7 +71,7 @@ export default function NewsDetailPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div>
+        <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-hmc-orange"></div>
       </div>
     );
   }
@@ -83,7 +83,7 @@ export default function NewsDetailPage() {
         <p className="text-gray-500 mb-8">The article you&apos;re looking for doesn&apos;t exist.</p>
         <Link
           href="/news"
-          className="px-4 py-2 bg-[#D96A32] text-white rounded-md hover:bg-[#c45a28] transition-colors"
+          className="px-4 py-2 bg-hmc-orange text-white rounded-md hover:bg-hmc-orange transition-colors"
         >
           Back to News
         </Link>
@@ -94,9 +94,9 @@ export default function NewsDetailPage() {
   return (
     <main className="min-h-screen bg-white">
       {/* Back Link */}
-      <div className="border-b border-t border-[#D96A32] bg-white">
+      <div className="border-b border-t border-hmc-orange bg-white">
         <div className="mx-auto max-w-4xl px-4 py-4">
-          <Link href="/news" className="text-sm text-gray-500 hover:text-[#D96A32] transition-colors">
+          <Link href="/news" className="text-sm text-gray-500 hover:text-hmc-orange transition-colors">
             ← Back to News
           </Link>
         </div>

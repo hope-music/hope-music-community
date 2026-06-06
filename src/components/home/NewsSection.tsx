@@ -113,7 +113,7 @@ export function NewsSection() {
                   >
                     {item.date}
                   </time>
-                  <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors duration-150 group-hover:text-[#C8102E]">
+                  <h3 className="text-sm font-semibold leading-snug text-hmc-text transition-colors duration-150 group-hover:text-hmc-red">
                     {item.title}
                   </h3>
                 </div>

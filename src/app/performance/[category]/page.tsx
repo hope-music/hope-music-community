@@ -16,6 +16,8 @@ interface Production {
   eventDate?: string;
   venue?: string;
   city?: string;
+  url?: string;
+  sourceUrl?: string;
 }
 
 interface FilterOption {
@@ -30,10 +32,7 @@ interface FilterGroup {
 
 type TimeFilter = "all" | "week" | "month";
 
-type DisplayStatus = "upcoming" | "recent" | "archived";
-
 const ITEMS_PER_PAGE = 20;
-const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 const CUSTOM_CITY_VALUE = "__custom_city__";
@@ -127,19 +126,23 @@ const GLOBAL_CITY_GROUPS = [
   },
 ];
 
-function getDisplayStatus(eventDate?: string): DisplayStatus {
-  if (!eventDate) return "upcoming";
-  const eventTime = new Date(eventDate).getTime();
-  const now = Date.now();
-  if (eventTime > now) return "upcoming";
-  const elapsed = now - eventTime;
-  if (elapsed <= TWO_WEEKS_MS) return "recent";
-  return "archived";
+function getEventDateStr(eventDate: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) {
+    return eventDate;
+  }
+  const d = new Date(eventDate);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
-function isVisible(eventDate?: string): boolean {
-  const status = getDisplayStatus(eventDate);
-  return status !== "archived";
+function matchesPastFilter(eventDate?: string): boolean {
+  if (!eventDate) return false;
+  const eventDateStr = getEventDateStr(eventDate);
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  return eventDateStr < todayStr;
 }
 
 function normalizeCity(city?: string): string {
@@ -149,26 +152,28 @@ function normalizeCity(city?: string): string {
 function getTimeFilterLabel(value: TimeFilter): string {
   switch (value) {
     case "week":
-      return "Next 7 days";
+      return "This Week";
     case "month":
-      return "Next 30 days";
+      return "This Month";
     default:
-      return "All time";
+      return "All Time";
   }
 }
 
 function matchesTimeFilter(eventDate: string | undefined, filter: TimeFilter): boolean {
-  if (filter === "all") return true;
   if (!eventDate) return false;
 
-  const eventTime = new Date(eventDate).getTime();
-  if (Number.isNaN(eventTime)) return false;
+  const eventDateStr = getEventDateStr(eventDate);
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
-  const now = Date.now();
-  if (eventTime < now) return false;
+  if (eventDateStr < todayStr) return false;
+  if (filter === "all") return true;
 
   const maxRange = filter === "week" ? ONE_WEEK_MS : ONE_MONTH_MS;
-  return eventTime - now <= maxRange;
+  const eventTime = new Date(eventDateStr).getTime();
+  const nowTime = now.getTime();
+  return eventTime - nowTime <= maxRange;
 }
 
 export default function PerformanceCategoryPage() {
@@ -180,6 +185,7 @@ export default function PerformanceCategoryPage() {
   const [selectedCity, setSelectedCity] = useState("all");
   const [customCity, setCustomCity] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
+  const [viewMode, setViewMode] = useState<"upcoming" | "past">("upcoming");
 
   useEffect(() => {
     const loadData = async () => {
@@ -194,8 +200,7 @@ export default function PerformanceCategoryPage() {
         if (res.ok) {
           const data = await res.json();
           const filtered = (data.events || [])
-            .filter((item: Production) => item.category === category)
-            .filter((item: Production) => isVisible(item.eventDate));
+            .filter((item: Production) => item.category === category);
           if (filtered.length > 0) {
             setItems(filtered);
             setLoading(false);
@@ -232,7 +237,7 @@ export default function PerformanceCategoryPage() {
 
           const filtered = updated.filter(
             (item: Production) =>
-              item.category === category && item.status !== "draft" && isVisible(item.eventDate)
+              item.category === category && item.status !== "draft"
           );
           setItems(filtered);
         }
@@ -305,22 +310,49 @@ export default function PerformanceCategoryPage() {
   const normalizedActiveCity = activeCityValue === "all" ? "all" : normalizeCity(activeCityValue);
 
   const filteredItems = useMemo(() => {
-    return items.filter((item) => {
+    const result = items.filter((item) => {
       const cityMatches =
         normalizedActiveCity === "all" || normalizeCity(item.city) === normalizedActiveCity;
-      const timeMatches = matchesTimeFilter(item.eventDate, timeFilter);
+      const timeMatches = viewMode === "upcoming"
+        ? matchesTimeFilter(item.eventDate, timeFilter)
+        : matchesPastFilter(item.eventDate);
       return cityMatches && timeMatches;
     });
-  }, [items, normalizedActiveCity, timeFilter]);
+
+    if (viewMode === "upcoming") {
+      return result.sort((a, b) => {
+        const dateA = a.eventDate ? getEventDateStr(a.eventDate) : "9999-99-99";
+        const dateB = b.eventDate ? getEventDateStr(b.eventDate) : "9999-99-99";
+        return dateA.localeCompare(dateB);
+      });
+    } else {
+      return result.sort((a, b) => {
+        const dateA = a.eventDate ? getEventDateStr(a.eventDate) : "0000-00-00";
+        const dateB = b.eventDate ? getEventDateStr(b.eventDate) : "0000-00-00";
+        return dateB.localeCompare(dateA);
+      });
+    }
+  }, [items, normalizedActiveCity, timeFilter, viewMode]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCity, customCity, timeFilter]);
+  }, [selectedCity, customCity, timeFilter, viewMode]);
 
-  const formatDate = (d?: string) => {
-    if (!d) return "";
+  const formatDateTime = (d?: string) => {
+    if (!d) return { date: "", time: "" };
     const date = new Date(d);
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
+      const [y, m, day] = d.split("-").map(Number);
+      const local = new Date(y, m - 1, day);
+      return {
+        date: local.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        time: ""
+      };
+    }
+    return {
+      date: date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      time: date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+    };
   };
 
   const { leftColumnItems, rightColumnItems } = useMemo(() => {
@@ -364,7 +396,7 @@ export default function PerformanceCategoryPage() {
       href={`/performance/${item.category}/${item.id}`}
       target="_blank"
       rel="noopener noreferrer"
-      className="group flex gap-4 rounded-2xl border border-gray-100 bg-white p-3 transition-all duration-300 hover:border-[#D96A32]/40 hover:shadow-lg hover:shadow-[#D96A32]/5"
+      className="group relative flex gap-4 rounded-2xl border border-gray-100 bg-white p-3 transition-all duration-300 hover:border-hmc-orange/40 hover:shadow-lg hover:shadow-hmc-orange/5"
     >
       <div className="relative h-24 w-32 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
         {item.coverImage ? (
@@ -380,29 +412,61 @@ export default function PerformanceCategoryPage() {
             <span className="text-xs text-gray-400">No Image</span>
           </div>
         )}
+        {viewMode === "past" && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+            <span className="rotate-[-20deg] rounded-full border-4 border-red-600 px-4 py-1 text-xl font-black uppercase tracking-wider text-red-600 shadow-sm">
+              Past
+            </span>
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
       </div>
       <div className="flex min-w-0 flex-1 flex-col justify-center">
         <div className="mb-1 flex items-start justify-between gap-2">
-          <h3 className="flex-1 line-clamp-2 text-sm font-semibold leading-snug text-gray-900 transition-colors group-hover:text-[#D96A32]">
+          <h3 className="flex-1 line-clamp-2 text-sm font-semibold leading-snug text-gray-900 transition-colors group-hover:text-hmc-orange">
             {item.title}
           </h3>
-          <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-medium text-gray-500 transition-colors group-hover:bg-[#D96A32] group-hover:text-white">
+          <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-[10px] font-medium text-gray-500 transition-colors group-hover:bg-hmc-orange group-hover:text-white">
             {itemNumber}
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
           {item.eventDate && (
-            <span className="inline-flex items-center gap-1 font-semibold text-[#D96A32]">
-              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              {formatDate(item.eventDate)}
-            </span>
+            <>
+              <span className="inline-flex items-center gap-1 font-semibold text-hmc-orange">
+                <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                {formatDateTime(item.eventDate).date}
+              </span>
+              {formatDateTime(item.eventDate).time && (
+                <span className="inline-flex items-center gap-1">
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {formatDateTime(item.eventDate).time}
+                </span>
+              )}
+            </>
           )}
           {item.city && <span>{item.city}</span>}
         </div>
         {item.venue && <p className="mt-1 truncate text-xs text-gray-400">{item.venue}</p>}
+        {(item.url || item.sourceUrl) && (
+          <button
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              window.open(item.url || item.sourceUrl, "_blank", "noopener,noreferrer");
+            }}
+            className="mt-2 inline-flex w-fit items-center gap-1 rounded bg-hmc-orange px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-hmc-orange/90 cursor-pointer"
+          >
+            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+            </svg>
+            Buy Tickets
+          </button>
+        )}
       </div>
     </a>
   );
@@ -410,9 +474,9 @@ export default function PerformanceCategoryPage() {
   if (loading) {
     return (
       <main className="min-h-screen bg-white">
-        <div className="border-b border-t border-[#D96A32]">
+        <div className="border-b border-t border-hmc-orange">
           <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-            <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">{categoryName}</h1>
+            <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">{categoryName}</h1>
           </div>
         </div>
         <div className="mx-auto max-w-6xl px-4 py-4">
@@ -421,7 +485,7 @@ export default function PerformanceCategoryPage() {
           </p>
         </div>
         <div className="flex justify-center py-20">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div>
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-hmc-orange"></div>
         </div>
       </main>
     );
@@ -430,9 +494,9 @@ export default function PerformanceCategoryPage() {
   if (items.length === 0) {
     return (
       <main className="min-h-screen bg-white">
-        <div className="border-b border-t border-[#D96A32]">
+        <div className="border-b border-t border-hmc-orange">
           <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-            <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">{categoryName}</h1>
+            <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">{categoryName}</h1>
           </div>
         </div>
         <div className="mx-auto max-w-6xl px-4 py-4">
@@ -441,8 +505,8 @@ export default function PerformanceCategoryPage() {
           </p>
         </div>
         <div className="py-20 text-center text-gray-500">
-          <p>No {categoryName.toLowerCase()} performances yet.</p>
-          <Link href="/performance" className="mt-4 inline-block text-[#D96A32] hover:underline">
+          <p>No matching performances found.</p>
+          <Link href="/performance" className="mt-4 inline-block text-hmc-orange hover:underline">
             ← Back to Performance
           </Link>
         </div>
@@ -452,9 +516,9 @@ export default function PerformanceCategoryPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="border-b border-t border-[#D96A32]">
+      <div className="border-b border-t border-hmc-orange">
         <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">{categoryName}</h1>
+          <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">{categoryName}</h1>
         </div>
       </div>
       <div className="mx-auto max-w-6xl px-4 py-4">
@@ -464,7 +528,7 @@ export default function PerformanceCategoryPage() {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 pb-4">
-        <div className="rounded-2xl border border-[#D96A32]/15 bg-[#FFF7F3] p-4 shadow-sm">
+        <div className="rounded-2xl border border-hmc-orange/15 bg-[#FFF7F3] p-4 shadow-sm">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="grid flex-1 grid-cols-1 gap-4 md:grid-cols-2">
               <label className="flex flex-col gap-2 text-sm font-medium text-gray-700">
@@ -472,7 +536,7 @@ export default function PerformanceCategoryPage() {
                 <select
                   value={selectedCity}
                   onChange={(e) => setSelectedCity(e.target.value)}
-                  className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-[#D96A32] focus:ring-2 focus:ring-[#D96A32]/20"
+                  className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20"
                 >
                   <option value="all">All cities</option>
                   {cityOptionGroups.map((group) => (
@@ -492,17 +556,17 @@ export default function PerformanceCategoryPage() {
                 <select
                   value={timeFilter}
                   onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
-                  className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-[#D96A32] focus:ring-2 focus:ring-[#D96A32]/20"
+                  className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20"
                 >
-                  <option value="all">All time</option>
-                  <option value="week">Next 7 days</option>
-                  <option value="month">Next 30 days</option>
+                  <option value="all">All Time</option>
+                  <option value="week">This Week</option>
+                  <option value="month">This Month</option>
                 </select>
               </label>
             </div>
 
             <div className="rounded-xl bg-white/80 px-4 py-3 text-sm text-gray-600">
-              <span className="font-semibold text-[#D96A32]">{filteredItems.length}</span> events
+              <span className="font-semibold text-hmc-orange">{filteredItems.length}</span> {viewMode === "upcoming" ? "upcoming" : "past"} events
               <span className="mx-2 text-gray-300">•</span>
               <span>{selectedCity === "all" ? "All cities" : selectedCity === CUSTOM_CITY_VALUE ? normalizedCustomCity || "Custom city" : selectedCity}</span>
               <span className="mx-2 text-gray-300">•</span>
@@ -519,7 +583,7 @@ export default function PerformanceCategoryPage() {
                   value={customCity}
                   onChange={(e) => setCustomCity(e.target.value)}
                   placeholder="Type a city not listed above"
-                  className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-[#D96A32] focus:ring-2 focus:ring-[#D96A32]/20"
+                  className="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm text-gray-700 outline-none transition placeholder:text-gray-400 focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20"
                 />
               </label>
             </div>
@@ -530,9 +594,11 @@ export default function PerformanceCategoryPage() {
       {filteredItems.length === 0 ? (
         <div className="mx-auto max-w-6xl px-4 pb-12">
           <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 py-16 text-center">
-            <h2 className="text-lg font-semibold text-gray-800">No matching performances</h2>
+            <h2 className="text-lg font-semibold text-gray-800">No {viewMode} performances found</h2>
             <p className="mt-2 text-sm text-gray-500">
-              Try another city or widen the time range to see more upcoming events.
+              {viewMode === "upcoming"
+                ? "Try another city or time range."
+                : "No past performances within two weeks."}
             </p>
           </div>
         </div>
@@ -540,18 +606,40 @@ export default function PerformanceCategoryPage() {
         <>
           <div className="mx-auto max-w-6xl px-4 pb-8">
             <div className="mb-6 flex items-center gap-3">
-              <div className="h-6 w-1.5 bg-[#D96A32]"></div>
-              <h2 className="text-base font-bold uppercase tracking-wider text-gray-800">All Events</h2>
+              <div className="h-6 w-1.5 bg-hmc-orange"></div>
+              <h2 className="text-base font-bold uppercase tracking-wider text-gray-800">Events</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setViewMode("upcoming")}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    viewMode === "upcoming"
+                      ? "bg-hmc-orange text-white"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  }`}
+                >
+                  Upcoming
+                </button>
+                <button
+                  onClick={() => setViewMode("past")}
+                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                    viewMode === "past"
+                      ? "bg-red-500 text-white"
+                      : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                  }`}
+                >
+                  Past Events
+                </button>
+              </div>
               <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-400">{filteredItems.length}</span>
               <div className="h-px flex-1 bg-gradient-to-r from-gray-200 via-transparent to-transparent"></div>
             </div>
 
             <div className="relative">
-              <div className="absolute bottom-0 left-1/2 top-0 hidden w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-[#D96A32]/30 to-transparent lg:block"></div>
+              <div className="absolute bottom-0 left-1/2 top-0 hidden w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-hmc-orange/30 to-transparent lg:block"></div>
 
               <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:flex">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-[#D96A32]/30 bg-white shadow-sm">
-                  <span className="text-xs font-bold text-[#D96A32]">{currentPage}/{totalPages}</span>
+                <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-hmc-orange/30 bg-white shadow-sm">
+                  <span className="text-xs font-bold text-hmc-orange">{currentPage}/{totalPages}</span>
                 </div>
               </div>
 
@@ -579,13 +667,13 @@ export default function PerformanceCategoryPage() {
                 <button
                   onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                   disabled={currentPage === 1}
-                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-[#D96A32] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-hmc-orange disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   ‹
                 </button>
                 <button
                   onClick={() => setCurrentPage(1)}
-                  className={`px-3 py-1.5 text-sm ${currentPage === 1 ? "font-semibold text-[#D96A32]" : "text-gray-600 hover:text-[#D96A32]"}`}
+                  className={`px-3 py-1.5 text-sm ${currentPage === 1 ? "font-semibold text-hmc-orange" : "text-gray-600 hover:text-hmc-orange"}`}
                 >
                   «
                 </button>
@@ -600,7 +688,7 @@ export default function PerformanceCategoryPage() {
                       onClick={() => setCurrentPage(page as number)}
                       className={`h-9 min-w-[36px] rounded px-2 text-sm ${
                         currentPage === page
-                          ? "bg-[#D96A32] font-medium text-white"
+                          ? "bg-hmc-orange font-medium text-white"
                           : "text-gray-600 hover:bg-gray-100"
                       }`}
                     >
@@ -610,14 +698,14 @@ export default function PerformanceCategoryPage() {
                 )}
                 <button
                   onClick={() => setCurrentPage(totalPages)}
-                  className={`px-3 py-1.5 text-sm ${currentPage === totalPages ? "font-semibold text-[#D96A32]" : "text-gray-600 hover:text-[#D96A32]"}`}
+                  className={`px-3 py-1.5 text-sm ${currentPage === totalPages ? "font-semibold text-hmc-orange" : "text-gray-600 hover:text-hmc-orange"}`}
                 >
                   »
                 </button>
                 <button
                   onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-[#D96A32] disabled:cursor-not-allowed disabled:opacity-40"
+                  className="px-3 py-1.5 text-sm text-gray-600 hover:text-hmc-orange disabled:cursor-not-allowed disabled:opacity-40"
                 >
                   ›
                 </button>

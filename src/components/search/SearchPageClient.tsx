@@ -9,6 +9,7 @@ import {
   STAGE_PRODUCTION_CATEGORY_LABELS,
   INTERACTION_CATEGORY_LABELS,
 } from "@/lib/constants";
+import { api } from "@/lib/convex";
 
 type SearchResult = {
   id: string;
@@ -140,18 +141,6 @@ const SECTION_RESULTS: SearchResult[] = [
     searchText: "news articles announcements editorial updates",
   },
 ];
-
-const PERFORMANCE_CATEGORY_LABELS: Record<string, string> = {
-  "legend-hall-of-fame": "Legend Hall of Fame",
-  musical: "Musical",
-  classical: "Classical",
-  edm: "EDM",
-  "legendary-rock": "Legendary Rock",
-  "legendary-pop": "Legendary Pop",
-  festival: "Festival",
-  ballet: "Ballet",
-  others: "Others",
-};
 
 const STAGE_CATEGORY_LABELS: Record<string, string> = {
   ...STAGE_PRODUCTION_CATEGORY_LABELS,
@@ -367,7 +356,7 @@ export default function SearchPageClient({ initialQuery }: SearchPageClientProps
   const [interactionResults, setInteractionResults] = useState<SearchResult[]>([]);
   const [hopeStudioResults, setHopeStudioResults] = useState<SearchResult[]>([]);
   const [loadingLocalResults, setLoadingLocalResults] = useState(true);
-  const publishedNews = useQuery(api.admin.getPublishedNews) as NewsArticle[] | undefined;
+  const publishedNews = useQuery(api.admin.getPublishedNews, {}) as NewsArticle[] | undefined;
 
   useEffect(() => {
     let cancelled = false;
@@ -438,14 +427,14 @@ export default function SearchPageClient({ initialQuery }: SearchPageClientProps
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="border-b border-t border-[#D96A32]">
+      <div className="border-b border-t border-hmc-orange">
         <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">Search</h1>
+          <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">Search</h1>
         </div>
       </div>
 
       <div className="mx-auto max-w-5xl px-4 py-10">
-        <div className="rounded-2xl border border-[#D96A32]/15 bg-[#FFF7F3] p-5 shadow-sm">
+        <div className="rounded-2xl border border-hmc-orange/15 bg-[#FFF7F3] p-5 shadow-sm">
           <p className="text-sm font-medium text-gray-600">Search query</p>
           <p className="mt-2 text-xl font-semibold text-gray-900">
             {query ? `“${query}”` : "Browse all searchable content"}
@@ -463,7 +452,7 @@ export default function SearchPageClient({ initialQuery }: SearchPageClientProps
           {Object.entries(groupedResults).map(([section, sectionResults]) => (
             <span
               key={section}
-              className="rounded-full bg-[#D96A32]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#D96A32]"
+              className="rounded-full bg-hmc-orange/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-hmc-orange"
             >
               {section} · {sectionResults.length}
             </span>
@@ -503,12 +492,12 @@ export default function SearchPageClient({ initialQuery }: SearchPageClientProps
                       href={result.href}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="block rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-[#D96A32]/40 hover:shadow-md"
+                      className="block rounded-2xl border border-gray-200 bg-white p-5 transition hover:border-hmc-orange/40 hover:shadow-md"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0 flex-1">
                           <div className="flex flex-wrap items-center gap-2">
-                            <span className="rounded-full bg-[#D96A32]/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#D96A32]">
+                            <span className="rounded-full bg-hmc-orange/10 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-hmc-orange">
                               {result.section}
                             </span>
                             {result.meta ? (
@@ -519,7 +508,7 @@ export default function SearchPageClient({ initialQuery }: SearchPageClientProps
                           <p className="mt-2 text-sm leading-6 text-gray-600">{result.description}</p>
                           <p className="mt-3 text-xs text-gray-400">{result.href}</p>
                         </div>
-                        <span className="shrink-0 rounded-full bg-[#D96A32]/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-[#D96A32]">
+                        <span className="shrink-0 rounded-full bg-hmc-orange/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] text-hmc-orange">
                           Open
                         </span>
                       </div>

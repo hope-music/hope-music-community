@@ -115,9 +115,11 @@ function TopicList({
         <li key={item.id}>
           <Link
             href={`/interaction/${category}/${item.id}`}
-            className="group flex items-start gap-2 rounded px-2 py-1.5 text-sm text-hmc-text transition-colors duration-150 hover:bg-amber-50/50 hover:text-[#C8102E]"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-start gap-2 rounded px-2 py-1.5 text-sm text-hmc-text transition-colors duration-150 hover:bg-amber-50/50 hover:text-hmc-red"
           >
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#D96A32] transition-colors duration-150 group-hover:bg-[#C8102E]" />
+            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-hmc-orange transition-colors duration-150 group-hover:bg-hmc-red" />
             <span className="flex-1 leading-snug">{item.title}</span>
           </Link>
         </li>
@@ -174,7 +176,7 @@ export function InteractionSection() {
               >
                 {loading ? (
                   <div className="flex items-center justify-center py-4">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-[#D96A32]"></div>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-200 border-t-hmc-orange"></div>
                   </div>
                 ) : (
                   <TopicList

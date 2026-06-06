@@ -12,8 +12,6 @@ export interface ForumPost {
   pinned?: boolean;
 }
 
-type TimeFilter = "all" | "day" | "week" | "month";
-
 interface InteractionForumListProps {
   category: string;
   posts: ForumPost[];
@@ -23,13 +21,6 @@ interface InteractionForumListProps {
 
 const POSTS_PER_PAGE_DEFAULT = 15;
 
-const TIME_FILTERS: { key: TimeFilter; label: string }[] = [
-  { key: "all", label: "All Time" },
-  { key: "day", label: "Past 24 Hours" },
-  { key: "week", label: "Past Week" },
-  { key: "month", label: "Past Month" },
-];
-
 export function InteractionForumList({
   category,
   posts,
@@ -37,7 +28,6 @@ export function InteractionForumList({
   categorySlug,
 }: InteractionForumListProps) {
   const [currentPage, setCurrentPage] = useState(1);
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
 
   const totalPages = Math.ceil(posts.length / postsPerPage);
   const startIndex = (currentPage - 1) * postsPerPage;
@@ -46,9 +36,9 @@ export function InteractionForumList({
   return (
     <main className="min-h-screen bg-white">
       {/* Page Header */}
-      <div className="border-b border-t border-[#D96A32] bg-white">
+      <div className="border-b border-t border-hmc-orange bg-white">
         <div className="mx-auto max-w-6xl px-4 py-4">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">
+          <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">
             {category}
           </h1>
         </div>
@@ -56,35 +46,15 @@ export function InteractionForumList({
 
       {/* Post List */}
       <div className="mx-auto max-w-6xl px-4 py-6">
-        {/* Filter Bar */}
-        <div className="mb-6 flex items-center justify-between gap-4">
-          {/* Time Filter Pills */}
-          <div className="flex flex-wrap items-center gap-2">
-            {TIME_FILTERS.map((filter) => (
-              <button
-                key={filter.key}
-                onClick={() => {
-                  setTimeFilter(filter.key);
-                  setCurrentPage(1);
-                }}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-150 ${
-                  timeFilter === filter.key
-                    ? "bg-[#C8102E] text-white shadow-sm"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
-
-          {/* New Topic Button */}
-          <button
-            type="button"
-            className="shrink-0 rounded-xl border border-[#C8102E] bg-white px-5 py-2 text-sm font-semibold text-[#C8102E] shadow-sm transition-all duration-200 hover:bg-[#C8102E] hover:text-white hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+        <div className="mb-6 flex justify-end">
+          <Link
+            href={`/interaction/${categorySlug}/new`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="shrink-0 rounded-xl border border-hmc-red bg-white px-5 py-2 text-sm font-semibold text-hmc-red shadow-sm transition-all duration-200 hover:bg-hmc-red hover:text-white hover:shadow-md active:scale-95"
           >
-            + New Topic
-          </button>
+            New Topic
+          </Link>
         </div>
 
         {/* Post Rows */}
@@ -95,17 +65,17 @@ export function InteractionForumList({
               href={`/interaction/${categorySlug}/${post.id}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="group flex items-center justify-between rounded-xl border border-hmc-placeholder-border bg-white px-5 py-4 shadow-sm transition-all duration-200 hover:border-[#D96A32] hover:shadow-md hover:scale-[1.01] active:scale-[0.99]"
+              className="group flex items-center justify-between rounded-xl border border-hmc-placeholder-border bg-white px-5 py-4 shadow-sm transition-all duration-200 hover:border-hmc-orange hover:shadow-md hover:scale-[1.01] active:scale-[0.99]"
             >
               {/* Left: Pinned Tag + Title + Author */}
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 {post.pinned && (
-                  <span className="shrink-0 rounded bg-[#C8102E] px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
+                  <span className="shrink-0 rounded bg-hmc-red px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-white">
                     Pinned
                   </span>
                 )}
                 <div className="flex min-w-0 flex-col gap-1">
-                  <h2 className="truncate text-base font-medium text-hmc-text transition-colors duration-150 group-hover:text-[#C8102E]">
+                  <h2 className="truncate text-base font-medium text-hmc-text transition-colors duration-150 group-hover:text-hmc-red">
                     {post.title}
                   </h2>
                   <p className="text-xs text-hmc-text-muted">
@@ -147,7 +117,7 @@ export function InteractionForumList({
                   onClick={() => setCurrentPage(page)}
                   className={`min-w-[36px] rounded-md px-3 py-2 text-sm font-medium transition-all duration-150 ${
                     currentPage === page
-                      ? "bg-[#C8102E] text-white shadow-sm scale-105"
+                      ? "bg-hmc-red text-white shadow-sm scale-105"
                       : "bg-white text-hmc-text hover:bg-gray-100 hover:shadow-sm active:scale-95"
                   }`}
                 >

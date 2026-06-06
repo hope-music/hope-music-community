@@ -14,7 +14,7 @@ export function MainNav() {
 
   return (
     <nav
-      className="border-b-[6px] border-[#60A5FA] text-white"
+      className="border-b-[6px] border-hmc-nav-border text-white"
       style={{ background: "var(--hmc-mainnav-bg)" }}
       aria-label="Main navigation"
     >
@@ -124,7 +124,7 @@ const INTERACTION_ITEMS = [
   { label: "Hardware", slug: "hardware" },
   { label: "Music", slug: "music" },
   { label: "Stage Production", slug: "stage-production" },
-  { label: "Article", slug: "artical" },
+  { label: "Article", slug: "article" },
   { label: "Others", slug: "others" },
 ];
 
@@ -139,7 +139,7 @@ function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolea
       >
         PERFORMANCE
         {isActive && (
-          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D96A32]" />
+          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-hmc-orange" />
         )}
         {/* Dropdown caret */}
         <svg
@@ -157,10 +157,10 @@ function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolea
 
       {/* Dropdown — left-aligned with nav item, flush to bottom, light-blue theme */}
       <div
-        className="pointer-events-none absolute left-0 top-full z-50 mt-0 w-52 rounded-b-xl border border-[#28779E]/20 bg-[#4A9BC8] py-2 shadow-xl opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
+        className="pointer-events-none absolute left-0 top-full z-50 mt-0 w-52 rounded-b-xl border border-hmc-mainnav-bg/20 bg-hmc-dropdown-bg py-2 shadow-xl opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
       >
         {PERFORMANCE_ITEMS.map((item) => (
-          <a
+          <Link
             key={item.slug || "featured"}
             href={item.isFeatured ? "/performance" : `/performance/${item.slug}`}
             target="_blank"
@@ -175,7 +175,7 @@ function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolea
               <span className="mr-2 text-yellow-300">★</span>
             )}
             {item.label}
-          </a>
+          </Link>
         ))}
       </div>
     </div>
@@ -193,7 +193,7 @@ function StageProductionNavLink({ href, isActive }: { href: string; isActive: bo
       >
         STAGE PRODUCTION
         {isActive && (
-          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D96A32]" />
+          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-hmc-orange" />
         )}
         <svg
           className="ml-1.5 h-2.5 w-2.5 shrink-0"
@@ -210,10 +210,10 @@ function StageProductionNavLink({ href, isActive }: { href: string; isActive: bo
 
       {/* Dropdown — left-aligned with nav item, flush to bottom, light-blue theme */}
       <div
-        className="pointer-events-none absolute left-0 top-full z-50 mt-0 w-52 rounded-b-xl border border-[#28779E]/20 bg-[#4A9BC8] py-2 shadow-xl opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
+        className="pointer-events-none absolute left-0 top-full z-50 mt-0 w-52 rounded-b-xl border border-hmc-mainnav-bg/20 bg-hmc-dropdown-bg py-2 shadow-xl opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
       >
         {STAGE_PRODUCTION_ITEMS.map((item) => (
-          <a
+          <Link
             key={item.slug}
             href={`/stage-production/${item.slug}`}
             target="_blank"
@@ -221,7 +221,7 @@ function StageProductionNavLink({ href, isActive }: { href: string; isActive: bo
             className="flex items-center px-5 py-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-white/20 hover:text-white"
           >
             {item.label}
-          </a>
+          </Link>
         ))}
       </div>
     </div>
@@ -239,7 +239,7 @@ function InteractionNavLink({ href, isActive }: { href: string; isActive: boolea
       >
         INTERACTION
         {isActive && (
-          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D96A32]" />
+          <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-hmc-orange" />
         )}
         <svg
           className="ml-1.5 h-2.5 w-2.5 shrink-0"
@@ -255,9 +255,11 @@ function InteractionNavLink({ href, isActive }: { href: string; isActive: boolea
       </Link>
 
       {/* Dropdown — left-aligned with nav item, flush to bottom, light-blue theme */}
-      <div className="pointer-events-none absolute left-0 top-full z-50 mt-0 w-52 rounded-b-xl border border-[#28779E]/20 bg-[#4A9BC8] py-2 shadow-xl opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
+      <div
+        className="pointer-events-none absolute left-0 top-full z-50 mt-0 w-52 rounded-b-xl border border-hmc-mainnav-bg/20 bg-hmc-dropdown-bg py-2 shadow-xl opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
+      >
         {INTERACTION_ITEMS.map((item) => (
-          <a
+          <Link
             key={item.slug}
             href={`/interaction/${item.slug}`}
             target="_blank"
@@ -265,7 +267,7 @@ function InteractionNavLink({ href, isActive }: { href: string; isActive: boolea
             className="flex items-center px-5 py-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-white/20 hover:text-white"
           >
             {item.label}
-          </a>
+          </Link>
         ))}
       </div>
     </div>
@@ -294,7 +296,7 @@ function NavLink({
     >
       {label}
       {isActive && (
-        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#D96A32]" />
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-hmc-orange" />
       )}
     </Link>
   );

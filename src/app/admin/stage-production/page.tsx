@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { STAGE_PRODUCTION_CATEGORY_OPTIONS } from "@/lib/constants";
 
 function RichTextEditor({ content, onChange }: { content: string; onChange: (c: string) => void }) {
   const editorRef = useRef<HTMLDivElement>(null);
@@ -78,17 +79,7 @@ interface BanEntry {
   expiresAt: number | null;
 }
 
-const CATEGORIES = [
-  { value: "stage", label: "Stage" },
-  { value: "video", label: "Video" },
-  { value: "lighting", label: "Lighting" },
-  { value: "audio", label: "Audio" },
-  { value: "effects", label: "Effects" },
-  { value: "costumes", label: "Costumes" },
-  { value: "props", label: "Props" },
-  { value: "makeup", label: "Makeup" },
-  { value: "others", label: "Others" },
-];
+const CATEGORIES = STAGE_PRODUCTION_CATEGORY_OPTIONS;
 
 // Default comments
 const DEFAULT_COMMENTS: Comment[] = [
@@ -142,7 +133,6 @@ export default function AdminStageProductionsPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -360,17 +350,17 @@ export default function AdminStageProductionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Stage Production</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage stage production records ({totalCount} items)</p>
+          <p className="mt-1 text-sm text-gray-500">Manage stage productions ({totalCount} total)</p>
         </div>
         <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-          + New Item
+          + New Stage Production
         </button>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Filter by Category</label>
+          <label className="block text-xs text-gray-500 mb-1">Category</label>
           <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
             <option value="all">All Categories</option>
             {CATEGORIES.map((cat) => (
@@ -379,9 +369,9 @@ export default function AdminStageProductionsPage() {
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Filter by Status</label>
+          <label className="block text-xs text-gray-500 mb-1">Status</label>
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
-            <option value="all">All Status</option>
+            <option value="all">All</option>
             <option value="draft">Drafts</option>
             <option value="upcoming">Upcoming</option>
             <option value="past">Past</option>
@@ -520,7 +510,7 @@ export default function AdminStageProductionsPage() {
         </div>
       )}
 
-      {/* Category Accordion */}
+      {/* Category Items */}
       <div className="space-y-6">
         {itemsByCategory.map((cat) => {
           const categoryItems = filterCategory === "all" || filterCategory === cat.value
@@ -531,12 +521,8 @@ export default function AdminStageProductionsPage() {
 
           return (
             <div key={cat.value} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <button
-                onClick={() => setExpandedCategory(expandedCategory === cat.value ? null : cat.value)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg">{expandedCategory === cat.value ? "▼" : "▶"}</span>
                   <span className="font-medium text-gray-900">{cat.label}</span>
                   <span className="text-sm text-gray-500">({categoryItems.length})</span>
                 </div>
@@ -545,40 +531,38 @@ export default function AdminStageProductionsPage() {
                     {categoryItems.filter(i => i.status === "upcoming").length} upcoming, {categoryItems.filter(i => i.status === "past").length} past
                   </span>
                 )}
-              </button>
+              </div>
 
-              {expandedCategory === cat.value && (
-                <div className="divide-y divide-gray-100">
-                  {categoryItems.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-gray-500 text-sm">
-                      No items in this category
-                    </div>
-                  ) : (
-                    categoryItems.map((item) => (
-                      <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {item.coverImage && (
-                            <img src={item.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900 truncate">{item.title}</span>
-                              {getStatusBadge(item.status)}
-                            </div>
-                            {item.eventDate && (
-                              <span className="text-xs text-gray-400">{formatDate(item.eventDate)}</span>
-                            )}
+              <div className="divide-y divide-gray-100">
+                {categoryItems.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                    No stage productions in this category
+                  </div>
+                ) : (
+                  categoryItems.map((item) => (
+                    <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {item.coverImage && (
+                          <img src={item.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 truncate">{item.title}</span>
+                            {getStatusBadge(item.status)}
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
-                          <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                          {item.eventDate && (
+                            <span className="text-xs text-gray-400">{formatDate(item.eventDate)}</span>
+                          )}
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              )}
+                      <div className="flex items-center gap-2 ml-4">
+                        <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                        <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           );
         })}

@@ -7,7 +7,7 @@ import { useQuery } from "@/lib/convex";
 import { api } from "@/lib/convex";
 
 export default function NewsListingPage() {
-  const allArticles = useQuery(api.admin.getPublishedNews) as any[] | undefined;
+  const allArticles = useQuery(api.admin.getPublishedNews, {}) as any[] | undefined;
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
@@ -30,9 +30,9 @@ export default function NewsListingPage() {
 
   return (
     <main className="min-h-screen bg-white">
-      <div className="border-b border-t border-[#D96A32] bg-white">
+      <div className="border-b border-t border-hmc-orange bg-white">
         <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-[#D96A32]">
+          <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">
             News
           </h1>
         </div>
@@ -53,7 +53,7 @@ export default function NewsListingPage() {
           </div>
         ) : displayItems.length === 0 ? (
           <div className="py-20 text-center">
-            <p className="text-gray-500">No news articles published yet.</p>
+            <p className="text-gray-500">No news articles found.</p>
           </div>
         ) : (
           <>
@@ -85,7 +85,7 @@ export default function NewsListingPage() {
                     <time className="text-xs text-gray-400">
                       {formatDate(article.publishDate)}
                     </time>
-                    <h2 className="text-sm font-semibold leading-snug text-gray-900 transition-colors group-hover:text-[#C8102E]">
+                    <h2 className="text-sm font-semibold leading-snug text-gray-900 transition-colors group-hover:text-hmc-red">
                       {article.title}
                     </h2>
                     {article.excerpt && (

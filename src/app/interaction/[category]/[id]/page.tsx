@@ -225,14 +225,14 @@ export default function InteractionDetailPage({ params }: PageProps) {
       const found = localPosts.find((p: any) => p.id === postId && normalizeInteractionCategory(p.category) === category);
       if (found) {
         setPost({
-          _id: found.id,
-          title: found.title,
-          content: found.content,
-          category: normalizeInteractionCategory(found.category),
-          authorUsername: found.author || "Anonymous",
-          authorAvatar: found.coverImage || "",
+          _id: found.id as string,
+          title: found.title as string,
+          content: found.content as string,
+          category: normalizeInteractionCategory(found.category as string),
+          authorUsername: (found.author as string) || "Anonymous",
+          authorAvatar: (found.coverImage as string) || "",
           authorEmail: "",
-          createdAt: found.createdAt || Date.now(),
+          createdAt: (found.createdAt as number) || Date.now(),
         });
       }
     }
@@ -328,7 +328,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-[#D96A32]"></div>
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-hmc-orange"></div>
       </div>
     );
   }
@@ -340,7 +340,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
         <p className="text-gray-500 mb-8">The post you&apos;re looking for doesn&apos;t exist.</p>
         <Link
           href={`/interaction/${category}`}
-          className="px-4 py-2 bg-[#D96A32] text-white rounded-md hover:bg-[#c45a28] transition-colors"
+          className="px-4 py-2 bg-hmc-orange text-white rounded-md hover:bg-hmc-orange transition-colors"
         >
           Back to {categoryLabel}
         </Link>
@@ -368,7 +368,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
                     key={cat.value}
                     href={`/interaction/${cat.value}`}
                     className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors ${
-                      category === cat.value ? "bg-[#D96A32]/10 text-[#D96A32] font-medium" : "text-gray-700 hover:bg-gray-50"
+                      category === cat.value ? "bg-hmc-orange/10 text-hmc-orange font-medium" : "text-gray-700 hover:bg-gray-50"
                     }`}
                   >
                     <span>{cat.value === "software" ? "💻" : cat.value === "hardware" ? "🎛️" : cat.value === "music" ? "🎵" : cat.value === "production" ? "🎬" : cat.value === "article" ? "📝" : "💬"}</span>
@@ -381,7 +381,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
 
           {/* Main Content */}
           <div className="flex-1 min-w-0 max-w-3xl">
-            <Link href={`/interaction/${category}`} className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-[#D96A32] mb-4">
+            <Link href={`/interaction/${category}`} className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-hmc-orange mb-4">
               ← Back to r/{categoryLabel}
             </Link>
 
@@ -443,10 +443,10 @@ export default function InteractionDetailPage({ params }: PageProps) {
                       onChange={(e) => setNewComment(e.target.value)}
                       placeholder="What are your thoughts?"
                       rows={3}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none resize-none mb-3"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-hmc-orange focus:border-transparent outline-none resize-none mb-3"
                     />
                     <div className="flex items-center justify-end">
-                      <button type="submit" className="px-4 py-1.5 bg-[#D96A32] text-white text-sm font-medium rounded-full hover:bg-[#c45a28] transition-colors">Post Comment</button>
+                      <button type="submit" className="px-4 py-1.5 bg-hmc-orange text-white text-sm font-medium rounded-full hover:bg-hmc-orange transition-colors">Post Comment</button>
                     </div>
                   </form>
                 </div>
@@ -456,13 +456,13 @@ export default function InteractionDetailPage({ params }: PageProps) {
                   <div className="flex items-center gap-3">
                     <Link
                       href="/login"
-                      className="px-4 py-2 text-sm font-medium text-[#D96A32] border border-[#D96A32] rounded-full hover:bg-[#D96A32]/10 transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-hmc-orange border border-hmc-orange rounded-full hover:bg-hmc-orange/10 transition-colors"
                     >
                       Sign In
                     </Link>
                     <Link
                       href="/registration"
-                      className="px-4 py-2 text-sm font-medium text-white bg-[#D96A32] rounded-full hover:bg-[#c45a28] transition-colors"
+                      className="px-4 py-2 text-sm font-medium text-white bg-hmc-orange rounded-full hover:bg-hmc-orange transition-colors"
                     >
                       Sign Up
                     </Link>
@@ -489,14 +489,14 @@ export default function InteractionDetailPage({ params }: PageProps) {
                           <span>{formatTimeAgo(comment.createdAt)}</span>
                         </div>
                         <p className="text-sm text-gray-800 mb-2">{comment.content}</p>
-                        <button onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)} className="text-xs text-gray-500 hover:text-[#D96A32] font-medium">Post Comment</button>
+                        <button onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)} className="text-xs text-gray-500 hover:text-hmc-orange font-medium">Post Comment</button>
 
                         {replyingTo === comment.id && (
                           <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="mt-3">
-                            <input type="text" value={replyAuthor} onChange={(e) => setReplyAuthor(e.target.value)} placeholder="Your name" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none" required />
-                            <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="Write a reply..." rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-[#D96A32] focus:border-transparent outline-none resize-none" required />
+                            <input type="text" value={replyAuthor} onChange={(e) => setReplyAuthor(e.target.value)} placeholder="Your name" className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-hmc-orange focus:border-transparent outline-none" required />
+                            <textarea value={replyContent} onChange={(e) => setReplyContent(e.target.value)} placeholder="Write a reply..." rows={2} className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm mb-2 focus:ring-2 focus:ring-hmc-orange focus:border-transparent outline-none resize-none" required />
                             <div className="flex gap-2">
-                              <button type="submit" className="px-3 py-1 bg-[#D96A32] text-white text-xs font-medium rounded-full hover:bg-[#c45a28]">Post Comment</button>
+                              <button type="submit" className="px-3 py-1 bg-hmc-orange text-white text-xs font-medium rounded-full hover:bg-hmc-orange">Post Comment</button>
                               <button type="button" onClick={() => { setReplyingTo(null); setReplyContent(""); setReplyAuthor(""); }} className="px-3 py-1 bg-gray-200 text-gray-600 text-xs font-medium rounded-full hover:bg-gray-300">Cancel</button>
                             </div>
                           </form>

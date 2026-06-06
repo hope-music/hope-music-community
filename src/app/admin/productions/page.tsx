@@ -84,6 +84,7 @@ interface Production {
   content: string;
   status: "upcoming" | "past" | "draft";
   eventDate?: string;
+  url?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -165,6 +166,7 @@ async function loadItemsFromApi(): Promise<Production[]> {
       content: event.content || "",
       status: event.status || "upcoming",
       eventDate: event.eventDate || event.date,
+      url: event.url || "",
       createdAt: event.createdAt || Date.now(),
       updatedAt: event.updatedAt || Date.now(),
     }));
@@ -207,13 +209,12 @@ function mergePerformanceData(apiData: Production[], adminData: Production[]): P
 
 export default function StageProductionsPage() {
   const [items, setItems] = useState<Production[]>([]);
-  const [filterCategory, setFilterCategory] = useState<string>("all");
+  const [filterCategory, setFilterCategory] = useState<string>(PERFORMANCE_CATEGORY_OPTIONS[0]?.value ?? "musical");
   const [filterStatus, setFilterStatus] = useState<"all" | "upcoming" | "past" | "draft">("all");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [dataSource, setDataSource] = useState<DataSource>("admin");
   const [isMerging, setIsMerging] = useState(false);
 
@@ -232,6 +233,7 @@ export default function StageProductionsPage() {
   const [category, setCategory] = useState("musical");
   const [status, setStatus] = useState<"upcoming" | "past" | "draft">("draft");
   const [eventDate, setEventDate] = useState("");
+  const [url, setUrl] = useState("");
   const [coverImage, setCoverImage] = useState("");
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
@@ -426,7 +428,7 @@ export default function StageProductionsPage() {
   };
 
   const filteredItems = items.filter((p) => {
-    if (filterCategory !== "all" && p.category !== filterCategory) return false;
+    if (p.category !== filterCategory) return false;
     if (filterStatus !== "all" && p.status !== filterStatus) return false;
     return true;
   });
@@ -456,9 +458,10 @@ export default function StageProductionsPage() {
     setTitle("");
     setDescription("");
     setContent("");
-    setCategory(filterCategory !== "all" ? filterCategory : "musical");
+    setCategory(filterCategory);
     setStatus("draft");
     setEventDate("");
+    setUrl("");
     setCoverImage("");
     setCoverPreview(null);
     setComments([]);
@@ -485,6 +488,7 @@ export default function StageProductionsPage() {
     setCategory(item.category || "musical");
     setStatus(item.status || "draft");
     setEventDate(formatDateForInput(item.eventDate));
+    setUrl(item.url || "");
     setCoverImage(item.coverImage || "");
     setCoverPreview(item.coverImage || null);
 
@@ -536,6 +540,7 @@ export default function StageProductionsPage() {
               category,
               status,
               eventDate,
+              url,
               coverImage,
               updatedAt: now
             };
@@ -554,6 +559,7 @@ export default function StageProductionsPage() {
           coverImage,
           status,
           eventDate,
+          url,
           createdAt: now,
           updatedAt: now,
         };
@@ -617,7 +623,7 @@ export default function StageProductionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Performance</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage performances by subcategory</p>
+          <p className="mt-1 text-sm text-gray-500">Manage performances ({items.length} total)</p>
           <div className="mt-2 flex items-center gap-4">
             <span className="text-sm">
               Total: <span className="font-semibold">{items.length}</span> items
@@ -647,18 +653,17 @@ export default function StageProductionsPage() {
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Filter by Subcategory</label>
+          <label className="block text-xs text-gray-500 mb-1">Category</label>
           <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
-            <option value="all">All Subcategories</option>
             {PERFORMANCE_CATEGORY_OPTIONS.map((cat) => (
               <option key={cat.value} value={cat.value}>{cat.label} ({itemsByCategory.find(c => c.value === cat.value)?.items.length || 0})</option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Filter by Status</label>
+          <label className="block text-xs text-gray-500 mb-1">Status</label>
           <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
-            <option value="all">All Status</option>
+            <option value="all">All</option>
             <option value="draft">Drafts</option>
             <option value="upcoming">Upcoming</option>
             <option value="past">Past</option>
@@ -684,7 +689,7 @@ export default function StageProductionsPage() {
                 <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" required />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Subcategory</label>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
                 <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">
                   {PERFORMANCE_CATEGORY_OPTIONS.map((cat) => (
                     <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -702,6 +707,10 @@ export default function StageProductionsPage() {
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Event Date</label>
                 <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Ticket URL</label>
+                <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.ticketmaster.com/..." className="w-full rounded-md border border-gray-300 px-3 py-2" />
               </div>
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-gray-700">Cover Image</label>
@@ -915,20 +924,16 @@ export default function StageProductionsPage() {
       {/* Subcategories with Items */}
       <div className="space-y-6">
         {itemsByCategory.map((sub) => {
-          const categoryItems = filterCategory === "all" || filterCategory === sub.value
+          const categoryItems = sub.value === filterCategory
             ? sub.items.filter(item => filterStatus === "all" || item.status === filterStatus)
             : [];
 
-          if (filterCategory !== "all" && filterCategory !== sub.value) return null;
+          if (filterCategory !== sub.value) return null;
 
           return (
             <div key={sub.value} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <button
-                onClick={() => setExpandedCategory(expandedCategory === sub.value ? null : sub.value)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg">{expandedCategory === sub.value ? "▼" : "▶"}</span>
                   <span className="font-medium text-gray-900">{sub.label}</span>
                   <span className="text-sm text-gray-500">({categoryItems.length})</span>
                 </div>
@@ -937,51 +942,49 @@ export default function StageProductionsPage() {
                     {categoryItems.filter(i => i.status === "upcoming").length} upcoming, {categoryItems.filter(i => i.status === "past").length} past
                   </span>
                 )}
-              </button>
+              </div>
 
-              {expandedCategory === sub.value && (
-                <div className="divide-y divide-gray-100">
-                  {categoryItems.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-gray-500 text-sm">
-                      No items in this subcategory
-                    </div>
-                  ) : (
-                    categoryItems.map((item) => (
-                      <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {item.coverImage && (
-                            <img src={item.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium text-gray-900 truncate">{item.title}</span>
-                              {getStatusBadge(item.status)}
-                            </div>
-                            {item.eventDate && (
-                              <span className="text-xs text-gray-400">{formatDate(item.eventDate)}</span>
-                            )}
+              <div className="divide-y divide-gray-100">
+                {categoryItems.length === 0 ? (
+                <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                  No performances in this category
+                </div>
+                ) : (
+                  categoryItems.map((item) => (
+                    <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {item.coverImage && (
+                          <img src={item.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 truncate">{item.title}</span>
+                            {getStatusBadge(item.status)}
                           </div>
-                        </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          <button
-                            onClick={() => toggleFeatured(item.id)}
-                            className={`px-3 py-1 text-xs font-medium rounded ${
-                              featuredIds.includes(item.id)
-                                ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                                : "text-gray-400 hover:text-yellow-600 hover:bg-gray-100"
-                            }`}
-                            title={featuredIds.includes(item.id) ? "Remove from Featured" : "Add to Featured"}
-                          >
-                            {featuredIds.includes(item.id) ? "★" : "☆"}
-                          </button>
-                          <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
-                          <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                          {item.eventDate && (
+                            <span className="text-xs text-gray-400">{formatDate(item.eventDate)}</span>
+                          )}
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              )}
+                      <div className="flex items-center gap-2 ml-4">
+                        <button
+                          onClick={() => toggleFeatured(item.id)}
+                          className={`px-3 py-1 text-xs font-medium rounded ${
+                            featuredIds.includes(item.id)
+                              ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                              : "text-gray-400 hover:text-yellow-600 hover:bg-gray-100"
+                          }`}
+                          title={featuredIds.includes(item.id) ? "Remove from Featured" : "Add to Featured"}
+                        >
+                          {featuredIds.includes(item.id) ? "★" : "☆"}
+                        </button>
+                        <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                        <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           );
         })}

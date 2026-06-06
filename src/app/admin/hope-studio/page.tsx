@@ -90,7 +90,6 @@ const BANNED_USERS_KEY = "hope_studio_banned_users";
 
 export default function AdminHopeStudioPage() {
   const [items, setItems] = useState<ContentItem[]>(DEFAULT_ITEMS);
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<ContentItem>(DEFAULT_ITEMS[0]);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -267,14 +266,14 @@ export default function AdminHopeStudioPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Hope Studio</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage Hope Studio content sections</p>
+          <p className="mt-1 text-sm text-gray-500">Manage Hope Studio content</p>
         </div>
       </div>
 
       {/* Filter */}
       <div className="flex flex-wrap items-center gap-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Filter by Section</label>
+          <label className="block text-xs text-gray-500 mb-1">Section</label>
           <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
             <option value="all">All Sections</option>
             {CATEGORIES.map((cat) => (
@@ -322,7 +321,7 @@ export default function AdminHopeStudioPage() {
             </div>
             <div className="flex justify-end gap-3 border-t pt-4">
               <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
-              <button onClick={handleSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Save</button>
+              <button onClick={handleSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
             </div>
           </div>
 
@@ -431,7 +430,7 @@ export default function AdminHopeStudioPage() {
         </div>
       )}
 
-      {/* Section Accordion */}
+      {/* Section Items */}
       <div className="space-y-6">
         {itemsByCategory.map((cat) => {
           const categoryItems = filterCategory === "all" || filterCategory === cat.value ? cat.items : [];
@@ -440,43 +439,37 @@ export default function AdminHopeStudioPage() {
 
           return (
             <div key={cat.value} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <button
-                onClick={() => setExpandedCategory(expandedCategory === cat.value ? null : cat.value)}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
+              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
                 <div className="flex items-center gap-3">
-                  <span className="text-lg">{expandedCategory === cat.value ? "▼" : "▶"}</span>
                   <span className="font-medium text-gray-900">{cat.label}</span>
                 </div>
                 <span className="text-xs text-gray-400">{categoryItems.length} item(s)</span>
-              </button>
+              </div>
 
-              {expandedCategory === cat.value && (
-                <div className="divide-y divide-gray-100">
-                  {categoryItems.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-gray-500 text-sm">
-                      No content in this section
-                    </div>
-                  ) : (
-                    categoryItems.map((item) => (
-                      <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                          {item.image && (
-                            <img src={item.image} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <span className="font-medium text-gray-900 truncate">{item.title}</span>
-                            <p className="text-xs text-gray-400 truncate">{item.description}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-2 ml-4">
-                          <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+              <div className="divide-y divide-gray-100">
+                {categoryItems.length === 0 ? (
+                  <div className="px-4 py-6 text-center text-gray-500 text-sm">
+                    No items in this section
+                  </div>
+                ) : (
+                  categoryItems.map((item) => (
+                    <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        {item.image && (
+                          <img src={item.image} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <span className="font-medium text-gray-900 truncate">{item.title}</span>
+                          <p className="text-xs text-gray-400 truncate">{item.description}</p>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              )}
+                      <div className="flex items-center gap-2 ml-4">
+                        <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           );
         })}

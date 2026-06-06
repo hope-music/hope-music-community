@@ -12,11 +12,11 @@ export function HeroSection() {
         <div className="mt-2 flex flex-col items-center gap-2">
           <a
             href="/hope-studio"
-            className="cursor-pointer text-[12px] text-hmc-text-muted transition-colors hover:text-[#D96A32]"
+            className="cursor-pointer text-[12px] text-hmc-text-muted transition-colors hover:text-hmc-orange"
           >
             <span className="italic">Shangri-La</span>, HopeStudio&apos;s unperformed immersive musical
           </a>
-          <div className="w-full" style={{ borderBottom: "1px solid #D96A32" }} />
+          <div className="w-full" style={{ borderBottom: "1px solid border-hmc-orange" }} />
         </div>
       </Container>
     </section>

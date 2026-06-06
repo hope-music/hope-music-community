@@ -76,7 +76,7 @@ export function InteractionThread({ post, categorySlug }: InteractionThreadProps
             href={`/interaction/${categorySlug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 text-sm text-hmc-text-muted transition-colors hover:text-[#D96A32]"
+            className="inline-flex items-center gap-1.5 text-sm text-hmc-text-muted transition-colors hover:text-hmc-orange"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
@@ -98,7 +98,7 @@ export function InteractionThread({ post, categorySlug }: InteractionThreadProps
             <h1 className="text-2xl font-bold leading-tight text-gray-900 sm:text-3xl">
               {post.title}
             </h1>
-            <span className="ml-4 shrink-0 rounded bg-[#C8102E] px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">
+            <span className="ml-4 shrink-0 rounded bg-hmc-red px-3 py-1 text-xs font-bold uppercase tracking-wider text-white">
               #1
             </span>
           </div>
@@ -127,7 +127,7 @@ export function InteractionThread({ post, categorySlug }: InteractionThreadProps
         {replies.length > 0 && (
           <div className="mb-8 flex flex-col gap-4">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-hmc-text-muted">
-              {replies.length} {replies.length === 1 ? "Reply" : "Replies"}
+              {replies.length} {replies.length === 1 ? "Comment" : "Comments"}
             </h2>
 
             {replies.map((reply) => (
@@ -167,22 +167,22 @@ export function InteractionThread({ post, categorySlug }: InteractionThreadProps
 
         {/* Reply Form */}
         <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-          <h3 className="mb-4 text-base font-semibold text-gray-900">Leave a Reply</h3>
+          <h3 className="mb-4 text-base font-semibold text-gray-900">Comments</h3>
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <textarea
               value={replyText}
               onChange={(e) => setReplyText(e.target.value)}
               placeholder="Write your comment here..."
               rows={5}
-              className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 placeholder-gray-400 transition-colors focus:border-[#D96A32] focus:outline-none focus:ring-2 focus:ring-[#D96A32]/20"
+              className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-700 placeholder-gray-400 transition-colors focus:border-hmc-orange focus:outline-none focus:ring-2 focus:ring-hmc-orange/20"
             />
             <div className="flex justify-end">
               <button
                 type="submit"
                 disabled={!replyText.trim() || isSubmitting}
-                className="rounded-xl bg-[#C8102E] px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-[#a00d26] disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-xl bg-hmc-red px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all duration-150 hover:bg-hmc-red disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {isSubmitting ? "Submitting..." : "Submit Reply"}
+                {isSubmitting ? "Posting..." : "Post Comment"}
               </button>
             </div>
           </form>

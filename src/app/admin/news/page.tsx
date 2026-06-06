@@ -59,7 +59,6 @@ interface NewsArticle {
   content: string;
   excerpt: string;
   isPublished: boolean;
-  isFeatured: boolean;
   createdAt: number;
   updatedAt?: number;
 }
@@ -136,11 +135,8 @@ export default function NewsAdminPage() {
   const [content, setContent] = useState("");
   const [coverImage, setCoverImage] = useState("");
   const [isPublished, setIsPublished] = useState(true);
-  const [isFeatured, setIsFeatured] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [filter, setFilter] = useState<"all" | "published" | "draft">("all");
-  const [expandedCategory, setExpandedCategory] = useState<string | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -259,15 +255,6 @@ export default function NewsAdminPage() {
   };
 
   const articles = allArticles || [];
-  const filteredArticles = articles.filter((article) => {
-    if (filter === "published") return article.isPublished;
-    if (filter === "draft") return !article.isPublished;
-    return true;
-  });
-
-  const publishedCount = articles.filter(a => a.isPublished).length;
-  const draftCount = articles.filter(a => !a.isPublished).length;
-  const featuredCount = articles.filter(a => a.isFeatured).length;
 
   const handleCoverImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -290,7 +277,6 @@ export default function NewsAdminPage() {
     setCoverImage("");
     setImagePreview(null);
     setIsPublished(true);
-    setIsFeatured(false);
     setShowForm(true);
   };
 
@@ -301,7 +287,6 @@ export default function NewsAdminPage() {
     setCoverImage(article.coverImage);
     setImagePreview(article.coverImage || null);
     setIsPublished(article.isPublished);
-    setIsFeatured(article.isFeatured);
     loadComments(`news-${article._id}`);
     setShowForm(true);
   };
@@ -316,10 +301,10 @@ export default function NewsAdminPage() {
     try {
       const excerpt = textContent.substring(0, 150);
       if (editingId) {
-        await updateArticle({ callerEmail: adminEmail, id: editingId as any, title: title.trim(), content, coverImage, excerpt, isPublished, isFeatured });
+        await updateArticle({ callerEmail: adminEmail, id: editingId as any, title: title.trim(), content, coverImage, excerpt, isPublished });
         setMessage({ type: "success", text: "Updated successfully!" });
       } else {
-        await createArticle({ callerEmail: adminEmail, title: title.trim(), content, coverImage, excerpt, isPublished, isFeatured });
+        await createArticle({ callerEmail: adminEmail, title: title.trim(), content, coverImage, excerpt, isPublished });
         setMessage({ type: "success", text: "Created successfully!" });
       }
       setShowForm(false);
@@ -348,16 +333,12 @@ export default function NewsAdminPage() {
     setCoverImage("");
     setImagePreview(null);
     setIsPublished(true);
-    setIsFeatured(false);
   };
 
-  const getStatusBadge = (isPub: boolean, isFeat: boolean) => (
-    <div className="flex gap-1">
-      {isFeat && <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-600">Featured</span>}
-      <span className={`rounded px-2 py-0.5 text-xs font-medium ${isPub ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}`}>
-        {isPub ? "Published" : "Draft"}
-      </span>
-    </div>
+  const getStatusBadge = (isPub: boolean) => (
+    <span className={`rounded px-2 py-0.5 text-xs font-medium ${isPub ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}`}>
+      {isPub ? "Published" : "Draft"}
+    </span>
   );
 
   const formatDate = (timestamp: number): string => new Date(timestamp).toLocaleDateString();
@@ -375,18 +356,6 @@ export default function NewsAdminPage() {
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-4">
-        <div>
-          <label className="block text-xs text-gray-500 mb-1">Filter by Status</label>
-          <select value={filter} onChange={(e) => setFilter(e.target.value as any)} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
-            <option value="all">All Articles ({articles.length})</option>
-            <option value="published">Published ({publishedCount})</option>
-            <option value="draft">Drafts ({draftCount})</option>
-          </select>
-        </div>
-      </div>
-
       {/* Message */}
       {message && (
         <div className={`rounded-lg p-4 text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
@@ -402,7 +371,7 @@ export default function NewsAdminPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div><label className="mb-1 block text-sm font-medium text-gray-700">Title</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" required /></div>
               <div><label className="mb-1 block text-sm font-medium text-gray-700">Cover Image</label><input ref={coverFileInputRef} type="file" accept="image/*" onChange={handleCoverImageSelect} className="hidden" /><button type="button" onClick={() => coverFileInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Choose Image</button>{imagePreview && <div className="mt-2 flex items-center gap-4"><img src={imagePreview} alt="Preview" className="h-20 w-32 rounded-md object-cover" /><button type="button" onClick={() => { setCoverImage(""); setImagePreview(null); }} className="text-sm text-red-500 hover:text-red-700">Remove</button></div>}</div>
-              <div><label className="mb-1 block text-sm font-medium text-gray-700">Options</label><div className="flex items-center gap-4"><label className="flex items-center gap-2"><input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} className="h-4 w-4" />Published</label><label className="flex items-center gap-2"><input type="checkbox" checked={isFeatured} onChange={(e) => setIsFeatured(e.target.checked)} className="h-4 w-4" />Featured</label></div></div>
+              <div><label className="mb-1 block text-sm font-medium text-gray-700">Options</label><div className="flex items-center gap-4"><label className="flex items-center gap-2"><input type="checkbox" checked={isPublished} onChange={(e) => setIsPublished(e.target.checked)} className="h-4 w-4" />Published</label></div></div>
             </div>
             <div><label className="mb-1 block text-sm font-medium text-gray-700">Content</label><RichTextEditor content={content} onChange={setContent} /></div>
             <div className="flex justify-end gap-3 border-t pt-4"><button type="button" onClick={() => { setShowForm(false); resetForm(); }} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button><button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-white disabled:opacity-50">{loading ? "Saving..." : editingId ? "Update" : "Create"}</button></div>
@@ -515,140 +484,38 @@ export default function NewsAdminPage() {
         </div>
       )}
 
-      {/* Loading State */}
+      {/* Articles Grid */}
       {allArticles === undefined ? (
         <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">
           Loading articles...
         </div>
-      ) : filteredArticles.length === 0 ? (
+      ) : articles.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white p-12 text-center text-gray-500">
-          No articles found. Click "New Article" to create one.
+          No articles yet
         </div>
       ) : (
-        <>
-          {/* Featured Articles Accordion */}
-          {featuredCount > 0 && filter === "all" && (
-            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <button
-                onClick={() => setExpandedCategory(expandedCategory === "featured" ? null : "featured")}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">{expandedCategory === "featured" ? "▼" : "▶"}</span>
-                  <span className="font-medium text-gray-900">Featured</span>
-                  <span className="text-sm text-gray-500">({featuredCount})</span>
-                </div>
-              </button>
-
-              {expandedCategory === "featured" && (
-                <div className="divide-y divide-gray-100">
-                  {articles.filter(a => a.isFeatured).map((article) => (
-                    <div key={article._id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {article.coverImage && (
-                          <img src={article.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900 truncate">{article.title}</span>
-                            {getStatusBadge(article.isPublished, article.isFeatured)}
-                          </div>
-                          <span className="text-xs text-gray-400">{formatDate(article.createdAt)}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <button onClick={() => handleEdit(article)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
-                        <button onClick={() => handleDelete(article._id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {articles.map((article) => (
+            <div key={article._id} className="rounded-lg border border-gray-200 bg-white overflow-hidden hover:shadow-md transition-shadow">
+              {article.coverImage && (
+                <img src={article.coverImage} alt={article.title} className="w-full h-40 object-cover" />
               )}
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <span className={`rounded px-2 py-0.5 text-xs font-medium ${article.isPublished ? "bg-green-100 text-green-600" : "bg-gray-100 text-gray-500"}`}>
+                    {article.isPublished ? "Published" : "Draft"}
+                  </span>
+                  <span className="text-xs text-gray-400">{formatDate(article.createdAt)}</span>
+                </div>
+                <h3 className="font-medium text-gray-900 text-sm mb-2 line-clamp-2">{article.title}</h3>
+                <div className="flex gap-2">
+                  <button onClick={() => handleEdit(article)} className="flex-1 px-3 py-1.5 text-xs font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded">Edit</button>
+                  <button onClick={() => handleDelete(article._id)} className="flex-1 px-3 py-1.5 text-xs font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded">Delete</button>
+                </div>
+              </div>
             </div>
-          )}
-
-          {/* Published Articles Accordion */}
-          {publishedCount > 0 && (
-            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <button
-                onClick={() => setExpandedCategory(expandedCategory === "published" ? null : "published")}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">{expandedCategory === "published" ? "▼" : "▶"}</span>
-                  <span className="font-medium text-gray-900">Published</span>
-                  <span className="text-sm text-gray-500">({publishedCount})</span>
-                </div>
-              </button>
-
-              {expandedCategory === "published" && (
-                <div className="divide-y divide-gray-100">
-                  {articles.filter(a => a.isPublished).map((article) => (
-                    <div key={article._id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {article.coverImage && (
-                          <img src={article.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900 truncate">{article.title}</span>
-                            {getStatusBadge(article.isPublished, article.isFeatured)}
-                          </div>
-                          <span className="text-xs text-gray-400">{formatDate(article.createdAt)}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <button onClick={() => handleEdit(article)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
-                        <button onClick={() => handleDelete(article._id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Draft Articles Accordion */}
-          {draftCount > 0 && (
-            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <button
-                onClick={() => setExpandedCategory(expandedCategory === "drafts" ? null : "drafts")}
-                className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="text-lg">{expandedCategory === "drafts" ? "▼" : "▶"}</span>
-                  <span className="font-medium text-gray-900">Drafts</span>
-                  <span className="text-sm text-gray-500">({draftCount})</span>
-                </div>
-              </button>
-
-              {expandedCategory === "drafts" && (
-                <div className="divide-y divide-gray-100">
-                  {articles.filter(a => !a.isPublished).map((article) => (
-                    <div key={article._id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {article.coverImage && (
-                          <img src={article.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900 truncate">{article.title}</span>
-                            {getStatusBadge(article.isPublished, article.isFeatured)}
-                          </div>
-                          <span className="text-xs text-gray-400">{formatDate(article.createdAt)}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <button onClick={() => handleEdit(article)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
-                        <button onClick={() => handleDelete(article._id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </>
+          ))}
+        </div>
       )}
     </div>
   );
