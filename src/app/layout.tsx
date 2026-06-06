@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
-import DemoDataInitializer from "@/components/DemoDataInitializer";
 import ConvexClientProvider from "./ConvexClientProvider";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import "./globals.css";
@@ -25,7 +24,6 @@ export default function RootLayout({
       <body className="flex min-h-full flex-col font-sans text-hmc-text">
         <ConvexClientProvider>
           <AuthProvider>
-            <DemoDataInitializer />
             <SiteHeader />
             <main className="flex-1">{children}</main>
             <SiteFooter />
