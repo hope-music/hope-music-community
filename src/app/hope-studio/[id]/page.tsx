@@ -91,7 +91,33 @@ const DEFAULT_ITEMS: Record<string, ContentItem> = {
         </div>
       </div>
     ` },
-  "shangri-la": { id: "shangri-la", title: "Shangri-La", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200", description: "", content: "<p>Shangri-La experience.</p>" },
+  "shangri-la": { id: "shangri-la", title: "Shangri-La", image: "/images/shangri-la/Shangri-La 1.jpg", description: "An immersive musical experience blending symphonic grandeur with electronic fashion", content: `
+      <h2 style="font-size: 1.75rem; font-weight: 700; color: #e85d04; margin-bottom: 1.5rem;">About the Musical</h2>
+      
+      <div style="background: linear-gradient(135deg, #fef3e2 0%, #fff8f0 100%); padding: 1.5rem; border-radius: 0.75rem; margin: 2rem 0; border-left: 4px solid #e85d04;">
+        <p style="line-height: 1.8;">The musical Shangri-La is a proof of concept that people from various walks of life can come together to build meaningful friendships. The vision behind Cultural Fusion events has always centred on uniting people through the shared joy of song and dance.</p>
+      </div>
+      
+      <p style="line-height: 1.8; margin-bottom: 2rem;">In the musical, audiences are treated not only to beautiful music and stunning visuals, but also to a profound exploration of love. It is a touching story that showcases love's remarkable power to transcend time and space.</p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2.5rem 0;">
+        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
+          <img src="/images/shangri-la/Shangri-La 1.jpg" alt="Shangri-La 1" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+        </div>
+        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
+          <img src="/images/shangri-la/Shangri-La 2.jpg" alt="Shangri-La 2" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 0 0 2.5rem 0;">
+        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
+          <img src="/images/shangri-la/Shangri-La 3.jpg" alt="Shangri-La 3" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+        </div>
+        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
+          <img src="/images/shangri-la/Shangri-La 4.jpg" alt="Shangri-La 4" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+        </div>
+      </div>
+    ` },
   works: { id: "works", title: "Cooperation", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=1200", description: "", content: "<p>Our portfolio.</p>" },
   schedule: { id: "schedule", title: "Performance Schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=1200", description: "", content: "<p>Performance schedule.</p>", hidden: true },
 };
