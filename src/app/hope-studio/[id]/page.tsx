@@ -18,7 +18,34 @@ interface ContentItem {
 
 const DEFAULT_ITEMS: Record<string, ContentItem> = {
   welcome: { id: "welcome", title: "Welcome to Hope Music Community", image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=1200", description: "", content: "<p>Welcome to the Hope Music Community!</p>" },
-  studio: { id: "studio", title: "Hope Studio", image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=1200", description: "", content: "<p>Hope Studio offers professional services.</p>" },
+  studio: { id: "studio", title: "Hope Studio", image: "/images/hope-studio/Hope Studio 1.png", description: "", content: `
+      <h2 style="font-size: 1.75rem; font-weight: 700; color: #e85d04; margin-bottom: 1rem;">About Hope Studio</h2>
+      <h3 style="font-size: 1.25rem; font-weight: 600; color: #333; margin-bottom: 1rem;">Music dream we create!</h3>
+      <p style="margin-bottom: 2rem;">Hope Studio is an entertainment studio specializing in musical performance, pioneering forms of tourism entertainment, and multimedia production.</p>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2rem 0;">
+        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px;">
+          <img src="/images/hope-studio/Hope Studio 1.png" alt="Hope Studio 1" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+        </div>
+        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px;">
+          <img src="/images/hope-studio/Hope Studio 2.png" alt="Hope Studio 2" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+        </div>
+      </div>
+      
+      <div style="margin: 2rem 0;">
+        <img src="/images/hope-studio/Hope Studio 3.jpg" alt="Hope Studio 3" style="width: 100%; height: auto; border-radius: 0.75rem;" />
+      </div>
+      
+      <div style="margin-top: 2.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 600; color: #e85d04; margin-bottom: 1rem;">Musical Shows</h3>
+        <p style="margin-bottom: 1rem;"><strong>Shangri-La</strong>, an upcoming musical produced by Hope Studio, is set to be a landmark work in the genre. It features an immersive soundscape that seamlessly blends traditional orchestral music with modern electronic music, offering audiences a truly refreshing experience. Complementing the music, AI-powered VR visuals deliver a breathtaking feast for the eyes.</p>
+      </div>
+      
+      <div style="margin-top: 2rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 600; color: #e85d04; margin-bottom: 1rem;">Multimedia Production</h3>
+        <p>Hope Studio pioneers innovative forms of tourism entertainment through immersive environments that integrate video, lighting, architecture, sound, and special effects to create remarkable visitor experiences.</p>
+      </div>
+    ` },
   "jesse-liu": { id: "jesse-liu", title: "Jesse Liu", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200", description: "", content: "<p>Jesse Liu is the founder.</p>" },
   "shangri-la": { id: "shangri-la", title: "Shangri-La", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200", description: "", content: "<p>Shangri-La experience.</p>" },
   works: { id: "works", title: "Cooperation", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=1200", description: "", content: "<p>Our portfolio.</p>" },

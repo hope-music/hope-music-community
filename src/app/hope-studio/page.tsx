@@ -15,7 +15,7 @@ interface ContentItem {
 
 const DEFAULT_ITEMS: ContentItem[] = [
   { id: "welcome", title: "Welcome to Hope Music Community", image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800", description: "Discover the vibrant world of Hope Music Community, where music lovers unite.", content: "" },
-  { id: "studio", title: "Hope Studio", image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=800", description: "Professional recording, mixing, and mastering services in our state-of-the-art facility.", content: "" },
+  { id: "studio", title: "Hope Studio", image: "/images/hope-studio/Hope Studio 1.png", description: "Professional recording, mixing, and mastering services in our state-of-the-art facility.", content: "" },
   { id: "jesse-liu", title: "Jesse Liu", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800", description: "Meet Jesse Liu, our founder and creative director.", content: "" },
   { id: "shangri-la", title: "Shangri-La", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800", description: "An immersive musical experience that transports you to another world.", content: "" },
   { id: "works", title: "Cooperation", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800", description: "Explore our portfolio of completed projects and collaborations.", content: "", hidden: false },
