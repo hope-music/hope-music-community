@@ -1,14 +1,20 @@
 import { Container } from "@/components/ui/Container";
+import Image from "next/image";
 import { HERO_CAPTION } from "@/lib/constants";
 
 export function HeroSection() {
   return (
     <section className="py-4" aria-label="Featured highlight">
       <Container>
-        <div
-          className="aspect-[21/7] w-full bg-gradient-to-br from-sky-200 via-emerald-100 to-slate-300"
-          aria-label="Hero image placeholder"
-        />
+        <div className="relative aspect-[21/7] w-full overflow-hidden">
+          <Image
+            src="/images/home-hero.jpg"
+            alt="Shangri-La - HopeStudio's immersive musical experience"
+            fill
+            className="object-contain"
+            priority
+          />
+        </div>
         <div className="mt-2 flex flex-col items-center gap-2">
           <a
             href="/hope-studio"
