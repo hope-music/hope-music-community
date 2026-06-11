@@ -14,7 +14,7 @@ interface ContentItem {
 }
 
 const DEFAULT_ITEMS: ContentItem[] = [
-  { id: "welcome", title: "Welcome to Hope Music Community", image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800", description: "Discover the vibrant world of Hope Music Community, where music lovers unite.", content: "" },
+  { id: "welcome", title: "Welcome to Hope Music Community", image: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=800", description: "Discover the vibrant world of Hope Music Community, where music lovers unite.", content: "" },
   { id: "studio", title: "Hope Studio", image: "/images/hope-studio/Hope Studio 1.png", description: "Professional recording, mixing, and mastering services in our state-of-the-art facility.", content: "" },
   { id: "jesse-liu", title: "Jesse Liu", image: "/images/jesse-liu/Jesse Liu 1.jpg", description: "Vocalist, Composer, Music Producer & AI Musician.", content: "" },
   { id: "shangri-la", title: "Shangri-La", image: "/images/shangri-la/Shangri-La 1.jpg", description: "An immersive musical experience that transports you to another world.", content: "" },
