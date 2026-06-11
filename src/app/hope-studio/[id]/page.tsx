@@ -2,6 +2,7 @@
 
 import { use } from "react";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { CommentSection } from "@/components/comments/CommentSection";
@@ -12,6 +13,7 @@ interface ContentItem {
   image: string;
   description: string;
   content: string;
+  hidden?: boolean;
 }
 
 const DEFAULT_ITEMS: Record<string, ContentItem> = {
@@ -20,7 +22,7 @@ const DEFAULT_ITEMS: Record<string, ContentItem> = {
   "jesse-liu": { id: "jesse-liu", title: "Jesse Liu", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200", description: "", content: "<p>Jesse Liu is the founder.</p>" },
   "shangri-la": { id: "shangri-la", title: "Shangri-La", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200", description: "", content: "<p>Shangri-La experience.</p>" },
   works: { id: "works", title: "Works", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=1200", description: "", content: "<p>Our portfolio.</p>" },
-  schedule: { id: "schedule", title: "Performance Schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=1200", description: "", content: "<p>Performance schedule.</p>" },
+  schedule: { id: "schedule", title: "Performance Schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=1200", description: "", content: "<p>Performance schedule.</p>", hidden: true },
 };
 
 interface PageProps {
@@ -29,6 +31,7 @@ interface PageProps {
 
 export default function HopeStudioDetailPage({ params }: PageProps) {
   const { id } = use(params);
+  const router = useRouter();
   const [item, setItem] = useState(DEFAULT_ITEMS[id] || null);
 
   useEffect(() => {
@@ -38,9 +41,22 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
         try {
           const items: ContentItem[] = JSON.parse(stored);
           const found = items.find(i => i.id === id);
-          if (found) setItem(found);
+          if (found) {
+            if (found.hidden) {
+              router.replace("/hope-studio");
+              return;
+            }
+            setItem(found);
+          }
         } catch (e) {
           // Silent fail - will use empty state
+        }
+      } else {
+        // Check default items for hidden status
+        const defaultItem = DEFAULT_ITEMS[id];
+        if (defaultItem && defaultItem.hidden) {
+          router.replace("/hope-studio");
+          return;
         }
       }
     };
@@ -48,7 +64,7 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
     loadData();
     const interval = setInterval(loadData, 1000);
     return () => clearInterval(interval);
-  }, [id]);
+  }, [id, router]);
 
   if (!item) {
     return (

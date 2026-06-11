@@ -9,6 +9,7 @@ interface ContentItem {
   image: string;
   description: string;
   content: string;
+  hidden?: boolean;
 }
 
 interface Comment {
@@ -41,7 +42,7 @@ const DEFAULT_ITEMS: ContentItem[] = [
   { id: "jesse-liu", title: "Jesse Liu", category: "jesse-liu", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800", description: "Meet Jesse Liu, our founder.", content: "<p>Jesse Liu is the founder.</p>" },
   { id: "shangri-la", title: "Shangri-La", category: "shangri-la", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800", description: "An immersive musical experience.", content: "<p>Shangri-La experience.</p>" },
   { id: "works", title: "Works", category: "works", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800", description: "Explore our portfolio.", content: "<p>Our portfolio.</p>" },
-  { id: "schedule", title: "Performance Schedule", category: "schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800", description: "Upcoming performances and events.", content: "<p>Performance schedule.</p>" },
+  { id: "schedule", title: "Performance Schedule", category: "schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800", description: "Upcoming performances and events.", content: "<p>Performance schedule.</p>", hidden: true },
 ];
 
 // Default comments
@@ -251,6 +252,7 @@ export default function AdminHopeStudioPage() {
     const updated = items.map(item => item.id === editingId ? { ...editForm, title: editForm.title.trim() } : item);
     saveToStorage(updated);
     setEditingId(null);
+    setEditForm(DEFAULT_ITEMS[0]);
     setMessage({ type: "success", text: "Updated successfully!" });
   };
 
@@ -318,6 +320,18 @@ export default function AdminHopeStudioPage() {
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">Content (for detail page - HTML supported)</label>
               <textarea value={editForm.content} onChange={(e) => setEditForm({ ...editForm, content: e.target.value })} rows={5} className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm" />
+            </div>
+            <div className="flex items-center gap-4 pt-2 border-t border-gray-200">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editForm.hidden !== true}
+                  onChange={(e) => setEditForm({ ...editForm, hidden: !e.target.checked })}
+                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Visible on website</span>
+              </label>
+              <span className="text-xs text-gray-400">(Uncheck to hide this section)</span>
             </div>
             <div className="flex justify-end gap-3 border-t pt-4">
               <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
@@ -459,7 +473,12 @@ export default function AdminHopeStudioPage() {
                           <img src={item.image} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
                         )}
                         <div className="flex-1 min-w-0">
-                          <span className="font-medium text-gray-900 truncate">{item.title}</span>
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium text-gray-900 truncate">{item.title}</span>
+                            {item.hidden && (
+                              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-0.5 rounded">Hidden</span>
+                            )}
+                          </div>
                           <p className="text-xs text-gray-400 truncate">{item.description}</p>
                         </div>
                       </div>

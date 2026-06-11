@@ -58,6 +58,7 @@ type HopeStudioItem = {
   title: string;
   description: string;
   content?: string;
+  hidden?: boolean;
 };
 
 type NewsArticle = {
@@ -158,36 +159,42 @@ const DEFAULT_HOPE_STUDIO_ITEMS: HopeStudioItem[] = [
     title: "Welcome to Hope Music Community",
     description: "Discover the vibrant world of Hope Music Community, where music lovers unite.",
     content: "",
+    hidden: false,
   },
   {
     id: "studio",
     title: "Hope Studio",
     description: "Professional recording, mixing, and mastering services in our state-of-the-art facility.",
     content: "",
+    hidden: false,
   },
   {
     id: "jesse-liu",
     title: "Jesse Liu",
     description: "Meet Jesse Liu, our founder and creative director.",
     content: "",
+    hidden: false,
   },
   {
     id: "shangri-la",
     title: "Shangri-La",
     description: "An immersive musical experience that transports you to another world.",
     content: "",
+    hidden: false,
   },
   {
     id: "works",
     title: "Works",
     description: "Explore our portfolio of completed projects and collaborations.",
     content: "",
+    hidden: false,
   },
   {
     id: "schedule",
     title: "Performance Schedule",
     description: "Stay updated with our upcoming performances and events.",
     content: "",
+    hidden: true,
   },
 ];
 
@@ -305,7 +312,8 @@ function loadHopeStudioResults(): SearchResult[] {
   try {
     const stored = localStorage.getItem("hope_studio_content");
     const parsed: HopeStudioItem[] = stored ? JSON.parse(stored) : DEFAULT_HOPE_STUDIO_ITEMS;
-    const items = Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_HOPE_STUDIO_ITEMS;
+    const items = (Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_HOPE_STUDIO_ITEMS)
+      .filter(item => item.hidden !== true);
 
     return items.map((item) => {
       const description = stripHtml(item.description) || stripHtml(item.content) || "Hope Studio content";
@@ -322,15 +330,17 @@ function loadHopeStudioResults(): SearchResult[] {
       } satisfies SearchResult;
     });
   } catch {
-    return DEFAULT_HOPE_STUDIO_ITEMS.map((item) => ({
-      id: `hope-studio-${item.id}`,
-      title: item.title,
-      href: `/hope-studio/${item.id}`,
-      description: item.description,
-      section: "Hope Studio",
-      meta: "Studio content",
-      searchText: normalizeSearchText(`${item.title} ${item.description} hope studio`),
-    }));
+    return DEFAULT_HOPE_STUDIO_ITEMS
+      .filter(item => item.hidden !== true)
+      .map((item) => ({
+        id: `hope-studio-${item.id}`,
+        title: item.title,
+        href: `/hope-studio/${item.id}`,
+        description: item.description,
+        section: "Hope Studio",
+        meta: "Studio content",
+        searchText: normalizeSearchText(`${item.title} ${item.description} hope studio`),
+      }));
   }
 }
 

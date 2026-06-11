@@ -10,6 +10,7 @@ interface ContentItem {
   image: string;
   description: string;
   content: string;
+  hidden?: boolean;
 }
 
 const DEFAULT_ITEMS: ContentItem[] = [
@@ -18,7 +19,7 @@ const DEFAULT_ITEMS: ContentItem[] = [
   { id: "jesse-liu", title: "Jesse Liu", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800", description: "Meet Jesse Liu, our founder and creative director.", content: "" },
   { id: "shangri-la", title: "Shangri-La", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800", description: "An immersive musical experience that transports you to another world.", content: "" },
   { id: "works", title: "Works", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800", description: "Explore our portfolio of completed projects and collaborations.", content: "" },
-  { id: "schedule", title: "Performance Schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800", description: "Stay updated with our upcoming performances and events.", content: "" },
+  { id: "schedule", title: "Performance Schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800", description: "Stay updated with our upcoming performances and events.", content: "", hidden: true },
 ];
 
 export default function HopeStudioPage() {
@@ -63,7 +64,7 @@ export default function HopeStudioPage() {
 
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map((item) => (
+          {items.filter(item => item.hidden !== true).map((item) => (
             <Link
               key={item.id}
               href={`/hope-studio/${item.id}`}
