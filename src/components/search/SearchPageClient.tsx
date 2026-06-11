@@ -184,7 +184,7 @@ const DEFAULT_HOPE_STUDIO_ITEMS: HopeStudioItem[] = [
   },
   {
     id: "works",
-    title: "Works",
+    title: "Cooperation",
     description: "Explore our portfolio of completed projects and collaborations.",
     content: "",
     hidden: false,
