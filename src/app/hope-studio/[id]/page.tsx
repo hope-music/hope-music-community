@@ -14,6 +14,7 @@ interface ContentItem {
   description: string;
   content: string;
   hidden?: boolean;
+  jsx?: React.ReactNode;
 }
 
 const DEFAULT_ITEMS: Record<string, ContentItem> = {
@@ -157,42 +158,44 @@ const DEFAULT_ITEMS: Record<string, ContentItem> = {
         </div>
       </div>
     ` },
-  works: { id: "works", title: "Cooperation", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200", description: "", content: `
-      <h2 style="font-size: 1.75rem; font-weight: 700; color: #e85d04; margin-bottom: 1.5rem;">Join Our Creative Team</h2>
-      
-      <div style="background: linear-gradient(135deg, #fef3e2 0%, #fff8f0 100%); padding: 1.5rem; border-radius: 0.75rem; margin: 2rem 0; border-left: 4px solid #e85d04;">
-        <p style="line-height: 1.8; font-size: 1.1rem; color: #333;">Production is officially underway for the musical Shangri-La! We warmly welcome talented singers, instrumentalists, and dancers from all over the world to join our creative team.</p>
-      </div>
-      
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2.5rem 0;">
-        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
-          <img src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800" alt="Auditions" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+  works: { id: "works", title: "Cooperation", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=1200", description: "", content: "", jsx: (
+      <>
+        <h2 style={{ fontSize: "1.75rem", fontWeight: "700", color: "#e85d04", marginBottom: "1.5rem" }}>Join Our Creative Team</h2>
+        
+        <div style={{ background: "linear-gradient(135deg, #fef3e2 0%, #fff8f0 100%)", padding: "1.5rem", borderRadius: "0.75rem", margin: "2rem 0", borderLeft: "4px solid #e85d04" }}>
+          <p style={{ lineHeight: "1.8", fontSize: "1.1rem", color: "#333" }}>Production is officially underway for the musical Shangri-La! We warmly welcome talented singers, instrumentalists, and dancers from all over the world to join our creative team.</p>
         </div>
-        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
-          <img src="https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800" alt="Performance" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+        
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", margin: "2.5rem 0" }}>
+          <div style={{ borderRadius: "0.75rem", overflow: "hidden", height: "300px", background: "#f5f5f5" }}>
+            <img src="https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800" alt="Auditions" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          </div>
+          <div style={{ borderRadius: "0.75rem", overflow: "hidden", height: "300px", background: "#f5f5f5" }}>
+            <img src="https://images.unsplash.com/photo-1501386761578-eac5c94b800a?w=800" alt="Performance" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          </div>
         </div>
-      </div>
-      
-      <div style="background: #fff; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin: 2rem 0;">
-        <h3 style="font-size: 1.25rem; font-weight: 600; color: #e85d04; margin-bottom: 1rem;">For Individual Artists</h3>
-        <p style="line-height: 1.8; color: #555;">Whether you represent an agency, performance group, theater, or other organization—or are an individual artist—we would love to explore a partnership with you.</p>
-        <p style="line-height: 1.8; margin-top: 1rem; color: #555;">To apply, please navigate to the "COOPERATION" section on our homepage and select <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('openCooperationModal')); }} style="color: #e85d04; font-weight: 600; text-decoration: underline; cursor: pointer;">"WELCOME TO OUR MUSICAL PERFORMANCE TEAM."</a></p>
-      </div>
-      
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 0 0 2.5rem 0;">
-        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
-          <img src="https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800" alt="Studio" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+        
+        <div style={{ background: "#fff", borderRadius: "0.75rem", padding: "2rem", boxShadow: "0 2px 8px rgba(0,0,0,0.08)", margin: "2rem 0" }}>
+          <h3 style={{ fontSize: "1.25rem", fontWeight: "600", color: "#e85d04", marginBottom: "1rem" }}>For Individual Artists</h3>
+          <p style={{ lineHeight: "1.8", color: "#555" }}>Whether you represent an agency, performance group, theater, or other organization—or are an individual artist—we would love to explore a partnership with you.</p>
+          <p style={{ lineHeight: "1.8", marginTop: "1rem", color: "#555" }}>To apply, please navigate to the "COOPERATION" section on our homepage and select <button onClick={() => window.dispatchEvent(new CustomEvent('openCooperationModal'))} style={{ color: "#e85d04", fontWeight: "600", textDecoration: "underline", cursor: "pointer", background: "none", border: "none", padding: 0, font: "inherit" }}>"WELCOME TO OUR MUSICAL PERFORMANCE TEAM."</button></p>
         </div>
-        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
-          <img src="https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=800" alt="Music" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
+        
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1.5rem", margin: "0 0 2.5rem 0" }}>
+          <div style={{ borderRadius: "0.75rem", overflow: "hidden", height: "300px", background: "#f5f5f5" }}>
+            <img src="https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800" alt="Studio" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          </div>
+          <div style={{ borderRadius: "0.75rem", overflow: "hidden", height: "300px", background: "#f5f5f5" }}>
+            <img src="https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=800" alt="Music" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+          </div>
         </div>
-      </div>
-      
-      <div style="background: linear-gradient(135deg, #e85d04 0%, #ff7b00 100%); border-radius: 0.75rem; padding: 2rem; margin: 2rem 0; color: white;">
-        <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Looking for Partners</h3>
-        <p style="line-height: 1.8;">To connect with us, please visit the "COOPERATION" section on our homepage and select <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('openBusinessCooperationModal')); }} style="color: white; font-weight: 600; text-decoration: underline; cursor: pointer;">"WE LOOK FORWARD TO COOPERATING WITH YOU ON ALL TYPES OF MUSIC BUSINESS PROJECTS."</a></p>
-      </div>
-    ` },
+        
+        <div style={{ background: "linear-gradient(135deg, #e85d04 0%, #ff7b00 100%)", borderRadius: "0.75rem", padding: "2rem", margin: "2rem 0", color: "white" }}>
+          <h3 style={{ fontSize: "1.25rem", fontWeight: "600", marginBottom: "1rem" }}>Looking for Partners</h3>
+          <p style={{ lineHeight: "1.8" }}>To connect with us, please visit the "COOPERATION" section on our homepage and select <button onClick={() => window.dispatchEvent(new CustomEvent('openBusinessCooperationModal'))} style={{ color: "white", fontWeight: "600", textDecoration: "underline", cursor: "pointer", background: "none", border: "none", padding: 0, font: "inherit" }}>"WE LOOK FORWARD TO COOPERATING WITH YOU ON ALL TYPES OF MUSIC BUSINESS PROJECTS."</button></p>
+        </div>
+      </>
+    ) },
   schedule: { id: "schedule", title: "Performance Schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=1200", description: "", content: "<p>Performance schedule.</p>", hidden: true },
 };
 
@@ -274,8 +277,13 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
 
         <div
           dangerouslySetInnerHTML={{ __html: item.content || "<p>Content coming soon...</p>" }}
-          style={{ fontFamily: "Georgia, serif", fontSize: "16px", lineHeight: "1.8" }}
+          style={{ fontFamily: "Georgia, serif", fontSize: "16px", lineHeight: "1.8", display: item.jsx ? "none" : "block" }}
         />
+        {item.jsx && (
+          <div style={{ fontFamily: "Georgia, serif", fontSize: "16px", lineHeight: "1.8" }}>
+            {item.jsx}
+          </div>
+        )}
 
         <div className="mt-10 border-t pt-6">
           <Link

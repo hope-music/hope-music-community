@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import { CooperationBar } from "@/components/layout/CooperationBar";
 import { CooperationModal } from "@/components/cooperation/CooperationModal";
