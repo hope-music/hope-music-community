@@ -46,7 +46,51 @@ const DEFAULT_ITEMS: Record<string, ContentItem> = {
         <p>Hope Studio pioneers innovative forms of tourism entertainment through immersive environments that integrate video, lighting, architecture, sound, and special effects to create remarkable visitor experiences.</p>
       </div>
     ` },
-  "jesse-liu": { id: "jesse-liu", title: "Jesse Liu", image: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=1200", description: "", content: "<p>Jesse Liu is the founder.</p>" },
+  "jesse-liu": { id: "jesse-liu", title: "Jesse Liu", image: "/images/jesse-liu/Jesse Liu 1.jpg", description: "Vocalist, Composer, Music Producer & AI Musician", content: `
+      <h2 style="font-size: 1.75rem; font-weight: 700; color: #e85d04; margin-bottom: 0.5rem;">Biography</h2>
+      <h3 style="font-size: 1.25rem; font-weight: 600; color: #333; margin-bottom: 1.5rem;">Vocalist, Composer, Music Producer & AI Musician</h3>
+      <p style="margin-bottom: 2rem; line-height: 1.8;">As one of the most revered music artists of our time, Jesse Liu is a crossover musician reshaping the industry through his masterful fusion of symphonic grandeur and electronic fashion.</p>
+      
+      <div style="background: linear-gradient(135deg, #fef3e2 0%, #fff8f0 100%); padding: 1.5rem; border-radius: 0.75rem; margin: 2rem 0; border-left: 4px solid #e85d04;">
+        <p style="margin-bottom: 1rem; line-height: 1.8;">AI represents a landmark achievement in modern technology, bringing new possibilities to virtually every corner of the world — and the music industry is no exception.</p>
+        <p style="margin-bottom: 0; line-height: 1.8;">Jesse Liu harnesses AI as a creative tool, broadening his channels for musical inspiration and elevating the efficiency of his production process. It is this forward-thinking approach that has earned him widespread recognition across the industry as a pioneering AI musician.</p>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2.5rem 0;">
+        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
+          <img src="/images/jesse-liu/Jesse Liu 1.jpg" alt="Jesse Liu 1" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+        </div>
+        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
+          <img src="/images/jesse-liu/Jesse Liu 2.jpg" alt="Jesse Liu 2" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+        </div>
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 0 0 2.5rem 0;">
+        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
+          <img src="/images/jesse-liu/Jesse Liu 3.jpg" alt="Jesse Liu 3" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+        </div>
+        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
+          <img src="/images/jesse-liu/Jesse Liu 4.jpg" alt="Jesse Liu 4" style="width: 100%; height: 100%; object-fit: contain; display: block;" />
+        </div>
+      </div>
+      
+      <div style="margin-top: 2.5rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 600; color: #e85d04; margin-bottom: 1.5rem;">Works</h3>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+          <div style="background: #fff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <span style="display: inline-block; background: #e85d04; color: white; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 0.75rem;">Musical</span>
+            <h4 style="font-size: 1.125rem; font-weight: 700; color: #333; margin-bottom: 0.5rem;">Shangri-La</h4>
+            <p style="color: #666; font-size: 0.875rem;">An immersive musical experience blending symphonic grandeur with electronic fashion.</p>
+          </div>
+          <div style="background: #fff; border-radius: 0.75rem; padding: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+            <span style="display: inline-block; background: #333; color: white; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 9999px; margin-bottom: 0.75rem;">Book</span>
+            <h4 style="font-size: 1.125rem; font-weight: 700; color: #333; margin-bottom: 0.5rem;">RESHAPE: Music Industry Needs</h4>
+            <p style="color: #666; font-size: 0.875rem;">A visionary perspective on the future of the music industry.</p>
+          </div>
+        </div>
+      </div>
+    ` },
   "shangri-la": { id: "shangri-la", title: "Shangri-La", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=1200", description: "", content: "<p>Shangri-La experience.</p>" },
   works: { id: "works", title: "Cooperation", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=1200", description: "", content: "<p>Our portfolio.</p>" },
   schedule: { id: "schedule", title: "Performance Schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=1200", description: "", content: "<p>Performance schedule.</p>", hidden: true },
@@ -117,13 +161,14 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
       </div>
 
       <article className="mx-auto max-w-4xl px-4 py-10">
-        <div className="mb-8 aspect-[16/9] w-full overflow-hidden rounded-xl bg-gray-100">
+        <div className="mb-8 w-full overflow-hidden rounded-xl bg-gray-100" style={{ aspectRatio: "16/9" }}>
           <Image
             src={item.image}
             alt={item.title}
             width={1200}
             height={675}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
+            style={{ backgroundColor: "#f5f5f5" }}
           />
         </div>
 
