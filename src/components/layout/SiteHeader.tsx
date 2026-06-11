@@ -15,6 +15,19 @@ export function SiteHeader() {
   const [showCooperationModal, setShowCooperationModal] = useState(false);
   const [showBusinessModal, setShowBusinessModal] = useState(false);
 
+  useEffect(() => {
+    const handleOpenCooperation = () => setShowCooperationModal(true);
+    const handleOpenBusiness = () => setShowBusinessModal(true);
+    
+    window.addEventListener('openCooperationModal', handleOpenCooperation);
+    window.addEventListener('openBusinessCooperationModal', handleOpenBusiness);
+    
+    return () => {
+      window.removeEventListener('openCooperationModal', handleOpenCooperation);
+      window.removeEventListener('openBusinessCooperationModal', handleOpenBusiness);
+    };
+  }, []);
+
   return (
     <>
       <header className="sticky top-0 z-50">

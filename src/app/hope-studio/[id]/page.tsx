@@ -176,7 +176,7 @@ const DEFAULT_ITEMS: Record<string, ContentItem> = {
       <div style="background: #fff; border-radius: 0.75rem; padding: 2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin: 2rem 0;">
         <h3 style="font-size: 1.25rem; font-weight: 600; color: #e85d04; margin-bottom: 1rem;">For Individual Artists</h3>
         <p style="line-height: 1.8; color: #555;">Whether you represent an agency, performance group, theater, or other organization—or are an individual artist—we would love to explore a partnership with you.</p>
-        <p style="line-height: 1.8; margin-top: 1rem; color: #555;">To apply, please navigate to the "COOPERATION" section on our homepage and select "WELCOME TO OUR MUSICAL PERFORMANCE TEAM."</p>
+        <p style="line-height: 1.8; margin-top: 1rem; color: #555;">To apply, please navigate to the "COOPERATION" section on our homepage and select <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('openCooperationModal')); }} style="color: #e85d04; font-weight: 600; text-decoration: underline; cursor: pointer;">"WELCOME TO OUR MUSICAL PERFORMANCE TEAM."</a></p>
       </div>
       
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 0 0 2.5rem 0;">
@@ -190,7 +190,7 @@ const DEFAULT_ITEMS: Record<string, ContentItem> = {
       
       <div style="background: linear-gradient(135deg, #e85d04 0%, #ff7b00 100%); border-radius: 0.75rem; padding: 2rem; margin: 2rem 0; color: white;">
         <h3 style="font-size: 1.25rem; font-weight: 600; margin-bottom: 1rem;">Looking for Partners</h3>
-        <p style="line-height: 1.8;">To connect with us, please visit the "COOPERATION" section on our homepage and select "WE LOOK FORWARD TO COOPERATING WITH YOU ON ALL TYPES OF MUSIC BUSINESS PROJECTS."</p>
+        <p style="line-height: 1.8;">To connect with us, please visit the "COOPERATION" section on our homepage and select <a href="#" onClick={(e) => { e.preventDefault(); window.dispatchEvent(new CustomEvent('openBusinessCooperationModal')); }} style="color: white; font-weight: 600; text-decoration: underline; cursor: pointer;">"WE LOOK FORWARD TO COOPERATING WITH YOU ON ALL TYPES OF MUSIC BUSINESS PROJECTS."</a></p>
       </div>
     ` },
   schedule: { id: "schedule", title: "Performance Schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=1200", description: "", content: "<p>Performance schedule.</p>", hidden: true },
