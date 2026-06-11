@@ -18,7 +18,7 @@ const DEFAULT_ITEMS: ContentItem[] = [
   { id: "studio", title: "Hope Studio", image: "/images/hope-studio/Hope Studio 1.png", description: "Professional recording, mixing, and mastering services in our state-of-the-art facility.", content: "" },
   { id: "jesse-liu", title: "Jesse Liu", image: "/images/jesse-liu/Jesse Liu 1.jpg", description: "Vocalist, Composer, Music Producer & AI Musician.", content: "" },
   { id: "shangri-la", title: "Shangri-La", image: "/images/shangri-la/Shangri-La 1.jpg", description: "An immersive musical experience that transports you to another world.", content: "" },
-  { id: "works", title: "Cooperation", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800", description: "Explore our portfolio of completed projects and collaborations.", content: "", hidden: false },
+  { id: "works", title: "Cooperation", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800", description: "Explore our portfolio of completed projects and collaborations.", content: "", hidden: false },
   { id: "schedule", title: "Performance Schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800", description: "Stay updated with our upcoming performances and events.", content: "", hidden: true },
 ];
 
