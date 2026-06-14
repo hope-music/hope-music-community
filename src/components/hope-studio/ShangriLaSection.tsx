@@ -64,18 +64,22 @@ function DaisyLiCard({ member }: { member: TeamMember }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="md:flex">
-        {/* Image on the left */}
-        {member.image && (
-          <div className="md:w-1/3 h-64 md:h-auto">
+        {/* Image on the left - full height */}
+        <div className="md:w-1/3 h-80 md:min-h-[400px] bg-gray-100">
+          {member.image ? (
             <Image
               src={member.image}
               alt={member.name}
-              width={400}
-              height={500}
+              width={600}
+              height={800}
               className="w-full h-full object-cover"
             />
-          </div>
-        )}
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-gray-400">
+              No Photo
+            </div>
+          )}
+        </div>
         {/* Content on the right */}
         <div className="md:w-2/3 p-6">
           <p className="text-gray-600 text-sm mb-1">{member.role}</p>
@@ -109,16 +113,9 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
 
   return (
     <div className="space-y-10">
-      {/* Introduction Section with image between paragraphs */}
-      <div>
-        <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 md:p-8 rounded-xl border-l-4 border-hmc-orange mb-6">
-          <p className="text-gray-800 leading-relaxed text-lg">
-            {data.introText1}
-          </p>
-        </div>
-
-        {/* Image 1 between paragraphs */}
-        <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100 mb-6">
+      {/* Images 1 & 2 at the top - 2 column grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
           <Image
             src={data.image1}
             alt="Shangri-La 1"
@@ -127,23 +124,25 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
             className="w-full h-full object-contain"
           />
         </div>
-
-        <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 md:p-8 rounded-xl border-l-4 border-hmc-orange">
-          <p className="text-gray-800 leading-relaxed text-lg">
-            {data.introText2}
-          </p>
+        <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
+          <Image
+            src={data.image2}
+            alt="Shangri-La 2"
+            width={800}
+            height={500}
+            className="w-full h-full object-contain"
+          />
         </div>
       </div>
 
-      {/* Image 2 after intro */}
-      <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
-        <Image
-          src={data.image2}
-          alt="Shangri-La 2"
-          width={800}
-          height={500}
-          className="w-full h-full object-contain"
-        />
+      {/* Introduction Section */}
+      <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 md:p-8 rounded-xl border-l-4 border-hmc-orange">
+        <p className="text-gray-800 leading-relaxed text-lg mb-4">
+          {data.introText1}
+        </p>
+        <p className="text-gray-800 leading-relaxed text-lg">
+          {data.introText2}
+        </p>
       </div>
 
       {/* Core Creative Team Section */}
