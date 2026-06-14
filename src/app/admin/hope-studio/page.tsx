@@ -129,8 +129,11 @@ const JESSE_LIU_STORAGE_KEY = "jesse_liu_content";
 
 // Shangri-La Data
 interface TeamMember {
+  id: string;
   role: string;
   name: string;
+  description?: string;
+  image?: string;
 }
 
 interface ShangriLaData {
@@ -138,8 +141,6 @@ interface ShangriLaData {
   introText2: string;
   coreTeamTitle: string;
   teamMembers: TeamMember[];
-  daisyLiTitle: string;
-  daisyLiContent: string;
   image1: string;
   image2: string;
   image3: string;
@@ -151,11 +152,20 @@ const DEFAULT_SHANGRI_LA_DATA: ShangriLaData = {
   introText2: "In the musical, audiences are treated not only to beautiful music and stunning visuals, but also to a profound exploration of love. It is a touching story that showcases love's remarkable power to transcend time and space.",
   coreTeamTitle: "Core creative team:",
   teamMembers: [
-    { role: "Music and Lyrics by", name: "Jesse Liu" },
-    { role: "Book and Lyrics by", name: "Daisy Li" },
+    {
+      id: "jesse-liu",
+      role: "Music and Lyrics by",
+      name: "Jesse Liu",
+      description: "Jesse Liu is a crossover musician reshaping the industry through his masterful fusion of symphonic grandeur and electronic fashion. As one of the most revered music artists of our time, he brings a unique vision to Shangri-La's electronic soundscape.",
+    },
+    {
+      id: "daisy-li",
+      role: "Book and Lyrics by",
+      name: "Daisy Li",
+      description: "Daisy Li is a masterful storyteller. She conceived the story within a fictional musical kingdom called Shangri-La, transporting its setting to the future to give full expression to the grandeur of its electronic soundscape. The result is an epic space journey to rescue the music kingdom — a narrative canvas that lets the electronic score truly soar.\n\nAt the heart of the story lies Daisy Li's inspired invention: the \"Music Seeds.\" Their transformation drives the entire arc of the plot, while simultaneously illuminating music as the living soul of the Kingdom of Shangri-La.",
+      image: "/images/shangri-la/Li.jpg",
+    },
   ],
-  daisyLiTitle: "About Daisy Li",
-  daisyLiContent: "Daisy Li is a masterful storyteller. She conceived the story within a fictional musical kingdom called Shangri-La, transporting its setting to the future to give full expression to the grandeur of its electronic soundscape. The result is an epic space journey to rescue the music kingdom — a narrative canvas that lets the electronic score truly soar.\n\nAt the heart of the story lies Daisy Li's inspired invention: the \"Music Seeds.\" Their transformation drives the entire arc of the plot, while simultaneously illuminating music as the living soul of the Kingdom of Shangri-La.",
   image1: "/images/shangri-la/Shangri-La 1.jpg",
   image2: "/images/shangri-la/Shangri-La 2.jpg",
   image3: "/images/shangri-la/Shangri-La 3.jpg",
@@ -556,9 +566,10 @@ export default function AdminHopeStudioPage() {
   };
 
   const handleShangriLaMemberAdd = () => {
+    const newId = `member-${Date.now()}`;
     setShangriLaForm({
       ...shangriLaForm,
-      teamMembers: [...shangriLaForm.teamMembers, { role: "", name: "" }],
+      teamMembers: [...shangriLaForm.teamMembers, { id: newId, role: "", name: "", description: "", image: "" }],
     });
   };
 
@@ -573,6 +584,18 @@ export default function AdminHopeStudioPage() {
     const newMembers = [...shangriLaForm.teamMembers];
     newMembers[index] = { ...newMembers[index], [field]: value };
     setShangriLaForm({ ...shangriLaForm, teamMembers: newMembers });
+  };
+
+  const handleShangriLaMemberImageSelect = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        handleShangriLaMemberChange(index, "image", event.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
   };
 
   const handleShangriLaSave = () => {
@@ -1060,6 +1083,39 @@ export default function AdminHopeStudioPage() {
                 </div>
               </div>
 
+              {/* Images Section - Move to top */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Images (shown before Core Creative Team)</h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {[
+                    { key: "image1" as const, label: "Image 1" },
+                    { key: "image2" as const, label: "Image 2" },
+                    { key: "image3" as const, label: "Image 3" },
+                    { key: "image4" as const, label: "Image 4" },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <label className="mb-1 block text-xs font-medium text-gray-700">{label}</label>
+                      <input
+                        type="text"
+                        value={shangriLaForm[key]}
+                        onChange={(e) => setShangriLaForm({ ...shangriLaForm, [key]: e.target.value })}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        placeholder="Image URL"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleShangriLaImageSelect(key, e)}
+                        className="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {shangriLaForm[key] && (
+                        <img src={shangriLaForm[key]} alt={label} className="h-20 w-full rounded-md object-contain bg-gray-100" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Core Creative Team Section */}
               <div className="space-y-4">
                 <div className="flex justify-between items-center border-b pb-2">
@@ -1082,9 +1138,11 @@ export default function AdminHopeStudioPage() {
                   />
                 </div>
                 {shangriLaForm.teamMembers.map((member, index) => (
-                  <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                  <div key={member.id || index} className="border border-gray-200 rounded-lg p-4 space-y-3">
                     <div className="flex justify-between items-center">
-                      <span className="text-sm font-medium text-gray-700">Member {index + 1}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        {member.name || `Member ${index + 1}`}
+                      </span>
                       <button
                         type="button"
                         onClick={() => handleShangriLaMemberRemove(index)}
@@ -1114,88 +1172,37 @@ export default function AdminHopeStudioPage() {
                         />
                       </div>
                     </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-gray-600">Description</label>
+                      <textarea
+                        value={member.description || ""}
+                        onChange={(e) => handleShangriLaMemberChange(index, "description", e.target.value)}
+                        rows={4}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        placeholder="Member description..."
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-gray-600">Photo URL (optional)</label>
+                      <input
+                        type="text"
+                        value={member.image || ""}
+                        onChange={(e) => handleShangriLaMemberChange(index, "image", e.target.value)}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        placeholder="/images/shangri-la/Li.jpg"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleShangriLaMemberImageSelect(index, e)}
+                        className="mt-1 block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {member.image && (
+                        <img src={member.image} alt={member.name} className="mt-2 h-20 w-20 rounded-full object-cover" />
+                      )}
+                    </div>
                   </div>
                 ))}
-              </div>
-
-              {/* About Daisy Li Section */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">About Daisy Li</h3>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Section Title</label>
-                  <input
-                    type="text"
-                    value={shangriLaForm.daisyLiTitle}
-                    onChange={(e) => setShangriLaForm({ ...shangriLaForm, daisyLiTitle: e.target.value })}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm font-medium text-gray-700">Content (use blank line for paragraph break)</label>
-                  <textarea
-                    value={shangriLaForm.daisyLiContent}
-                    onChange={(e) => setShangriLaForm({ ...shangriLaForm, daisyLiContent: e.target.value })}
-                    rows={6}
-                    className="w-full rounded-md border border-gray-300 px-3 py-2"
-                  />
-                </div>
-              </div>
-
-              {/* Images Section */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Images</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[
-                    { key: "image1" as const, label: "Image 1" },
-                    { key: "image2" as const, label: "Image 2" },
-                  ].map(({ key, label }) => (
-                    <div key={key} className="space-y-2">
-                      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
-                      <input
-                        type="text"
-                        value={shangriLaForm[key]}
-                        onChange={(e) => setShangriLaForm({ ...shangriLaForm, [key]: e.target.value })}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                        placeholder="Image URL"
-                      />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleShangriLaImageSelect(key, e)}
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      />
-                      {shangriLaForm[key] && (
-                        <img src={shangriLaForm[key]} alt={label} className="h-32 w-full rounded-md object-contain bg-gray-100" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {[
-                    { key: "image3" as const, label: "Image 3" },
-                    { key: "image4" as const, label: "Image 4" },
-                  ].map(({ key, label }) => (
-                    <div key={key} className="space-y-2">
-                      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
-                      <input
-                        type="text"
-                        value={shangriLaForm[key]}
-                        onChange={(e) => setShangriLaForm({ ...shangriLaForm, [key]: e.target.value })}
-                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-                        placeholder="Image URL"
-                      />
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => handleShangriLaImageSelect(key, e)}
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                      />
-                      {shangriLaForm[key] && (
-                        <img src={shangriLaForm[key]} alt={label} className="h-32 w-full rounded-md object-contain bg-gray-100" />
-                      )}
-                    </div>
-                  ))}
-                </div>
               </div>
 
               <div className="flex justify-end gap-3 border-t pt-4">
