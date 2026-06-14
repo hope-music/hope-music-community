@@ -127,6 +127,43 @@ const DEFAULT_JESSE_LIU_DATA: JesseLiuData = {
 
 const JESSE_LIU_STORAGE_KEY = "jesse_liu_content";
 
+// Shangri-La Data
+interface TeamMember {
+  role: string;
+  name: string;
+}
+
+interface ShangriLaData {
+  introText1: string;
+  introText2: string;
+  coreTeamTitle: string;
+  teamMembers: TeamMember[];
+  daisyLiTitle: string;
+  daisyLiContent: string;
+  image1: string;
+  image2: string;
+  image3: string;
+  image4: string;
+}
+
+const DEFAULT_SHANGRI_LA_DATA: ShangriLaData = {
+  introText1: "The musical Shangri-La is a proof of concept that people from various walks of life can come together to build meaningful friendships. The vision behind Cultural Fusion events has always centred on uniting people through the shared joy of song and dance.",
+  introText2: "In the musical, audiences are treated not only to beautiful music and stunning visuals, but also to a profound exploration of love. It is a touching story that showcases love's remarkable power to transcend time and space.",
+  coreTeamTitle: "Core creative team:",
+  teamMembers: [
+    { role: "Music and Lyrics by", name: "Jesse Liu" },
+    { role: "Book and Lyrics by", name: "Daisy Li" },
+  ],
+  daisyLiTitle: "About Daisy Li",
+  daisyLiContent: "Daisy Li is a masterful storyteller. She conceived the story within a fictional musical kingdom called Shangri-La, transporting its setting to the future to give full expression to the grandeur of its electronic soundscape. The result is an epic space journey to rescue the music kingdom — a narrative canvas that lets the electronic score truly soar.\n\nAt the heart of the story lies Daisy Li's inspired invention: the \"Music Seeds.\" Their transformation drives the entire arc of the plot, while simultaneously illuminating music as the living soul of the Kingdom of Shangri-La.",
+  image1: "/images/shangri-la/Shangri-La 1.jpg",
+  image2: "/images/shangri-la/Shangri-La 2.jpg",
+  image3: "/images/shangri-la/Shangri-La 3.jpg",
+  image4: "/images/shangri-la/Shangri-La 4.jpg",
+};
+
+const SHANGRI_LA_STORAGE_KEY = "shangri_la_content";
+
 const CATEGORIES = [
   { value: "welcome", label: "Welcome to Hope Music Community" },
   { value: "studio", label: "Hope Studio" },
@@ -169,6 +206,10 @@ export default function AdminHopeStudioPage() {
   const [jesseLiuData, setJesseLiuData] = useState<JesseLiuData>(DEFAULT_JESSE_LIU_DATA);
   const [jesseLiuForm, setJesseLiuForm] = useState<JesseLiuData>(DEFAULT_JESSE_LIU_DATA);
 
+  // Shangri-La data state
+  const [shangriLaData, setShangriLaData] = useState<ShangriLaData>(DEFAULT_SHANGRI_LA_DATA);
+  const [shangriLaForm, setShangriLaForm] = useState<ShangriLaData>(DEFAULT_SHANGRI_LA_DATA);
+
   // Comment management state
   const [comments, setComments] = useState<Comment[]>([]);
   const [bannedUsers, setBannedUsers] = useState<BanEntry[]>([]);
@@ -207,6 +248,17 @@ export default function AdminHopeStudioPage() {
       try {
         const parsed = JSON.parse(jesseLiuStored);
         setJesseLiuData({ ...DEFAULT_JESSE_LIU_DATA, ...parsed });
+      } catch (e) {
+        // Silent fail
+      }
+    }
+
+    // Load Shangri-La data
+    const shangriLaStored = localStorage.getItem(SHANGRI_LA_STORAGE_KEY);
+    if (shangriLaStored) {
+      try {
+        const parsed = JSON.parse(shangriLaStored);
+        setShangriLaData({ ...DEFAULT_SHANGRI_LA_DATA, ...parsed });
       } catch (e) {
         // Silent fail
       }
@@ -392,6 +444,20 @@ export default function AdminHopeStudioPage() {
         setJesseLiuForm(DEFAULT_JESSE_LIU_DATA);
       }
     }
+
+    // Load Shangri-La data if editing shangri-la section
+    if (item.id === "shangri-la") {
+      const shangriLaStored = localStorage.getItem(SHANGRI_LA_STORAGE_KEY);
+      if (shangriLaStored) {
+        try {
+          setShangriLaForm({ ...DEFAULT_SHANGRI_LA_DATA, ...JSON.parse(shangriLaStored) });
+        } catch (e) {
+          setShangriLaForm(DEFAULT_SHANGRI_LA_DATA);
+        }
+      } else {
+        setShangriLaForm(DEFAULT_SHANGRI_LA_DATA);
+      }
+    }
   };
 
   const handleSave = () => {
@@ -477,6 +543,44 @@ export default function AdminHopeStudioPage() {
     setMessage({ type: "success", text: "Jesse Liu content updated successfully!" });
   };
 
+  const handleShangriLaImageSelect = (key: keyof ShangriLaData, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setShangriLaForm({ ...shangriLaForm, [key]: event.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
+  };
+
+  const handleShangriLaMemberAdd = () => {
+    setShangriLaForm({
+      ...shangriLaForm,
+      teamMembers: [...shangriLaForm.teamMembers, { role: "", name: "" }],
+    });
+  };
+
+  const handleShangriLaMemberRemove = (index: number) => {
+    setShangriLaForm({
+      ...shangriLaForm,
+      teamMembers: shangriLaForm.teamMembers.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleShangriLaMemberChange = (index: number, field: keyof TeamMember, value: string) => {
+    const newMembers = [...shangriLaForm.teamMembers];
+    newMembers[index] = { ...newMembers[index], [field]: value };
+    setShangriLaForm({ ...shangriLaForm, teamMembers: newMembers });
+  };
+
+  const handleShangriLaSave = () => {
+    localStorage.setItem(SHANGRI_LA_STORAGE_KEY, JSON.stringify(shangriLaForm));
+    setShangriLaData(shangriLaForm);
+    setMessage({ type: "success", text: "Shangri-La content updated successfully!" });
+  };
+
   const handleCancel = () => {
     setEditingId(null);
     setEditForm(DEFAULT_ITEMS[0]);
@@ -484,6 +588,7 @@ export default function AdminHopeStudioPage() {
     setWelcomeForm(DEFAULT_WELCOME_DATA);
     setStudioForm(DEFAULT_STUDIO_DATA);
     setJesseLiuForm(DEFAULT_JESSE_LIU_DATA);
+    setShangriLaForm(DEFAULT_SHANGRI_LA_DATA);
   };
 
   return (
@@ -928,6 +1033,174 @@ export default function AdminHopeStudioPage() {
               <div className="flex justify-end gap-3 border-t pt-4">
                 <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
                 <button onClick={handleJesseLiuSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
+              </div>
+            </div>
+          ) : editingId === "shangri-la" ? (
+            <div className="space-y-6">
+              {/* Introduction Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Introduction</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Introduction Text 1</label>
+                  <textarea
+                    value={shangriLaForm.introText1}
+                    onChange={(e) => setShangriLaForm({ ...shangriLaForm, introText1: e.target.value })}
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Introduction Text 2</label>
+                  <textarea
+                    value={shangriLaForm.introText2}
+                    onChange={(e) => setShangriLaForm({ ...shangriLaForm, introText2: e.target.value })}
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Core Creative Team Section */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center border-b pb-2">
+                  <h3 className="text-sm font-semibold text-gray-700">Core Creative Team</h3>
+                  <button
+                    type="button"
+                    onClick={handleShangriLaMemberAdd}
+                    className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
+                  >
+                    + Add Member
+                  </button>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Section Title</label>
+                  <input
+                    type="text"
+                    value={shangriLaForm.coreTeamTitle}
+                    onChange={(e) => setShangriLaForm({ ...shangriLaForm, coreTeamTitle: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+                {shangriLaForm.teamMembers.map((member, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">Member {index + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleShangriLaMemberRemove(index)}
+                        className="text-red-600 hover:text-red-700 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-xs text-gray-600">Role</label>
+                        <input
+                          type="text"
+                          value={member.role}
+                          onChange={(e) => handleShangriLaMemberChange(index, "role", e.target.value)}
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                          placeholder="e.g. Music and Lyrics by"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-gray-600">Name</label>
+                        <input
+                          type="text"
+                          value={member.name}
+                          onChange={(e) => handleShangriLaMemberChange(index, "name", e.target.value)}
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* About Daisy Li Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">About Daisy Li</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Section Title</label>
+                  <input
+                    type="text"
+                    value={shangriLaForm.daisyLiTitle}
+                    onChange={(e) => setShangriLaForm({ ...shangriLaForm, daisyLiTitle: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Content (use blank line for paragraph break)</label>
+                  <textarea
+                    value={shangriLaForm.daisyLiContent}
+                    onChange={(e) => setShangriLaForm({ ...shangriLaForm, daisyLiContent: e.target.value })}
+                    rows={6}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Images Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Images</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    { key: "image1" as const, label: "Image 1" },
+                    { key: "image2" as const, label: "Image 2" },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+                      <input
+                        type="text"
+                        value={shangriLaForm[key]}
+                        onChange={(e) => setShangriLaForm({ ...shangriLaForm, [key]: e.target.value })}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        placeholder="Image URL"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleShangriLaImageSelect(key, e)}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {shangriLaForm[key] && (
+                        <img src={shangriLaForm[key]} alt={label} className="h-32 w-full rounded-md object-contain bg-gray-100" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    { key: "image3" as const, label: "Image 3" },
+                    { key: "image4" as const, label: "Image 4" },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+                      <input
+                        type="text"
+                        value={shangriLaForm[key]}
+                        onChange={(e) => setShangriLaForm({ ...shangriLaForm, [key]: e.target.value })}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        placeholder="Image URL"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleShangriLaImageSelect(key, e)}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {shangriLaForm[key] && (
+                        <img src={shangriLaForm[key]} alt={label} className="h-32 w-full rounded-md object-contain bg-gray-100" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t pt-4">
+                <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
+                <button onClick={handleShangriLaSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
               </div>
             </div>
           ) : (

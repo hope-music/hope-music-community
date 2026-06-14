@@ -9,6 +9,7 @@ import { CommentSection } from "@/components/comments/CommentSection";
 import { WelcomeSection } from "@/components/hope-studio/WelcomeSection";
 import { StudioSection } from "@/components/hope-studio/StudioSection";
 import { JesseLiuSection } from "@/components/hope-studio/JesseLiuSection";
+import { ShangriLaSection } from "@/components/hope-studio/ShangriLaSection";
 
 interface ContentItem {
   id: string;
@@ -246,6 +247,8 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
           <StudioSection />
         ) : id === "jesse-liu" ? (
           <JesseLiuSection />
+        ) : id === "shangri-la" ? (
+          <ShangriLaSection />
         ) : (
           <>
             <div
