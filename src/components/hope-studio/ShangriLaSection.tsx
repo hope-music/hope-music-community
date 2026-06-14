@@ -49,72 +49,12 @@ export const DEFAULT_SHANGRI_LA_DATA: ShangriLaData = {
 
 const SHANGRI_LA_STORAGE_KEY = "shangri_la_content";
 
-function JesseLiuCard({ member }: { member: TeamMember }) {
-  return (
-    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-      <p className="text-gray-600 text-sm mb-1">{member.role}</p>
-      <Link href="/hope-studio/jesse-liu" className="text-xl font-bold text-hmc-orange hover:underline">
-        {member.name}
-      </Link>
-    </div>
-  );
-}
-
-function DaisyLiCard({ member }: { member: TeamMember }) {
-  const hasImage = !!member.image;
-
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="md:flex">
-        {/* Image on the left - full height */}
-        <div className="md:w-1/3 h-80 md:min-h-[400px] bg-gray-100">
-          {hasImage ? (
-            <Image
-              src={member.image}
-              alt={member.name}
-              width={600}
-              height={800}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-              No Photo
-            </div>
-          )}
-        </div>
-        {/* Content on the right */}
-        <div className="md:w-2/3 p-6">
-          <p className="text-gray-600 text-sm mb-1">{member.role}</p>
-          <h4 className="text-xl font-bold text-gray-900 mb-4">{member.name}</h4>
-          <div className="prose prose-gray max-w-none">
-            {member.description?.split('\n\n').map((paragraph, index) => (
-              <p key={index} className="text-gray-700 leading-relaxed mb-4 last:mb-0">
-                {paragraph}
-              </p>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function TeamMemberCard({ member }: { member: TeamMember }) {
-  return (
-    <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100 text-center">
-      <p className="text-gray-600 text-sm mb-1">{member.role}</p>
-      <h4 className="text-lg font-bold text-gray-900">{member.name}</h4>
-    </div>
-  );
-}
-
 function ShangriLaContent({ data }: { data: ShangriLaData }) {
   const jesseLiu = data.teamMembers.find(m => m.id === "jesse-liu");
   const daisyLi = data.teamMembers.find(m => m.id === "daisy-li");
-  const otherMembers = data.teamMembers.filter(m => m.id !== "jesse-liu" && m.id !== "daisy-li");
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-12">
       {/* Section 1: First paragraph + Images 1 & 2 */}
       <div>
         <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 md:p-8 rounded-xl border-l-4 border-hmc-orange mb-6">
@@ -179,20 +119,60 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
           {data.coreTeamTitle}
         </h3>
 
-        {/* Jesse Liu - Link Card */}
-        {jesseLiu && <JesseLiuCard member={jesseLiu} />}
+        <div className="space-y-8">
+          {/* Jesse Liu - Full width card */}
+          {jesseLiu && (
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+              <div className="bg-hmc-orange p-4">
+                <p className="text-white/80 text-sm">{jesseLiu.role}</p>
+                <Link href="/hope-studio/jesse-liu" className="text-xl font-bold text-white hover:underline">
+                  {jesseLiu.name}
+                </Link>
+              </div>
+              <div className="p-6">
+                <p className="text-gray-500 italic">Learn more about Jesse Liu's musical journey</p>
+              </div>
+            </div>
+          )}
 
-        {/* Daisy Li - Image Left, Text Right */}
-        {daisyLi && <DaisyLiCard member={daisyLi} />}
-
-        {/* Other Team Members */}
-        {otherMembers.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
-            {otherMembers.map((member) => (
-              <TeamMemberCard key={member.id} member={member} />
-            ))}
-          </div>
-        )}
+          {/* Daisy Li - Image + Text side by side */}
+          {daisyLi && (
+            <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
+              <div className="bg-hmc-orange p-4">
+                <p className="text-white/80 text-sm">{daisyLi.role}</p>
+                <h4 className="text-xl font-bold text-white">{daisyLi.name}</h4>
+              </div>
+              <div className="md:flex">
+                {/* Image on the left */}
+                <div className="md:w-1/3 h-64 md:h-auto bg-gray-100">
+                  {daisyLi.image ? (
+                    <Image
+                      src={daisyLi.image}
+                      alt={daisyLi.name}
+                      width={600}
+                      height={400}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-gray-400 min-h-[200px]">
+                      No Photo
+                    </div>
+                  )}
+                </div>
+                {/* Content on the right */}
+                <div className="md:w-2/3 p-6">
+                  <div className="prose prose-gray max-w-none">
+                    {daisyLi.description?.split('\n\n').map((paragraph, index) => (
+                      <p key={index} className="text-gray-700 leading-relaxed mb-4 last:mb-0">
+                        {paragraph}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
