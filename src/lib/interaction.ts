@@ -26,11 +26,14 @@ export function getInteractionCategoriesWithIcons() {
     value,
     label,
     icon:
-      value === "software" ? "💻" :
-      value === "hardware" ? "🎛️" :
-      value === "music" ? "🎵" :
-      value === "production" ? "🎬" :
-      value === "article" ? "📝" : "💬",
+      value === "live-performance" ? "🎤" :
+      value === "dj-edm" ? "🎧" :
+      value === "ambient-music" ? "🌊" :
+      value === "pop-rock" ? "🎸" :
+      value === "classical" ? "🎻" :
+      value === "film-music" ? "🎬" :
+      value === "fusion-music" ? "🎹" :
+      value === "music-production" ? "🎛️" : "💬",
   }));
 }
 

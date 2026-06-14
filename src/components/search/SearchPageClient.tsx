@@ -91,10 +91,10 @@ const SECTION_RESULTS: SearchResult[] = [
     id: "section-interaction",
     title: "Interaction",
     href: "/interaction",
-    description: "Join discussions about software, hardware, music, and stage production topics.",
+    description: "Join discussions about live performance, DJ & EDM, ambient music, pop & rock, classical, film music, and more.",
     section: "Section",
     meta: "Interaction",
-    searchText: "interaction software hardware music production discussions forum",
+    searchText: "interaction live performance DJ EDM ambient pop rock classical film music fusion production discussions forum",
   },
   {
     id: "section-hope-studio",

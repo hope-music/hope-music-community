@@ -62,11 +62,14 @@ export const PERFORMANCE_CATEGORY_SLUG_MAP: Record<string, string> = Object.from
 );
 
 export const INTERACTION_CATEGORY_OPTIONS = [
-  { value: "software", label: "Software" },
-  { value: "hardware", label: "Hardware" },
-  { value: "music", label: "Music" },
-  { value: "production", label: "Insights" },
-  { value: "article", label: "Article" },
+  { value: "live-performance", label: "Live Performance" },
+  { value: "dj-edm", label: "DJ & EDM" },
+  { value: "ambient-music", label: "Ambient Music" },
+  { value: "pop-rock", label: "Pop & Rock" },
+  { value: "classical", label: "Classical" },
+  { value: "film-music", label: "Film Music" },
+  { value: "fusion-music", label: "Fusion Music" },
+  { value: "music-production", label: "Music Production" },
   { value: "others", label: "Others" },
 ] as const;
 
@@ -75,20 +78,26 @@ export const INTERACTION_CATEGORY_LABELS: Record<string, string> = Object.fromEn
 );
 
 export const LEGACY_INTERACTION_CATEGORY_MAP: Record<string, string> = {
-  resources: "article",
-  artical: "article",
+  software: "music-production",
+  hardware: "music-production",
+  music: "music-production",
+  production: "music-production",
+  article: "music-production",
+  resources: "music-production",
+  artical: "music-production",
   other: "others",
-  "stage-production": "production",
-  stageProduction: "production",
-  "stage_production": "production",
+  others: "others",
 };
 
 export const INTERACTION_CATEGORIES = [
-  "Software",
-  "Hardware",
-  "Music",
-  "Insights",
-  "Article",
+  "Live Performance",
+  "DJ & EDM",
+  "Ambient Music",
+  "Pop & Rock",
+  "Classical",
+  "Film Music",
+  "Fusion Music",
+  "Music Production",
   "Others",
 ] as const;
 

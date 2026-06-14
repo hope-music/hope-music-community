@@ -120,11 +120,14 @@ const STAGE_PRODUCTION_ITEMS = [
 ];
 
 const INTERACTION_ITEMS = [
-  { label: "Software", slug: "software" },
-  { label: "Hardware", slug: "hardware" },
-  { label: "Music", slug: "music" },
-  { label: "Insights", slug: "stage-production" },
-  { label: "Article", slug: "article" },
+  { label: "Live Performance", slug: "live-performance" },
+  { label: "DJ & EDM", slug: "dj-edm" },
+  { label: "Ambient Music", slug: "ambient-music" },
+  { label: "Pop & Rock", slug: "pop-rock" },
+  { label: "Classical", slug: "classical" },
+  { label: "Film Music", slug: "film-music" },
+  { label: "Fusion Music", slug: "fusion-music" },
+  { label: "Music Production", slug: "music-production" },
   { label: "Others", slug: "others" },
 ];
 
