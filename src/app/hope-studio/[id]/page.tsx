@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { CommentSection } from "@/components/comments/CommentSection";
+import { WelcomeSection } from "@/components/hope-studio/WelcomeSection";
 
 interface ContentItem {
   id: string;
@@ -18,46 +19,7 @@ interface ContentItem {
 }
 
 const DEFAULT_ITEMS: Record<string, ContentItem> = {
-  welcome: { id: "welcome", title: "Welcome to Hope Music Community", image: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=1200", description: "", content: `
-      <h2 style="font-size: 1.75rem; font-weight: 700; color: #e85d04; margin-bottom: 1.5rem;">Welcome Home</h2>
-      
-      <div style="background: linear-gradient(135deg, #fef3e2 0%, #fff8f0 100%); padding: 1.5rem; border-radius: 0.75rem; margin: 2rem 0; border-left: 4px solid #e85d04;">
-        <p style="line-height: 1.8;">Hope Music Community is home to music lovers from every corner of the world. Welcome home!</p>
-        <p style="line-height: 1.8; margin-top: 1rem;">You don't need to be a prodigy or pay for lessons. All you need is a dream — start here, where the music dreams of ordinary people come alive, simply because you love music.</p>
-      </div>
-      
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 2.5rem 0;">
-        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
-          <img src="https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=800" alt="Community" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
-        </div>
-        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
-          <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800" alt="Music" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
-        </div>
-      </div>
-      
-      <div style="text-align: center; padding: 2.5rem; background: linear-gradient(135deg, #fff8f0 0%, #fef3e2 100%); border-radius: 0.75rem; margin: 2rem 0;">
-        <h3 style="font-size: 1.5rem; font-weight: 700; color: #e85d04; margin-bottom: 1.5rem; font-style: italic;">(The Song)</h3>
-        <div style="line-height: 2.2; font-size: 1.1rem; color: #444;">
-          <p style="margin-bottom: 0.5rem;">Because you love music,</p>
-          <p style="margin-bottom: 0.5rem;">The world begins to sing.</p>
-          <p style="margin-bottom: 0.5rem;">Because you love music,</p>
-          <p style="margin-bottom: 1.5rem;">Every heart takes wing.</p>
-          <p style="margin-bottom: 0.5rem;">No need for fame, no need for gold,</p>
-          <p style="margin-bottom: 0.5rem;">Just a dream and a song to hold.</p>
-          <p style="margin-bottom: 0;">Because you love music,</p>
-          <p style="font-weight: 700; color: #e85d04; margin-top: 0.5rem;">We all belong.</p>
-        </div>
-      </div>
-      
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin: 0 0 2.5rem 0;">
-        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
-          <img src="https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800" alt="Performance" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
-        </div>
-        <div style="border-radius: 0.75rem; overflow: hidden; height: 300px; background: #f5f5f5;">
-          <img src="https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800" alt="Concert" style="width: 100%; height: 100%; object-fit: cover; display: block;" />
-        </div>
-      </div>
-    ` },
+  welcome: { id: "welcome", title: "Welcome to Hope Music Community", image: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=1200", description: "", content: "" },
   studio: { id: "studio", title: "Hope Studio", image: "/images/hope-studio/Hope Studio 1.png", description: "", content: `
       <h2 style="font-size: 1.75rem; font-weight: 700; color: #e85d04; margin-bottom: 1rem;">About Hope Studio</h2>
       <h3 style="font-size: 1.25rem; font-weight: 600; color: #333; margin-bottom: 1rem;">Music dream we create!</h3>
@@ -275,14 +237,21 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
           />
         </div>
 
-        <div
-          dangerouslySetInnerHTML={{ __html: item.content || "<p>Content coming soon...</p>" }}
-          style={{ fontFamily: "Georgia, serif", fontSize: "16px", lineHeight: "1.8", display: item.jsx ? "none" : "block" }}
-        />
-        {item.jsx && (
-          <div style={{ fontFamily: "Georgia, serif", fontSize: "16px", lineHeight: "1.8" }}>
-            {item.jsx}
-          </div>
+        {/* Welcome Section - Special component for welcome page */}
+        {id === "welcome" ? (
+          <WelcomeSection />
+        ) : (
+          <>
+            <div
+              dangerouslySetInnerHTML={{ __html: item.content || "<p>Content coming soon...</p>" }}
+              style={{ fontFamily: "Georgia, serif", fontSize: "16px", lineHeight: "1.8", display: item.jsx ? "none" : "block" }}
+            />
+            {item.jsx && (
+              <div style={{ fontFamily: "Georgia, serif", fontSize: "16px", lineHeight: "1.8" }}>
+                {item.jsx}
+              </div>
+            )}
+          </>
         )}
 
         <div className="mt-10 border-t pt-6">

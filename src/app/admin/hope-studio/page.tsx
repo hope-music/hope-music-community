@@ -27,13 +27,50 @@ interface BanEntry {
   expiresAt: number | null;
 }
 
+interface WelcomeData {
+  heroTitle: string;
+  heroSubtitle: string;
+  introText1: string;
+  introText2: string;
+  songTitle: string;
+  songLyricsText: string;
+  image1: string;
+  image2: string;
+  image3: string;
+  image4: string;
+}
+
+const DEFAULT_WELCOME_DATA: WelcomeData = {
+  heroTitle: "Welcome home!",
+  heroSubtitle: "The Hope Music Community website was designed and developed by Hope Studio, leveraging advanced AI-assisted development tools.",
+  introText1: "Hope Music Community is home to music lovers from every corner of the world.",
+  introText2: "You don't need to be a prodigy or pay for lessons. All you need is a dream — start here, where the music dreams of ordinary people come alive, simply because you love music.",
+  songTitle: "(The Song)",
+  songLyricsText: `Because you love music,
+The world begins to sing.
+Because you love music,
+Every heart takes wing.
+
+No need for fame, no need for gold,
+Just a dream and a song to hold.
+
+Because you love music,
+We all belong.`,
+  image1: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=800",
+  image2: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800",
+  image3: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800",
+  image4: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800",
+};
+
+const WELCOME_STORAGE_KEY = "welcome_content";
+
 const CATEGORIES = [
-  { value: "welcome", label: "Welcome Section" },
-  { value: "studio", label: "Hope Studio Section" },
-  { value: "jesse-liu", label: "Jesse Liu Section" },
-  { value: "shangri-la", label: "Shangri-La Section" },
-  { value: "works", label: "Works Section" },
-  { value: "schedule", label: "Schedule Section" },
+  { value: "welcome", label: "Welcome to Hope Music Community" },
+  { value: "studio", label: "Hope Studio" },
+  { value: "jesse-liu", label: "Jesse Liu" },
+  { value: "shangri-la", label: "Shangri-La" },
+  { value: "works", label: "Cooperation" },
+  { value: "schedule", label: "Performance Schedule" },
 ];
 
 const DEFAULT_ITEMS: ContentItem[] = [
@@ -45,46 +82,6 @@ const DEFAULT_ITEMS: ContentItem[] = [
   { id: "schedule", title: "Performance Schedule", category: "schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800", description: "Upcoming performances and events.", content: "<p>Performance schedule.</p>", hidden: true },
 ];
 
-// Default comments
-const DEFAULT_COMMENTS: Comment[] = [
-  {
-    id: "placeholder_1",
-    authorName: "Sarah Johnson",
-    authorEmail: "sarah@example.com",
-    authorAvatar: "🎵",
-    content: "Hope Studio is amazing! The facilities are top-notch.",
-    createdAt: Date.now() - 86400000 * 3,
-    replies: [
-      {
-        id: "placeholder_1_reply",
-        authorName: "Mike Chen",
-        authorEmail: "mike@example.com",
-        authorAvatar: "🎤",
-        content: "I agree! Best recording studio in town.",
-        createdAt: Date.now() - 86400000 * 2,
-        replies: [],
-      },
-    ],
-  },
-  {
-    id: "placeholder_2",
-    authorName: "Emily Davis",
-    authorEmail: "emily@example.com",
-    authorAvatar: "🎹",
-    content: "Jesse Liu's work is truly inspiring.",
-    createdAt: Date.now() - 86400000 * 5,
-    replies: [],
-  },
-  {
-    id: "placeholder_3",
-    authorName: "Alex Thompson",
-    authorEmail: "alex@example.com",
-    authorAvatar: "🥁",
-    content: "Can't wait to visit Shangri-La!",
-    createdAt: Date.now() - 86400000 * 7,
-    replies: [],
-  },
-];
 
 const COMMENTS_STORAGE_KEY = "hope_studio_comments";
 const BANNED_USERS_KEY = "hope_studio_banned_users";
@@ -97,6 +94,10 @@ export default function AdminHopeStudioPage() {
   const [filterCategory, setFilterCategory] = useState<string>("all");
   const imageInputRef = useRef<HTMLInputElement>(null);
 
+  // Welcome data state
+  const [welcomeData, setWelcomeData] = useState<WelcomeData>(DEFAULT_WELCOME_DATA);
+  const [welcomeForm, setWelcomeForm] = useState<WelcomeData>(DEFAULT_WELCOME_DATA);
+
   // Comment management state
   const [comments, setComments] = useState<Comment[]>([]);
   const [bannedUsers, setBannedUsers] = useState<BanEntry[]>([]);
@@ -105,6 +106,17 @@ export default function AdminHopeStudioPage() {
     const stored = localStorage.getItem("hope_studio_content");
     if (stored) {
       setItems(JSON.parse(stored));
+    }
+
+    // Load welcome data
+    const welcomeStored = localStorage.getItem(WELCOME_STORAGE_KEY);
+    if (welcomeStored) {
+      try {
+        const parsed = JSON.parse(welcomeStored);
+        setWelcomeData({ ...DEFAULT_WELCOME_DATA, ...parsed });
+      } catch (e) {
+        // Silent fail
+      }
     }
   }, []);
 
@@ -121,9 +133,9 @@ export default function AdminHopeStudioPage() {
     if (stored) {
       const allComments = JSON.parse(stored);
       const pageComments = allComments[itemId] || [];
-      setComments(pageComments.length > 0 ? pageComments : DEFAULT_COMMENTS);
+      setComments(pageComments);
     } else {
-      setComments(DEFAULT_COMMENTS);
+      setComments([]);
     }
     const banned = localStorage.getItem(BANNED_USERS_KEY);
     if (banned) {
@@ -245,6 +257,20 @@ export default function AdminHopeStudioPage() {
     setEditingId(item.id);
     setEditForm({ ...item });
     loadComments(`hope-studio-${item.id}`);
+
+    // Load welcome data if editing welcome section
+    if (item.id === "welcome") {
+      const welcomeStored = localStorage.getItem(WELCOME_STORAGE_KEY);
+      if (welcomeStored) {
+        try {
+          setWelcomeForm({ ...DEFAULT_WELCOME_DATA, ...JSON.parse(welcomeStored) });
+        } catch (e) {
+          setWelcomeForm(DEFAULT_WELCOME_DATA);
+        }
+      } else {
+        setWelcomeForm(DEFAULT_WELCOME_DATA);
+      }
+    }
   };
 
   const handleSave = () => {
@@ -256,10 +282,29 @@ export default function AdminHopeStudioPage() {
     setMessage({ type: "success", text: "Updated successfully!" });
   };
 
+  const handleWelcomeImageSelect = (key: keyof WelcomeData, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setWelcomeForm({ ...welcomeForm, [key]: event.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
+  };
+
+  const handleWelcomeSave = () => {
+    localStorage.setItem(WELCOME_STORAGE_KEY, JSON.stringify(welcomeForm));
+    setWelcomeData(welcomeForm);
+    setMessage({ type: "success", text: "Welcome content updated successfully!" });
+  };
+
   const handleCancel = () => {
     setEditingId(null);
     setEditForm(DEFAULT_ITEMS[0]);
     setComments([]);
+    setWelcomeForm(DEFAULT_WELCOME_DATA);
   };
 
   return (
@@ -296,48 +341,162 @@ export default function AdminHopeStudioPage() {
       {editingId && (
         <div className="rounded-lg border border-gray-200 bg-white p-6">
           <h2 className="mb-4 text-lg font-semibold">Edit: {CATEGORIES.find(c => c.value === editingId)?.label}</h2>
-          <div className="space-y-4">
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Title</label>
-              <input type="text" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-2" />
-            </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Cover Image</label>
-              <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
-              <button type="button" onClick={() => imageInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50">
-                Choose Image
-              </button>
-              {editForm.image && (
-                <div className="mt-3">
-                  <img src={editForm.image} alt="Preview" className="h-40 w-auto rounded-md object-cover" />
+
+          {/* Welcome Section Editor */}
+          {editingId === "welcome" ? (
+            <div className="space-y-6">
+              {/* Hero Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Hero Section</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Hero Title</label>
+                  <input
+                    type="text"
+                    value={welcomeForm.heroTitle}
+                    onChange={(e) => setWelcomeForm({ ...welcomeForm, heroTitle: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
                 </div>
-              )}
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Hero Subtitle</label>
+                  <textarea
+                    value={welcomeForm.heroSubtitle}
+                    onChange={(e) => setWelcomeForm({ ...welcomeForm, heroSubtitle: e.target.value })}
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Introduction Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Introduction</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Introduction Text 1</label>
+                  <textarea
+                    value={welcomeForm.introText1}
+                    onChange={(e) => setWelcomeForm({ ...welcomeForm, introText1: e.target.value })}
+                    rows={2}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Introduction Text 2</label>
+                  <textarea
+                    value={welcomeForm.introText2}
+                    onChange={(e) => setWelcomeForm({ ...welcomeForm, introText2: e.target.value })}
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Song Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Song Section</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Song Title</label>
+                  <input
+                    type="text"
+                    value={welcomeForm.songTitle}
+                    onChange={(e) => setWelcomeForm({ ...welcomeForm, songTitle: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Lyrics (use blank line for spacing)</label>
+                  <textarea
+                    value={welcomeForm.songLyricsText}
+                    onChange={(e) => setWelcomeForm({ ...welcomeForm, songLyricsText: e.target.value })}
+                    rows={12}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm"
+                    placeholder="Enter lyrics, one line per row. Use blank line for spacing."
+                  />
+                </div>
+              </div>
+
+              {/* Images Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Images</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    { key: "image1" as const, label: "Image 1 (top left)" },
+                    { key: "image2" as const, label: "Image 2 (top right)" },
+                    { key: "image3" as const, label: "Image 3 (bottom left)" },
+                    { key: "image4" as const, label: "Image 4 (bottom right)" },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+                      <input
+                        type="text"
+                        value={welcomeForm[key]}
+                        onChange={(e) => setWelcomeForm({ ...welcomeForm, [key]: e.target.value })}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        placeholder="Image URL"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleWelcomeImageSelect(key, e)}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {welcomeForm[key] && (
+                        <img src={welcomeForm[key]} alt={label} className="h-32 w-full rounded-md object-cover" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t pt-4">
+                <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
+                <button onClick={handleWelcomeSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Description (for listing page)</label>
-              <textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={2} className="w-full rounded-md border border-gray-300 px-3 py-2" />
+          ) : (
+            <div className="space-y-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Title</label>
+                <input type="text" value={editForm.title} onChange={(e) => setEditForm({ ...editForm, title: e.target.value })} className="w-full rounded-md border border-gray-300 px-3 py-2" />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Cover Image</label>
+                <input ref={imageInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
+                <button type="button" onClick={() => imageInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm hover:bg-gray-50">
+                  Choose Image
+                </button>
+                {editForm.image && (
+                  <div className="mt-3">
+                    <img src={editForm.image} alt="Preview" className="h-40 w-auto rounded-md object-cover" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Description (for listing page)</label>
+                <textarea value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={2} className="w-full rounded-md border border-gray-300 px-3 py-2" />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">Content (for detail page - HTML supported)</label>
+                <textarea value={editForm.content} onChange={(e) => setEditForm({ ...editForm, content: e.target.value })} rows={5} className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm" />
+              </div>
+              <div className="flex items-center gap-4 pt-2 border-t border-gray-200">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={editForm.hidden !== true}
+                    onChange={(e) => setEditForm({ ...editForm, hidden: !e.target.checked })}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-sm font-medium text-gray-700">Visible on website</span>
+                </label>
+                <span className="text-xs text-gray-400">(Uncheck to hide this section)</span>
+              </div>
+              <div className="flex justify-end gap-3 border-t pt-4">
+                <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
+                <button onClick={handleSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
+              </div>
             </div>
-            <div>
-              <label className="mb-1 block text-sm font-medium text-gray-700">Content (for detail page - HTML supported)</label>
-              <textarea value={editForm.content} onChange={(e) => setEditForm({ ...editForm, content: e.target.value })} rows={5} className="w-full rounded-md border border-gray-300 px-3 py-2 font-mono text-sm" />
-            </div>
-            <div className="flex items-center gap-4 pt-2 border-t border-gray-200">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editForm.hidden !== true}
-                  onChange={(e) => setEditForm({ ...editForm, hidden: !e.target.checked })}
-                  className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">Visible on website</span>
-              </label>
-              <span className="text-xs text-gray-400">(Uncheck to hide this section)</span>
-            </div>
-            <div className="flex justify-end gap-3 border-t pt-4">
-              <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
-              <button onClick={handleSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
-            </div>
-          </div>
+          )}
 
           {/* Comment Management Section */}
           <div className="mt-8 border-t border-gray-200 pt-6">
