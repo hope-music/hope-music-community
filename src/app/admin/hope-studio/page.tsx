@@ -1197,7 +1197,7 @@ export default function AdminHopeStudioPage() {
                         className="mt-1 block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                       />
                       {member.image && (
-                        <img src={member.image} alt={member.name} className="mt-2 h-20 w-20 rounded-full object-cover" />
+                        <img src={member.image} alt={member.name} className="mt-2 h-20 w-20 rounded-md object-cover" />
                       )}
                     </div>
                   </div>
