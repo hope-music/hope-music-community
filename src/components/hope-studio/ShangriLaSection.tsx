@@ -61,12 +61,14 @@ function JesseLiuCard({ member }: { member: TeamMember }) {
 }
 
 function DaisyLiCard({ member }: { member: TeamMember }) {
+  const hasImage = !!member.image;
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
       <div className="md:flex">
         {/* Image on the left - full height */}
         <div className="md:w-1/3 h-80 md:min-h-[400px] bg-gray-100">
-          {member.image ? (
+          {hasImage ? (
             <Image
               src={member.image}
               alt={member.name}
@@ -113,36 +115,62 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
 
   return (
     <div className="space-y-10">
-      {/* Images 1 & 2 at the top - 2 column grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
-          <Image
-            src={data.image1}
-            alt="Shangri-La 1"
-            width={800}
-            height={500}
-            className="w-full h-full object-contain"
-          />
+      {/* Section 1: First paragraph + Images 1 & 2 */}
+      <div>
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 md:p-8 rounded-xl border-l-4 border-hmc-orange mb-6">
+          <p className="text-gray-800 leading-relaxed text-lg">
+            {data.introText1}
+          </p>
         </div>
-        <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
-          <Image
-            src={data.image2}
-            alt="Shangri-La 2"
-            width={800}
-            height={500}
-            className="w-full h-full object-contain"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
+            <Image
+              src={data.image1}
+              alt="Shangri-La 1"
+              width={800}
+              height={500}
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
+            <Image
+              src={data.image2}
+              alt="Shangri-La 2"
+              width={800}
+              height={500}
+              className="w-full h-full object-contain"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Introduction Section */}
-      <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 md:p-8 rounded-xl border-l-4 border-hmc-orange">
-        <p className="text-gray-800 leading-relaxed text-lg mb-4">
-          {data.introText1}
-        </p>
-        <p className="text-gray-800 leading-relaxed text-lg">
-          {data.introText2}
-        </p>
+      {/* Section 2: Second paragraph + Images 3 & 4 */}
+      <div>
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 md:p-8 rounded-xl border-l-4 border-hmc-orange mb-6">
+          <p className="text-gray-800 leading-relaxed text-lg">
+            {data.introText2}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
+            <Image
+              src={data.image3}
+              alt="Shangri-La 3"
+              width={800}
+              height={500}
+              className="w-full h-full object-contain"
+            />
+          </div>
+          <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
+            <Image
+              src={data.image4}
+              alt="Shangri-La 4"
+              width={800}
+              height={500}
+              className="w-full h-full object-contain"
+            />
+          </div>
+        </div>
       </div>
 
       {/* Core Creative Team Section */}
@@ -165,28 +193,6 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Images 3 & 4 at the bottom */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
-          <Image
-            src={data.image3}
-            alt="Shangri-La 3"
-            width={800}
-            height={500}
-            className="w-full h-full object-contain"
-          />
-        </div>
-        <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
-          <Image
-            src={data.image4}
-            alt="Shangri-La 4"
-            width={800}
-            height={500}
-            className="w-full h-full object-contain"
-          />
-        </div>
       </div>
     </div>
   );
