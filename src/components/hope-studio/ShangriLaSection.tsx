@@ -143,24 +143,24 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
                 <h4 className="text-xl font-bold text-gray-900">{daisyLi.name}</h4>
               </div>
               <div className="md:flex">
-                {/* Image on the left */}
-                <div className="md:w-1/3 h-64 md:h-auto bg-gray-100">
+                {/* Image on the left - smaller */}
+                <div className="md:w-1/4 h-48 md:min-h-[200px] bg-gray-100">
                   {daisyLi.image ? (
                     <Image
                       src={daisyLi.image}
                       alt={daisyLi.name}
-                      width={600}
-                      height={400}
+                      width={300}
+                      height={300}
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400 min-h-[200px]">
+                    <div className="w-full h-full flex items-center justify-center text-gray-400">
                       No Photo
                     </div>
                   )}
                 </div>
-                {/* Content on the right */}
-                <div className="md:w-2/3 p-6">
+                {/* Content on the right - larger */}
+                <div className="md:w-3/4 p-6">
                   <div className="prose prose-gray max-w-none">
                     {daisyLi.description?.split('\n\n').map((paragraph, index) => (
                       <p key={index} className="text-gray-700 leading-relaxed mb-4 last:mb-0">
