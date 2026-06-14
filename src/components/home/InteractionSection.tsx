@@ -23,6 +23,18 @@ const CATEGORY_LABELS = INTERACTION_CATEGORY_LABELS;
 
 const CATEGORY_KEYS = INTERACTION_CATEGORY_KEYS;
 
+const CATEGORY_FOOTER_PROMPTS: Record<string, string> = {
+  "live-performance": "For anything about live performance. Please post your information here.",
+  "dj-edm": "For anything about DJ and EDM. Please post your information here.",
+  "ambient-music": "For anything about ambient and atmospheric music. Please post your information here.",
+  "pop-rock": "For anything about pop and rock music. Please post your information here.",
+  "classical": "For anything about classical (musical, opera, concert, and ballet, etc). Please post your information here.",
+  "film-music": "For anything about film scores and soundtracks. Please post your information here.",
+  "fusion-music": "For anything about contemporary fusion (orchestral & electronic). Please post your information here.",
+  "music-production": "For anything about audio production and technology. Please post your information here.",
+  others: "If there is no suitable category above, please post your information here.",
+};
+
 const PLACEHOLDER_POSTS: Record<string, { id: string; title: string }[]> = {
   "live-performance": [
     { id: "ph-live-1", title: "Tips for engaging a live audience" },
@@ -138,29 +150,38 @@ function TopicList({
   category,
   items,
   placeholderItems,
+  footerPrompt,
 }: {
   category: string;
   items: InteractionItem[];
   placeholderItems: { id: string; title: string }[];
+  footerPrompt?: string;
 }) {
   const displayItems = items.length >= 10 ? items.slice(0, 10) : [...items, ...placeholderItems].slice(0, 10);
 
   return (
-    <ul className="space-y-0.5">
-      {displayItems.map((item) => (
-        <li key={item.id}>
-          <Link
-            href={`/interaction/${category}/${item.id}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group flex items-start gap-2 rounded px-2 py-1.5 text-sm text-hmc-text transition-colors duration-150 hover:bg-amber-50/50 hover:text-hmc-red"
-          >
-            <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-hmc-orange transition-colors duration-150 group-hover:bg-hmc-red" />
-            <span className="flex-1 leading-snug">{item.title}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <div className="flex flex-col">
+      <ul className="space-y-0.5">
+        {displayItems.map((item) => (
+          <li key={item.id}>
+            <Link
+              href={`/interaction/${category}/${item.id}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group flex items-start gap-2 rounded px-2 py-1.5 text-sm text-hmc-text transition-colors duration-150 hover:bg-amber-50/50 hover:text-hmc-red"
+            >
+              <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-hmc-orange transition-colors duration-150 group-hover:bg-hmc-red" />
+              <span className="flex-1 leading-snug">{item.title}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      {footerPrompt && (
+        <div className="mt-3 rounded border border-dashed border-hmc-orange/40 bg-hmc-orange/5 px-3 py-2.5">
+          <p className="text-xs leading-relaxed text-hmc-text">{footerPrompt}</p>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -218,6 +239,7 @@ export function InteractionSection() {
                     category={categorySlug}
                     items={items}
                     placeholderItems={placeholders}
+                    footerPrompt={CATEGORY_FOOTER_PROMPTS[categorySlug]}
                   />
                 )}
               </CategoryBox>
