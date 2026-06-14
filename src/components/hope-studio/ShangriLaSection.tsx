@@ -129,8 +129,6 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
                   {jesseLiu.name}
                 </Link>
               </div>
-                </Link>
-              </div>
               <div className="p-6">
                 <p className="text-gray-500 italic">Learn more about Jesse Liu's musical journey</p>
               </div>
