@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { WelcomeSection } from "@/components/hope-studio/WelcomeSection";
+import { StudioSection } from "@/components/hope-studio/StudioSection";
 
 interface ContentItem {
   id: string;
@@ -240,6 +241,8 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
         {/* Welcome Section - Special component for welcome page */}
         {id === "welcome" ? (
           <WelcomeSection />
+        ) : id === "studio" ? (
+          <StudioSection />
         ) : (
           <>
             <div

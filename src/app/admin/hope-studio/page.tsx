@@ -64,6 +64,33 @@ We all belong.`,
 
 const WELCOME_STORAGE_KEY = "welcome_content";
 
+// Studio Data
+interface StudioData {
+  subtitle: string;
+  introText: string;
+  musicalShowsTitle: string;
+  musicalShowsContent: string;
+  multimediaTitle: string;
+  multimediaContent: string;
+  image1: string;
+  image2: string;
+  image3: string;
+}
+
+const DEFAULT_STUDIO_DATA: StudioData = {
+  subtitle: "Music dream we create!",
+  introText: "Hope Studio is an entertainment studio specializing in musical performance, innovative tourism entertainment, and multimedia production — founded by Jesse Liu.",
+  musicalShowsTitle: "Musical Shows",
+  musicalShowsContent: "Shangri-La, an upcoming musical produced by Hope Studio, is set to be a landmark work in the genre. It features an immersive soundscape that seamlessly blends traditional orchestral music with modern electronic music, offering audiences a truly refreshing experience. Complementing the music, AI-powered VR visuals deliver a breathtaking feast for the eyes.",
+  multimediaTitle: "Multimedia Production",
+  multimediaContent: "Hope Studio pioneers innovative forms of tourism entertainment through immersive environments that integrate video, lighting, architecture, sound, and special effects to create remarkable visitor experiences.",
+  image1: "/images/hope-studio/Hope Studio 1.png",
+  image2: "/images/hope-studio/Hope Studio 2.png",
+  image3: "/images/hope-studio/Hope Studio 3.jpg",
+};
+
+const STUDIO_STORAGE_KEY = "studio_content";
+
 const CATEGORIES = [
   { value: "welcome", label: "Welcome to Hope Music Community" },
   { value: "studio", label: "Hope Studio" },
@@ -98,6 +125,10 @@ export default function AdminHopeStudioPage() {
   const [welcomeData, setWelcomeData] = useState<WelcomeData>(DEFAULT_WELCOME_DATA);
   const [welcomeForm, setWelcomeForm] = useState<WelcomeData>(DEFAULT_WELCOME_DATA);
 
+  // Studio data state
+  const [studioData, setStudioData] = useState<StudioData>(DEFAULT_STUDIO_DATA);
+  const [studioForm, setStudioForm] = useState<StudioData>(DEFAULT_STUDIO_DATA);
+
   // Comment management state
   const [comments, setComments] = useState<Comment[]>([]);
   const [bannedUsers, setBannedUsers] = useState<BanEntry[]>([]);
@@ -114,6 +145,17 @@ export default function AdminHopeStudioPage() {
       try {
         const parsed = JSON.parse(welcomeStored);
         setWelcomeData({ ...DEFAULT_WELCOME_DATA, ...parsed });
+      } catch (e) {
+        // Silent fail
+      }
+    }
+
+    // Load studio data
+    const studioStored = localStorage.getItem(STUDIO_STORAGE_KEY);
+    if (studioStored) {
+      try {
+        const parsed = JSON.parse(studioStored);
+        setStudioData({ ...DEFAULT_STUDIO_DATA, ...parsed });
       } catch (e) {
         // Silent fail
       }
@@ -271,6 +313,20 @@ export default function AdminHopeStudioPage() {
         setWelcomeForm(DEFAULT_WELCOME_DATA);
       }
     }
+
+    // Load studio data if editing studio section
+    if (item.id === "studio") {
+      const studioStored = localStorage.getItem(STUDIO_STORAGE_KEY);
+      if (studioStored) {
+        try {
+          setStudioForm({ ...DEFAULT_STUDIO_DATA, ...JSON.parse(studioStored) });
+        } catch (e) {
+          setStudioForm(DEFAULT_STUDIO_DATA);
+        }
+      } else {
+        setStudioForm(DEFAULT_STUDIO_DATA);
+      }
+    }
   };
 
   const handleSave = () => {
@@ -300,11 +356,30 @@ export default function AdminHopeStudioPage() {
     setMessage({ type: "success", text: "Welcome content updated successfully!" });
   };
 
+  const handleStudioImageSelect = (key: keyof StudioData, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setStudioForm({ ...studioForm, [key]: event.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
+  };
+
+  const handleStudioSave = () => {
+    localStorage.setItem(STUDIO_STORAGE_KEY, JSON.stringify(studioForm));
+    setStudioData(studioForm);
+    setMessage({ type: "success", text: "Hope Studio content updated successfully!" });
+  };
+
   const handleCancel = () => {
     setEditingId(null);
     setEditForm(DEFAULT_ITEMS[0]);
     setComments([]);
     setWelcomeForm(DEFAULT_WELCOME_DATA);
+    setStudioForm(DEFAULT_STUDIO_DATA);
   };
 
   return (
@@ -451,6 +526,137 @@ export default function AdminHopeStudioPage() {
               <div className="flex justify-end gap-3 border-t pt-4">
                 <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
                 <button onClick={handleWelcomeSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
+              </div>
+            </div>
+          ) : editingId === "studio" ? (
+            <div className="space-y-6">
+              {/* Subtitle Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Subtitle</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Subtitle</label>
+                  <input
+                    type="text"
+                    value={studioForm.subtitle}
+                    onChange={(e) => setStudioForm({ ...studioForm, subtitle: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Introduction Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Introduction</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Introduction Text</label>
+                  <textarea
+                    value={studioForm.introText}
+                    onChange={(e) => setStudioForm({ ...studioForm, introText: e.target.value })}
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Musical Shows Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Musical Shows</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Section Title</label>
+                  <input
+                    type="text"
+                    value={studioForm.musicalShowsTitle}
+                    onChange={(e) => setStudioForm({ ...studioForm, musicalShowsTitle: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Content</label>
+                  <textarea
+                    value={studioForm.musicalShowsContent}
+                    onChange={(e) => setStudioForm({ ...studioForm, musicalShowsContent: e.target.value })}
+                    rows={4}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Multimedia Production Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Multimedia Production</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Section Title</label>
+                  <input
+                    type="text"
+                    value={studioForm.multimediaTitle}
+                    onChange={(e) => setStudioForm({ ...studioForm, multimediaTitle: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Content</label>
+                  <textarea
+                    value={studioForm.multimediaContent}
+                    onChange={(e) => setStudioForm({ ...studioForm, multimediaContent: e.target.value })}
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Images Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Images</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    { key: "image1" as const, label: "Image 1 (top left)" },
+                    { key: "image2" as const, label: "Image 2 (top right)" },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+                      <input
+                        type="text"
+                        value={studioForm[key]}
+                        onChange={(e) => setStudioForm({ ...studioForm, [key]: e.target.value })}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        placeholder="Image URL"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleStudioImageSelect(key, e)}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {studioForm[key] && (
+                        <img src={studioForm[key]} alt={label} className="h-32 w-full rounded-md object-cover" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Image 3 (full width)</label>
+                  <input
+                    type="text"
+                    value={studioForm.image3}
+                    onChange={(e) => setStudioForm({ ...studioForm, image3: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                    placeholder="Image URL"
+                  />
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => handleStudioImageSelect("image3", e)}
+                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                  />
+                  {studioForm.image3 && (
+                    <img src={studioForm.image3} alt="Image 3" className="h-32 w-full rounded-md object-cover" />
+                  )}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t pt-4">
+                <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
+                <button onClick={handleStudioSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
               </div>
             </div>
           ) : (
