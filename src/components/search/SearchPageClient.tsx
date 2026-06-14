@@ -80,12 +80,12 @@ const SECTION_RESULTS: SearchResult[] = [
   },
   {
     id: "section-stage-production",
-    title: "Stage Production",
+    title: "Insights",
     href: "/stage-production",
     description: "Explore stage, lighting, audio, effects, costumes, props, and related production work.",
     section: "Section",
-    meta: "Stage Production",
-    searchText: "stage production lighting audio effects costumes props production",
+    meta: "Insights",
+    searchText: "insights stage production lighting audio effects costumes props production",
   },
   {
     id: "section-interaction",
@@ -271,7 +271,7 @@ function loadStageProductionResults(): SearchResult[] {
         title: item.title,
         href: `/stage-production/${item.category}/${item.id}`,
         description,
-        section: "Stage Production",
+        section: "Insights",
         meta: [categoryLabel, formatDate(item.eventDate)].filter(Boolean).join(" • "),
         searchText: normalizeSearchText(
           `${item.title} ${description} ${categoryLabel} stage production ${item.category}`

@@ -123,7 +123,7 @@ const INTERACTION_ITEMS = [
   { label: "Software", slug: "software" },
   { label: "Hardware", slug: "hardware" },
   { label: "Music", slug: "music" },
-  { label: "Stage Production", slug: "stage-production" },
+  { label: "Insights", slug: "stage-production" },
   { label: "Article", slug: "article" },
   { label: "Others", slug: "others" },
 ];
@@ -191,7 +191,7 @@ function StageProductionNavLink({ href, isActive }: { href: string; isActive: bo
           isActive ? "opacity-100" : "opacity-80"
         }`}
       >
-        STAGE PRODUCTION
+        INSIGHTS
         {isActive && (
           <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-hmc-orange" />
         )}

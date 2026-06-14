@@ -3,9 +3,9 @@ export const SITE_TAGLINE = "BECAUSE YOU LOVE MUSIC";
 
 export const MAIN_NAV_LINKS = [
   { label: "PERFORMANCE", href: "/performance", variant: "default" as const },
-  { label: "STAGE PRODUCTION", href: "/stage-production", variant: "default" as const },
-  { label: "HOPE STUDIO", href: "/hope-studio", variant: "hope-studio" as const },
   { label: "INTERACTION", href: "/interaction", variant: "default" as const },
+  { label: "HOPE STUDIO", href: "/hope-studio", variant: "hope-studio" as const },
+  { label: "INSIGHTS", href: "/stage-production", variant: "default" as const },
   { label: "NEWS", href: "/news", variant: "default" as const, external: true as const },
   { label: "COMMUNITY", href: "/", variant: "default" as const },
 ] as const;
@@ -65,7 +65,7 @@ export const INTERACTION_CATEGORY_OPTIONS = [
   { value: "software", label: "Software" },
   { value: "hardware", label: "Hardware" },
   { value: "music", label: "Music" },
-  { value: "production", label: "Stage Production" },
+  { value: "production", label: "Insights" },
   { value: "article", label: "Article" },
   { value: "others", label: "Others" },
 ] as const;
@@ -87,7 +87,7 @@ export const INTERACTION_CATEGORIES = [
   "Software",
   "Hardware",
   "Music",
-  "Stage Production",
+  "Insights",
   "Article",
   "Others",
 ] as const;

@@ -37,7 +37,7 @@ export default function AdminDashboardPage() {
       color: "border-orange-200 bg-white hover:border-orange-400",
     },
     {
-      title: "Stage Production",
+      title: "Insights",
       description: "Manage sets, lighting, sound, and production resources",
       href: "/admin/stage-production",
       icon: "🎬",

@@ -6,7 +6,7 @@ import Link from "next/link";
 
 const BASE_NAV_ITEMS = [
   { label: "Performance", href: "/admin/productions" },
-  { label: "Stage Production", href: "/admin/stage-production" },
+  { label: "Insights", href: "/admin/stage-production" },
   { label: "Hope Studio", href: "/admin/hope-studio" },
   { label: "Interaction", href: "/admin/interaction" },
   { label: "News", href: "/admin/news" },
