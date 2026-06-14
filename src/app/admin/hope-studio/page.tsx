@@ -91,6 +91,42 @@ const DEFAULT_STUDIO_DATA: StudioData = {
 
 const STUDIO_STORAGE_KEY = "studio_content";
 
+// Jesse Liu Data
+interface Work {
+  title: string;
+  type: string;
+  description: string;
+}
+
+interface JesseLiuData {
+  subtitle: string;
+  introText: string;
+  quoteText: string;
+  image1: string;
+  image2: string;
+  image3: string;
+  image4: string;
+  worksTitle: string;
+  works: Work[];
+}
+
+const DEFAULT_JESSE_LIU_DATA: JesseLiuData = {
+  subtitle: "Vocalist, Composer, Music Producer & AI Musician",
+  introText: "As one of the most revered music artists of our time, Jesse Liu is a crossover musician reshaping the industry through his masterful fusion of symphonic grandeur and electronic fashion.",
+  quoteText: "AI represents a landmark achievement in modern technology, bringing new possibilities to virtually every corner of the world — and the music industry is no exception. Jesse Liu harnesses AI as a creative tool, broadening his channels for musical inspiration and elevating the efficiency of his production process. It is this forward-thinking approach that has earned him widespread recognition across the industry as a pioneering AI musician.",
+  image1: "/images/jesse-liu/Jesse Liu 1.jpg",
+  image2: "/images/jesse-liu/Jesse Liu 2.jpg",
+  image3: "/images/jesse-liu/Jesse Liu 3.jpg",
+  image4: "/images/jesse-liu/Jesse Liu 4.jpg",
+  worksTitle: "Works",
+  works: [
+    { title: "Shangri-La", type: "Musical", description: "An immersive musical experience blending symphonic grandeur with electronic fashion." },
+    { title: "RESHAPE: Music Industry Needs", type: "Book", description: "A visionary perspective on the future of the music industry." },
+  ],
+};
+
+const JESSE_LIU_STORAGE_KEY = "jesse_liu_content";
+
 const CATEGORIES = [
   { value: "welcome", label: "Welcome to Hope Music Community" },
   { value: "studio", label: "Hope Studio" },
@@ -129,6 +165,10 @@ export default function AdminHopeStudioPage() {
   const [studioData, setStudioData] = useState<StudioData>(DEFAULT_STUDIO_DATA);
   const [studioForm, setStudioForm] = useState<StudioData>(DEFAULT_STUDIO_DATA);
 
+  // Jesse Liu data state
+  const [jesseLiuData, setJesseLiuData] = useState<JesseLiuData>(DEFAULT_JESSE_LIU_DATA);
+  const [jesseLiuForm, setJesseLiuForm] = useState<JesseLiuData>(DEFAULT_JESSE_LIU_DATA);
+
   // Comment management state
   const [comments, setComments] = useState<Comment[]>([]);
   const [bannedUsers, setBannedUsers] = useState<BanEntry[]>([]);
@@ -156,6 +196,17 @@ export default function AdminHopeStudioPage() {
       try {
         const parsed = JSON.parse(studioStored);
         setStudioData({ ...DEFAULT_STUDIO_DATA, ...parsed });
+      } catch (e) {
+        // Silent fail
+      }
+    }
+
+    // Load Jesse Liu data
+    const jesseLiuStored = localStorage.getItem(JESSE_LIU_STORAGE_KEY);
+    if (jesseLiuStored) {
+      try {
+        const parsed = JSON.parse(jesseLiuStored);
+        setJesseLiuData({ ...DEFAULT_JESSE_LIU_DATA, ...parsed });
       } catch (e) {
         // Silent fail
       }
@@ -327,6 +378,20 @@ export default function AdminHopeStudioPage() {
         setStudioForm(DEFAULT_STUDIO_DATA);
       }
     }
+
+    // Load Jesse Liu data if editing jesse-liu section
+    if (item.id === "jesse-liu") {
+      const jesseLiuStored = localStorage.getItem(JESSE_LIU_STORAGE_KEY);
+      if (jesseLiuStored) {
+        try {
+          setJesseLiuForm({ ...DEFAULT_JESSE_LIU_DATA, ...JSON.parse(jesseLiuStored) });
+        } catch (e) {
+          setJesseLiuForm(DEFAULT_JESSE_LIU_DATA);
+        }
+      } else {
+        setJesseLiuForm(DEFAULT_JESSE_LIU_DATA);
+      }
+    }
   };
 
   const handleSave = () => {
@@ -374,12 +439,51 @@ export default function AdminHopeStudioPage() {
     setMessage({ type: "success", text: "Hope Studio content updated successfully!" });
   };
 
+  const handleJesseLiuImageSelect = (key: keyof JesseLiuData, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setJesseLiuForm({ ...jesseLiuForm, [key]: event.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
+  };
+
+  const handleJesseLiuWorkAdd = () => {
+    setJesseLiuForm({
+      ...jesseLiuForm,
+      works: [...jesseLiuForm.works, { title: "", type: "Musical", description: "" }],
+    });
+  };
+
+  const handleJesseLiuWorkRemove = (index: number) => {
+    setJesseLiuForm({
+      ...jesseLiuForm,
+      works: jesseLiuForm.works.filter((_, i) => i !== index),
+    });
+  };
+
+  const handleJesseLiuWorkChange = (index: number, field: keyof Work, value: string) => {
+    const newWorks = [...jesseLiuForm.works];
+    newWorks[index] = { ...newWorks[index], [field]: value };
+    setJesseLiuForm({ ...jesseLiuForm, works: newWorks });
+  };
+
+  const handleJesseLiuSave = () => {
+    localStorage.setItem(JESSE_LIU_STORAGE_KEY, JSON.stringify(jesseLiuForm));
+    setJesseLiuData(jesseLiuForm);
+    setMessage({ type: "success", text: "Jesse Liu content updated successfully!" });
+  };
+
   const handleCancel = () => {
     setEditingId(null);
     setEditForm(DEFAULT_ITEMS[0]);
     setComments([]);
     setWelcomeForm(DEFAULT_WELCOME_DATA);
     setStudioForm(DEFAULT_STUDIO_DATA);
+    setJesseLiuForm(DEFAULT_JESSE_LIU_DATA);
   };
 
   return (
@@ -657,6 +761,173 @@ export default function AdminHopeStudioPage() {
               <div className="flex justify-end gap-3 border-t pt-4">
                 <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
                 <button onClick={handleStudioSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
+              </div>
+            </div>
+          ) : editingId === "jesse-liu" ? (
+            <div className="space-y-6">
+              {/* Subtitle Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Subtitle</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Subtitle</label>
+                  <input
+                    type="text"
+                    value={jesseLiuForm.subtitle}
+                    onChange={(e) => setJesseLiuForm({ ...jesseLiuForm, subtitle: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Introduction Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Introduction</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Introduction Text</label>
+                  <textarea
+                    value={jesseLiuForm.introText}
+                    onChange={(e) => setJesseLiuForm({ ...jesseLiuForm, introText: e.target.value })}
+                    rows={3}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Quote Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">AI Quote</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Quote Text</label>
+                  <textarea
+                    value={jesseLiuForm.quoteText}
+                    onChange={(e) => setJesseLiuForm({ ...jesseLiuForm, quoteText: e.target.value })}
+                    rows={4}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Images Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Images</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    { key: "image1" as const, label: "Image 1" },
+                    { key: "image2" as const, label: "Image 2" },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+                      <input
+                        type="text"
+                        value={jesseLiuForm[key]}
+                        onChange={(e) => setJesseLiuForm({ ...jesseLiuForm, [key]: e.target.value })}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        placeholder="Image URL"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleJesseLiuImageSelect(key, e)}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {jesseLiuForm[key] && (
+                        <img src={jesseLiuForm[key]} alt={label} className="h-32 w-full rounded-md object-contain bg-gray-100" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    { key: "image3" as const, label: "Image 3" },
+                    { key: "image4" as const, label: "Image 4" },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
+                      <input
+                        type="text"
+                        value={jesseLiuForm[key]}
+                        onChange={(e) => setJesseLiuForm({ ...jesseLiuForm, [key]: e.target.value })}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        placeholder="Image URL"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleJesseLiuImageSelect(key, e)}
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {jesseLiuForm[key] && (
+                        <img src={jesseLiuForm[key]} alt={label} className="h-32 w-full rounded-md object-contain bg-gray-100" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Works Section */}
+              <div className="space-y-4">
+                <div className="flex justify-between items-center border-b pb-2">
+                  <h3 className="text-sm font-semibold text-gray-700">Works</h3>
+                  <button
+                    type="button"
+                    onClick={handleJesseLiuWorkAdd}
+                    className="rounded-md border border-gray-300 bg-white px-3 py-1 text-sm hover:bg-gray-50"
+                  >
+                    + Add Work
+                  </button>
+                </div>
+                {jesseLiuForm.works.map((work, index) => (
+                  <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-gray-700">Work {index + 1}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleJesseLiuWorkRemove(index)}
+                        className="text-red-600 hover:text-red-700 text-sm"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label className="mb-1 block text-xs text-gray-600">Title</label>
+                        <input
+                          type="text"
+                          value={work.title}
+                          onChange={(e) => handleJesseLiuWorkChange(index, "title", e.target.value)}
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-gray-600">Type</label>
+                        <select
+                          value={work.type}
+                          onChange={(e) => handleJesseLiuWorkChange(index, "type", e.target.value)}
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        >
+                          <option value="Musical">Musical</option>
+                          <option value="Book">Book</option>
+                          <option value="Album">Album</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-xs text-gray-600">Description</label>
+                        <input
+                          type="text"
+                          value={work.description}
+                          onChange={(e) => handleJesseLiuWorkChange(index, "description", e.target.value)}
+                          className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="flex justify-end gap-3 border-t pt-4">
+                <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
+                <button onClick={handleJesseLiuSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
               </div>
             </div>
           ) : (
