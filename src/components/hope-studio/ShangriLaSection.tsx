@@ -123,10 +123,12 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
           {/* Jesse Liu - Full width card */}
           {jesseLiu && (
             <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-              <div className="bg-hmc-orange p-4">
-                <p className="text-white/80 text-sm">{jesseLiu.role}</p>
-                <Link href="/hope-studio/jesse-liu" className="text-xl font-bold text-white hover:underline">
+              <div className="border-b border-gray-100 px-6 py-4">
+                <p className="text-gray-500 text-sm">{jesseLiu.role}</p>
+                <Link href="/hope-studio/jesse-liu" className="text-xl font-bold text-gray-900 hover:text-hmc-orange">
                   {jesseLiu.name}
+                </Link>
+              </div>
                 </Link>
               </div>
               <div className="p-6">
@@ -138,9 +140,9 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
           {/* Daisy Li - Image + Text side by side */}
           {daisyLi && (
             <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-              <div className="bg-hmc-orange p-4">
-                <p className="text-white/80 text-sm">{daisyLi.role}</p>
-                <h4 className="text-xl font-bold text-white">{daisyLi.name}</h4>
+              <div className="border-b-2 border-hmc-orange px-6 py-4">
+                <p className="text-gray-500 text-sm">{daisyLi.role}</p>
+                <h4 className="text-xl font-bold text-gray-900">{daisyLi.name}</h4>
               </div>
               <div className="md:flex">
                 {/* Image on the left */}
