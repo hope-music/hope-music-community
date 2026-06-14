@@ -138,13 +138,13 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
           {/* Daisy Li - Image + Text side by side */}
           {daisyLi && (
             <div className="bg-white rounded-xl shadow-md border border-gray-200 overflow-hidden">
-              <div className="px-6 py-4">
-                <p className="text-gray-500 text-sm">{daisyLi.role}</p>
-                <h4 className="text-xl font-bold text-gray-900">{daisyLi.name}</h4>
-              </div>
               <div className="md:flex md:items-stretch">
-                {/* Image on the left - at bottom */}
-                <div className="md:w-1/4 md:flex md:items-end bg-gray-50 p-6">
+                {/* Image on the left - with title above */}
+                <div className="md:w-1/4 md:flex md:flex-col bg-gray-50 p-6">
+                  <div className="mb-4">
+                    <p className="text-gray-500 text-sm">{daisyLi.role}</p>
+                    <h4 className="text-xl font-bold text-gray-900">{daisyLi.name}</h4>
+                  </div>
                   {daisyLi.image ? (
                     <Image
                       src={daisyLi.image}
