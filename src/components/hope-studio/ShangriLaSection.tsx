@@ -142,26 +142,26 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
                 <p className="text-gray-500 text-sm">{daisyLi.role}</p>
                 <h4 className="text-xl font-bold text-gray-900">{daisyLi.name}</h4>
               </div>
-              <div className="md:flex">
-                {/* Image on the left - smaller */}
-                <div className="md:w-1/4 h-48 md:min-h-[200px] bg-gray-100">
+              <div className="md:flex md:items-stretch">
+                {/* Image on the left - smaller, centered */}
+                <div className="md:w-1/4 md:flex md:items-center md:justify-center bg-gray-50 p-6">
                   {daisyLi.image ? (
                     <Image
                       src={daisyLi.image}
                       alt={daisyLi.name}
-                      width={300}
-                      height={300}
-                      className="w-full h-full object-cover"
+                      width={200}
+                      height={200}
+                      className="w-40 h-40 md:w-44 md:h-44 rounded-md object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <div className="w-40 h-40 md:w-44 md:h-44 flex items-center justify-center text-gray-400 bg-gray-100 rounded-md">
                       No Photo
                     </div>
                   )}
                 </div>
-                {/* Content on the right - larger */}
-                <div className="md:w-3/4 p-6">
-                  <div className="prose prose-gray max-w-none">
+                {/* Content on the right - larger, centered */}
+                <div className="md:w-3/4 p-6 md:flex md:items-center">
+                  <div className="prose prose-gray max-w-none w-full">
                     {daisyLi.description?.split('\n\n').map((paragraph, index) => (
                       <p key={index} className="text-gray-700 leading-relaxed mb-4 last:mb-0">
                         {paragraph}
