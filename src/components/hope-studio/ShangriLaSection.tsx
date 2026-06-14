@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 export interface TeamMember {
   id: string;
@@ -31,7 +32,6 @@ export const DEFAULT_SHANGRI_LA_DATA: ShangriLaData = {
       id: "jesse-liu",
       role: "Music and Lyrics by",
       name: "Jesse Liu",
-      description: "Jesse Liu is a crossover musician reshaping the industry through his masterful fusion of symphonic grandeur and electronic fashion. As one of the most revered music artists of our time, he brings a unique vision to Shangri-La's electronic soundscape.",
     },
     {
       id: "daisy-li",
@@ -51,16 +51,11 @@ const SHANGRI_LA_STORAGE_KEY = "shangri_la_content";
 
 function JesseLiuCard({ member }: { member: TeamMember }) {
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-6 text-center border-b border-gray-100">
-        <p className="text-gray-600 text-sm mb-1">{member.role}</p>
-        <h4 className="text-xl font-bold text-gray-900">{member.name}</h4>
-      </div>
-      <div className="p-6">
-        <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-          {member.description}
-        </p>
-      </div>
+    <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+      <p className="text-gray-600 text-sm mb-1">{member.role}</p>
+      <Link href="/hope-studio/jesse-liu" className="text-xl font-bold text-hmc-orange hover:underline">
+        {member.name}
+      </Link>
     </div>
   );
 }
@@ -68,29 +63,31 @@ function JesseLiuCard({ member }: { member: TeamMember }) {
 function DaisyLiCard({ member }: { member: TeamMember }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="p-6 text-center border-b border-gray-100">
-        <p className="text-gray-600 text-sm mb-1">{member.role}</p>
-        <h4 className="text-xl font-bold text-gray-900">{member.name}</h4>
-      </div>
-      {member.image && (
-        <div className="p-6 flex justify-center">
-          <div className="w-40 h-40 rounded-full overflow-hidden bg-gray-100">
+      <div className="md:flex">
+        {/* Image on the left */}
+        {member.image && (
+          <div className="md:w-1/3 h-64 md:h-auto">
             <Image
               src={member.image}
               alt={member.name}
-              width={160}
-              height={160}
+              width={400}
+              height={500}
               className="w-full h-full object-cover"
             />
           </div>
+        )}
+        {/* Content on the right */}
+        <div className="md:w-2/3 p-6">
+          <p className="text-gray-600 text-sm mb-1">{member.role}</p>
+          <h4 className="text-xl font-bold text-gray-900 mb-4">{member.name}</h4>
+          <div className="prose prose-gray max-w-none">
+            {member.description?.split('\n\n').map((paragraph, index) => (
+              <p key={index} className="text-gray-700 leading-relaxed mb-4 last:mb-0">
+                {paragraph}
+              </p>
+            ))}
+          </div>
         </div>
-      )}
-      <div className="p-6 pt-0">
-        {member.description?.split('\n\n').map((paragraph, index) => (
-          <p key={index} className="text-gray-700 leading-relaxed mb-4 last:mb-0">
-            {paragraph}
-          </p>
-        ))}
       </div>
     </div>
   );
@@ -112,34 +109,41 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
 
   return (
     <div className="space-y-10">
-      {/* Introduction Section */}
-      <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 md:p-8 rounded-xl border-l-4 border-hmc-orange">
-        <p className="text-gray-800 leading-relaxed text-lg mb-4">
-          {data.introText1}
-        </p>
-        <p className="text-gray-800 leading-relaxed text-lg">
-          {data.introText2}
-        </p>
+      {/* Introduction Section with image between paragraphs */}
+      <div>
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 md:p-8 rounded-xl border-l-4 border-hmc-orange mb-6">
+          <p className="text-gray-800 leading-relaxed text-lg">
+            {data.introText1}
+          </p>
+        </div>
+
+        {/* Image 1 between paragraphs */}
+        <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100 mb-6">
+          <Image
+            src={data.image1}
+            alt="Shangri-La 1"
+            width={800}
+            height={500}
+            className="w-full h-full object-contain"
+          />
+        </div>
+
+        <div className="bg-gradient-to-r from-orange-50 to-amber-50 p-6 md:p-8 rounded-xl border-l-4 border-hmc-orange">
+          <p className="text-gray-800 leading-relaxed text-lg">
+            {data.introText2}
+          </p>
+        </div>
       </div>
 
-      {/* Image Grid - 4 images before Core Creative Team */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[
-          { key: "image1" as const, src: data.image1, alt: "Shangri-La 1" },
-          { key: "image2" as const, src: data.image2, alt: "Shangri-La 2" },
-          { key: "image3" as const, src: data.image3, alt: "Shangri-La 3" },
-          { key: "image4" as const, src: data.image4, alt: "Shangri-La 4" },
-        ].map(({ key, src, alt }) => (
-          <div key={key} className="rounded-xl overflow-hidden h-40 md:h-48 bg-gray-100">
-            <Image
-              src={src}
-              alt={alt}
-              width={400}
-              height={300}
-              className="w-full h-full object-contain"
-            />
-          </div>
-        ))}
+      {/* Image 2 after intro */}
+      <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
+        <Image
+          src={data.image2}
+          alt="Shangri-La 2"
+          width={800}
+          height={500}
+          className="w-full h-full object-contain"
+        />
       </div>
 
       {/* Core Creative Team Section */}
@@ -148,10 +152,10 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
           {data.coreTeamTitle}
         </h3>
 
-        {/* Jesse Liu Card */}
+        {/* Jesse Liu - Link Card */}
         {jesseLiu && <JesseLiuCard member={jesseLiu} />}
 
-        {/* Daisy Li Card with Photo */}
+        {/* Daisy Li - Image Left, Text Right */}
         {daisyLi && <DaisyLiCard member={daisyLi} />}
 
         {/* Other Team Members */}
@@ -162,6 +166,28 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
             ))}
           </div>
         )}
+      </div>
+
+      {/* Images 3 & 4 at the bottom */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
+          <Image
+            src={data.image3}
+            alt="Shangri-La 3"
+            width={800}
+            height={500}
+            className="w-full h-full object-contain"
+          />
+        </div>
+        <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
+          <Image
+            src={data.image4}
+            alt="Shangri-La 4"
+            width={800}
+            height={500}
+            className="w-full h-full object-contain"
+          />
+        </div>
       </div>
     </div>
   );

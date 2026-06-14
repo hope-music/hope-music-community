@@ -156,7 +156,6 @@ const DEFAULT_SHANGRI_LA_DATA: ShangriLaData = {
       id: "jesse-liu",
       role: "Music and Lyrics by",
       name: "Jesse Liu",
-      description: "Jesse Liu is a crossover musician reshaping the industry through his masterful fusion of symphonic grandeur and electronic fashion. As one of the most revered music artists of our time, he brings a unique vision to Shangri-La's electronic soundscape.",
     },
     {
       id: "daisy-li",
