@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -14,45 +13,16 @@ interface ContentItem {
 }
 
 const DEFAULT_ITEMS: ContentItem[] = [
-  { id: "welcome", title: "Welcome to Hope Music Community", image: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=800", description: "Discover the vibrant world of Hope Music Community, where music lovers unite.", content: "" },
+  { id: "welcome", title: "Welcome to Hope Music Community", image: "/images/Welcome to Hope Music Community/Welcome to Hope Music Community 1.jpg", description: "Discover the vibrant world of Hope Music Community, where music lovers unite.", content: "" },
   { id: "studio", title: "Hope Studio", image: "/images/hope-studio/Hope Studio 1.png", description: "Professional recording, mixing, and mastering services in our state-of-the-art facility.", content: "" },
   { id: "jesse-liu", title: "Jesse Liu", image: "/images/jesse-liu/Jesse Liu 1.jpg", description: "Vocalist, Composer, Music Producer & AI Musician.", content: "" },
   { id: "shangri-la", title: "Shangri-La", image: "/images/shangri-la/Shangri-La 1.jpg", description: "An immersive musical experience that transports you to another world.", content: "" },
-  { id: "works", title: "Cooperation", image: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800", description: "Explore our portfolio of completed projects and collaborations.", content: "", hidden: false },
+  { id: "works", title: "Cooperation", image: "/images/Cooperation/Cooperation 1.jpg", description: "Explore our portfolio of completed projects and collaborations.", content: "", hidden: false },
   { id: "schedule", title: "Performance Schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800", description: "Stay updated with our upcoming performances and events.", content: "", hidden: true },
 ];
 
 export default function HopeStudioPage() {
-  const [items, setItems] = useState<ContentItem[]>(DEFAULT_ITEMS);
-
-  useEffect(() => {
-    const loadData = () => {
-      const stored = localStorage.getItem("hope_studio_content");
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setItems(parsed);
-          }
-        } catch (e) {
-          // Silent fail - will use empty state
-        }
-      }
-    };
-
-    loadData();
-
-    // Listen for storage changes (when admin updates)
-    window.addEventListener("storage", loadData);
-
-    // Poll for changes every second (for same-tab updates)
-    const interval = setInterval(loadData, 1000);
-
-    return () => {
-      window.removeEventListener("storage", loadData);
-      clearInterval(interval);
-    };
-  }, []);
+  const items = DEFAULT_ITEMS;
 
   return (
     <main className="min-h-screen bg-white">
