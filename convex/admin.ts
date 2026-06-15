@@ -32,6 +32,16 @@ export const generateUploadUrl = mutation({
 });
 
 // ============================================
+// FILE STORAGE: Get File URL
+// ============================================
+export const getFileUrl = mutation({
+  args: { storageId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.storage.getUrl(args.storageId);
+  },
+});
+
+// ============================================
 // HELPER: Require Super Admin
 // ============================================
 const ADMIN_EMAILS = ["admin@hopemusic.com"];

@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/lib/convex";
@@ -9,10 +8,10 @@ import { ViewMoreButton } from "@/components/ui/ViewMoreButton";
 
 export function NewsSection() {
   // Fetch published news from Convex (real-time reactive)
-  const news = useQuery(api.admin.getPublishedNews, { limit: 3 });
+  const news = useQuery(api.admin.getPublishedNews, { limit: 3 }) as any[] | undefined;
 
   const formatDate = (dateValue?: number | string): string => {
-    if (!dateValue) return "Coming soon";
+    if (!dateValue) return "";
     const date = typeof dateValue === "number" ? new Date(dateValue) : new Date(dateValue);
     return date.toLocaleDateString("en-US", {
       year: "numeric",
@@ -29,31 +28,6 @@ export function NewsSection() {
     image: article.coverImage || "",
     href: `/news/${article._id}`,
   }));
-
-  // Fallback demo data if no Convex data
-  const displayItems = newsItems.length > 0 ? newsItems : [
-    {
-      id: "demo-1",
-      title: "Announcing the 2026 Global Musicals Gala line-up",
-      date: "June 25, 2026",
-      image: "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=500",
-      href: "/news/demo-1",
-    },
-    {
-      id: "demo-2",
-      title: "Hope Studio partners with industry leader for pro-audio workshop series",
-      date: "June 25, 2026",
-      image: "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=500",
-      href: "/news/demo-2",
-    },
-    {
-      id: "demo-3",
-      title: "Artist Community Spotlight: Rising stars share their journey with HOPE",
-      date: "June 25, 2026",
-      image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500",
-      href: "/news/demo-3",
-    },
-  ];
 
   return (
     <section className="py-6 pb-10" aria-labelledby="news-heading">
@@ -81,24 +55,27 @@ export function NewsSection() {
               </div>
             ))}
           </div>
+        ) : newsItems.length === 0 ? (
+          <div className="py-12 text-center text-gray-500">
+            No news articles available yet.
+          </div>
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-            {displayItems.map((item: any) => (
+            {newsItems.map((item) => (
               <Link
                 key={item.id}
                 href={item.href}
-                target="_blank"
-                rel="noopener noreferrer"
                 className="group flex h-full flex-col overflow-hidden rounded-xl border border-hmc-placeholder-border bg-white shadow-sm transition-shadow duration-200 hover:shadow-md"
               >
                 <div className="aspect-[4/3] w-full overflow-hidden bg-hmc-placeholder">
                   {item.image ? (
-                    <Image
+                    <img
                       src={item.image}
                       alt={item.title}
-                      width={500}
-                      height={375}
                       className="h-full w-full rounded-xl object-cover transition-transform duration-200 group-hover:scale-105"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = "none";
+                      }}
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center bg-gray-200">

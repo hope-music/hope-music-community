@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@/lib/convex";
@@ -25,9 +24,6 @@ export default function NewsListingPage() {
     });
   };
 
-  // Fallback demo data when no articles
-  const displayItems = currentItems.length > 0 ? currentItems : [];
-
   return (
     <main className="min-h-screen bg-white">
       <div className="border-b border-t border-hmc-orange bg-white">
@@ -51,29 +47,28 @@ export default function NewsListingPage() {
               </div>
             ))}
           </div>
-        ) : displayItems.length === 0 ? (
+        ) : currentItems.length === 0 ? (
           <div className="py-20 text-center">
             <p className="text-gray-500">No news articles found.</p>
           </div>
         ) : (
           <>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {displayItems.map((article) => (
+              {currentItems.map((article) => (
                 <Link
                   key={article._id}
                   href={`/news/${article._id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
                   className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
                 >
                   <div className="aspect-[4/3] overflow-hidden bg-gray-100">
                     {article.coverImage ? (
-                      <Image
+                      <img
                         src={article.coverImage}
                         alt={article.title}
-                        width={600}
-                        height={450}
                         className="h-full w-full object-cover transition-transform duration-200 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center bg-gray-200">
