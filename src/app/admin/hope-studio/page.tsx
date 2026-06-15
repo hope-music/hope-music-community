@@ -56,7 +56,7 @@ Just a dream and a song to hold.
 
 Because you love music,
 We all belong.`,
-  image1: "https://images.unsplash.com/photo-1529333166437-7750a6dd5a70?w=800",
+  image1: "/images/Welcome to Hope Music Community/Welcome to Hope Music Community 1.jpg",
   image2: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800",
   image3: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800",
   image4: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800",
@@ -173,6 +173,31 @@ const DEFAULT_SHANGRI_LA_DATA: ShangriLaData = {
 
 const SHANGRI_LA_STORAGE_KEY = "shangri_la_content";
 
+// Cooperation Data
+interface CooperationData {
+  heroTitle: string;
+  introText1: string;
+  introText2: string;
+  link1Title: string;
+  link2Title: string;
+  image1: string;
+  image2: string;
+  image3: string;
+}
+
+const DEFAULT_COOPERATION_DATA: CooperationData = {
+  heroTitle: "Join Our Creative Team",
+  introText1: "Production is officially underway for the musical Shangri-La! We warmly welcome talented singers, instrumentalists, and dancers from all over the world to join our creative team.\n\nTo apply, please navigate to the \"COOPERATION\" section on our homepage and select \"WELCOME TO OUR MUSICAL PERFORMANCE TEAM.\"",
+  introText2: "Whether you represent an agency, performance group, theater, or other organization—or are an individual artist—we would love to explore a partnership with you.\n\nTo connect with us, please visit the \"COOPERATION\" section on our homepage and select \"WE LOOK FORWARD TO COOPERATING WITH YOU ON ALL TYPES OF MUSIC BUSINESS PROJECTS.\"",
+  link1Title: "WELCOME TO OUR MUSICAL PERFORMANCE TEAM",
+  link2Title: "WE LOOK FORWARD TO COOPERATING WITH YOU ON ALL TYPES OF MUSIC BUSINESS PROJECTS",
+  image1: "/images/Cooperation/Cooperation 1.jpg",
+  image2: "/images/Cooperation/Cooperation 2.jpg",
+  image3: "/images/Cooperation/Cooperation 3.jpg",
+};
+
+const COOPERATION_STORAGE_KEY = "cooperation_content";
+
 const CATEGORIES = [
   { value: "welcome", label: "Welcome to Hope Music Community" },
   { value: "studio", label: "Hope Studio" },
@@ -186,8 +211,8 @@ const DEFAULT_ITEMS: ContentItem[] = [
   { id: "welcome", title: "Welcome to Hope Music Community", category: "welcome", image: "https://images.unsplash.com/photo-1514320291840-2e0a9bf2a9ae?w=800", description: "Discover the vibrant world of Hope Music Community, where music lovers unite.", content: "<p>Welcome to the Hope Music Community!</p>" },
   { id: "studio", title: "Hope Studio", category: "studio", image: "/images/hope-studio/Hope Studio 1.png", description: "Professional recording, mixing, and mastering services.", content: "" },
   { id: "jesse-liu", title: "Jesse Liu", category: "jesse-liu", image: "/images/jesse-liu/Jesse Liu 1.jpg", description: "Meet Jesse Liu, our founder and creative director.", content: "" },
-  { id: "shangri-la", title: "Shangri-La", category: "shangri-la", image: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800", description: "An immersive musical experience.", content: "<p>Shangri-La experience.</p>" },
-  { id: "works", title: "Cooperation", category: "works", image: "https://images.unsplash.com/photo-1507838153414-b4b713384a76?w=800", description: "Explore our portfolio.", content: "<p>Our portfolio.</p>" },
+  { id: "shangri-la", title: "Shangri-La", category: "shangri-la", image: "/images/shangri-la/Shangri-La 1.jpg", description: "An immersive musical experience.", content: "<p>Shangri-La experience.</p>" },
+  { id: "works", title: "Cooperation", category: "works", image: "/images/Cooperation/Cooperation 1.jpg", description: "Explore our portfolio.", content: "<p>Our portfolio.</p>" },
   { id: "schedule", title: "Performance Schedule", category: "schedule", image: "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800", description: "Upcoming performances and events.", content: "<p>Performance schedule.</p>", hidden: true },
 ];
 
@@ -218,6 +243,10 @@ export default function AdminHopeStudioPage() {
   // Shangri-La data state
   const [shangriLaData, setShangriLaData] = useState<ShangriLaData>(DEFAULT_SHANGRI_LA_DATA);
   const [shangriLaForm, setShangriLaForm] = useState<ShangriLaData>(DEFAULT_SHANGRI_LA_DATA);
+
+  // Cooperation data state
+  const [cooperationData, setCooperationData] = useState<CooperationData>(DEFAULT_COOPERATION_DATA);
+  const [cooperationForm, setCooperationForm] = useState<CooperationData>(DEFAULT_COOPERATION_DATA);
 
   // Comment management state
   const [comments, setComments] = useState<Comment[]>([]);
@@ -272,6 +301,17 @@ export default function AdminHopeStudioPage() {
         // Silent fail
       }
     }
+
+    // Load Cooperation data
+    const cooperationStored = localStorage.getItem(COOPERATION_STORAGE_KEY);
+    if (cooperationStored) {
+      try {
+        const parsed = JSON.parse(cooperationStored);
+        setCooperationData({ ...DEFAULT_COOPERATION_DATA, ...parsed });
+      } catch (e) {
+        // Silent fail
+      }
+    }
   }, []);
 
   const saveToStorage = (data: ContentItem[]) => {
@@ -279,7 +319,7 @@ export default function AdminHopeStudioPage() {
     setItems(data);
   };
 
-  useEffect(() => { if (message) { const t = setTimeout(() => setMessage(null), 5000); return () => clearTimeout(t); } }, [message]);
+  useEffect(() => { if (message) { const t = setTimeout(() => setMessage(null), 10000); return () => clearTimeout(t); } }, [message]);
 
   // Comment management functions
   const loadComments = (itemId: string) => {
@@ -467,6 +507,20 @@ export default function AdminHopeStudioPage() {
         setShangriLaForm(DEFAULT_SHANGRI_LA_DATA);
       }
     }
+
+    // Load Cooperation data if editing works section
+    if (item.id === "works") {
+      const cooperationStored = localStorage.getItem(COOPERATION_STORAGE_KEY);
+      if (cooperationStored) {
+        try {
+          setCooperationForm({ ...DEFAULT_COOPERATION_DATA, ...JSON.parse(cooperationStored) });
+        } catch (e) {
+          setCooperationForm(DEFAULT_COOPERATION_DATA);
+        }
+      } else {
+        setCooperationForm(DEFAULT_COOPERATION_DATA);
+      }
+    }
   };
 
   const handleSave = () => {
@@ -493,6 +547,7 @@ export default function AdminHopeStudioPage() {
   const handleWelcomeSave = () => {
     localStorage.setItem(WELCOME_STORAGE_KEY, JSON.stringify(welcomeForm));
     setWelcomeData(welcomeForm);
+    setEditingId(null);
     setMessage({ type: "success", text: "Welcome content updated successfully!" });
   };
 
@@ -511,6 +566,7 @@ export default function AdminHopeStudioPage() {
   const handleStudioSave = () => {
     localStorage.setItem(STUDIO_STORAGE_KEY, JSON.stringify(studioForm));
     setStudioData(studioForm);
+    setEditingId(null);
     setMessage({ type: "success", text: "Hope Studio content updated successfully!" });
   };
 
@@ -549,6 +605,7 @@ export default function AdminHopeStudioPage() {
   const handleJesseLiuSave = () => {
     localStorage.setItem(JESSE_LIU_STORAGE_KEY, JSON.stringify(jesseLiuForm));
     setJesseLiuData(jesseLiuForm);
+    setEditingId(null);
     setMessage({ type: "success", text: "Jesse Liu content updated successfully!" });
   };
 
@@ -600,7 +657,38 @@ export default function AdminHopeStudioPage() {
   const handleShangriLaSave = () => {
     localStorage.setItem(SHANGRI_LA_STORAGE_KEY, JSON.stringify(shangriLaForm));
     setShangriLaData(shangriLaForm);
+    setEditingId(null);
     setMessage({ type: "success", text: "Shangri-La content updated successfully!" });
+  };
+
+  const handleCooperationImageSelect = (key: keyof CooperationData, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && file.type.startsWith("image/")) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        setCooperationForm({ ...cooperationForm, [key]: event.target?.result as string });
+      };
+      reader.readAsDataURL(file);
+    }
+    e.target.value = "";
+  };
+
+  const handleCooperationSave = () => {
+    localStorage.setItem(COOPERATION_STORAGE_KEY, JSON.stringify(cooperationForm));
+    setCooperationData(cooperationForm);
+
+    // Also update the card image in hope_studio_content
+    const stored = localStorage.getItem("hope_studio_content");
+    if (stored) {
+      const items = JSON.parse(stored);
+      const updated = items.map(item =>
+        item.id === "works" ? { ...item, image: cooperationForm.image1 } : item
+      );
+      localStorage.setItem("hope_studio_content", JSON.stringify(updated));
+    }
+
+    setEditingId(null);
+    setMessage({ type: "success", text: "Cooperation content updated successfully!" });
   };
 
   const handleCancel = () => {
@@ -611,6 +699,7 @@ export default function AdminHopeStudioPage() {
     setStudioForm(DEFAULT_STUDIO_DATA);
     setJesseLiuForm(DEFAULT_JESSE_LIU_DATA);
     setShangriLaForm(DEFAULT_SHANGRI_LA_DATA);
+    setCooperationForm(DEFAULT_COOPERATION_DATA);
   };
 
   return (
@@ -622,6 +711,15 @@ export default function AdminHopeStudioPage() {
           <p className="mt-1 text-sm text-gray-500">Manage Hope Studio content</p>
         </div>
       </div>
+
+      {/* Success/Error Toast */}
+      {message && (
+        <div className="fixed inset-0 flex items-center justify-center z-50">
+          <div className="bg-white border border-gray-200 rounded-lg shadow-xl px-8 py-4 text-center">
+            <p className="text-gray-800">{message.text}</p>
+          </div>
+        </div>
+      )}
 
       {/* Filter */}
       <div className="flex flex-wrap items-center gap-4">
@@ -635,13 +733,6 @@ export default function AdminHopeStudioPage() {
           </select>
         </div>
       </div>
-
-      {/* Message */}
-      {message && (
-        <div className={`rounded-lg p-4 text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-          {message.text}
-        </div>
-      )}
 
       {/* Edit Form */}
       {editingId && (
@@ -755,8 +846,8 @@ export default function AdminHopeStudioPage() {
               </div>
 
               <div className="flex justify-end gap-3 border-t pt-4">
-                <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
-                <button onClick={handleWelcomeSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); handleCancel(); }} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); handleWelcomeSave(); }} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
               </div>
             </div>
           ) : editingId === "studio" ? (
@@ -886,8 +977,8 @@ export default function AdminHopeStudioPage() {
               </div>
 
               <div className="flex justify-end gap-3 border-t pt-4">
-                <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
-                <button onClick={handleStudioSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); handleCancel(); }} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); handleStudioSave(); }} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
               </div>
             </div>
           ) : editingId === "jesse-liu" ? (
@@ -1053,8 +1144,8 @@ export default function AdminHopeStudioPage() {
               </div>
 
               <div className="flex justify-end gap-3 border-t pt-4">
-                <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
-                <button onClick={handleJesseLiuSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); handleCancel(); }} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); handleJesseLiuSave(); }} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
               </div>
             </div>
           ) : editingId === "shangri-la" ? (
@@ -1205,8 +1296,109 @@ export default function AdminHopeStudioPage() {
               </div>
 
               <div className="flex justify-end gap-3 border-t pt-4">
-                <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
-                <button onClick={handleShangriLaSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); handleCancel(); }} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); handleShangriLaSave(); }} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
+              </div>
+            </div>
+          ) : editingId === "works" ? (
+            <div className="space-y-6">
+              {/* Hero Title Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Hero Section</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Hero Title</label>
+                  <input
+                    type="text"
+                    value={cooperationForm.heroTitle}
+                    onChange={(e) => setCooperationForm({ ...cooperationForm, heroTitle: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Introduction Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Introduction</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Introduction Text 1 (use blank line for spacing)</label>
+                  <textarea
+                    value={cooperationForm.introText1}
+                    onChange={(e) => setCooperationForm({ ...cooperationForm, introText1: e.target.value })}
+                    rows={4}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                    placeholder="Enter text. Use blank line to separate paragraphs."
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Introduction Text 2 (use blank line for spacing)</label>
+                  <textarea
+                    value={cooperationForm.introText2}
+                    onChange={(e) => setCooperationForm({ ...cooperationForm, introText2: e.target.value })}
+                    rows={4}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                    placeholder="Enter text. Use blank line to separate paragraphs."
+                  />
+                </div>
+              </div>
+
+              {/* Button Labels Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Button Labels</h3>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Link 1 Title (Musical Performance Team)</label>
+                  <input
+                    type="text"
+                    value={cooperationForm.link1Title}
+                    onChange={(e) => setCooperationForm({ ...cooperationForm, link1Title: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-gray-700">Link 2 Title (Business Cooperation)</label>
+                  <input
+                    type="text"
+                    value={cooperationForm.link2Title}
+                    onChange={(e) => setCooperationForm({ ...cooperationForm, link2Title: e.target.value })}
+                    className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  />
+                </div>
+              </div>
+
+              {/* Images Section */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Images</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {[
+                    { key: "image1" as const, label: "Image 1" },
+                    { key: "image2" as const, label: "Image 2" },
+                    { key: "image3" as const, label: "Image 3" },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="space-y-2">
+                      <label className="mb-1 block text-xs font-medium text-gray-700">{label}</label>
+                      <input
+                        type="text"
+                        value={cooperationForm[key]}
+                        onChange={(e) => setCooperationForm({ ...cooperationForm, [key]: e.target.value })}
+                        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+                        placeholder="Image URL"
+                      />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => handleCooperationImageSelect(key, e)}
+                        className="block w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                      />
+                      {cooperationForm[key] && (
+                        <img src={cooperationForm[key]} alt={label} className="h-32 w-full rounded-md object-cover bg-gray-100" />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-3 border-t pt-4">
+                <button type="button" onClick={(e) => { e.preventDefault(); handleCancel(); }} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); handleCooperationSave(); }} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
               </div>
             </div>
           ) : (
@@ -1248,8 +1440,8 @@ export default function AdminHopeStudioPage() {
                 <span className="text-xs text-gray-400">(Uncheck to hide this section)</span>
               </div>
               <div className="flex justify-end gap-3 border-t pt-4">
-                <button onClick={handleCancel} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
-                <button onClick={handleSave} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); handleCancel(); }} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
+                <button type="button" onClick={(e) => { e.preventDefault(); handleSave(); }} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
               </div>
             </div>
           )}
