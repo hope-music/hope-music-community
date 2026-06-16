@@ -21,7 +21,7 @@ export function ViewMoreButton({
       rel="noopener noreferrer"
       className={`inline-block bg-hmc-red font-semibold text-white transition-colors hover:bg-hmc-red-hover ${sizeClasses} ${className} normal-case`}
     >
-      View Details
+      View More
     </Link>
   );
 }

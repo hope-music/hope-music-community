@@ -61,7 +61,7 @@ export function ContentCard({
             href={categoryHref}
             className="flex-1 rounded bg-hmc-orange px-3 py-1.5 text-center text-xs font-medium text-white hover:bg-hmc-orange/90 transition-colors"
           >
-            View Details
+            View More
           </a>
         </div>
       )}
