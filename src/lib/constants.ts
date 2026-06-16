@@ -25,6 +25,18 @@ export const PERFORMANCE_CATEGORIES = [
   "Others",
 ] as const;
 
+export const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
+  Musical:         "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=500",
+  Classical:        "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=500",
+  EDM:              "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500",
+  "Legendary Rock": "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=500",
+  "Legendary Pop":  "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500",
+  Festival:         "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=500",
+  Ballet:           "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=500",
+  Drama:            "https://images.unsplash.com/photo-1503095396549-807759245b35?w=500",
+  Others:           "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=500",
+};
+
 export const PERFORMANCE_CATEGORY_OPTIONS = [
   { value: "musical", label: "Musical" },
   { value: "classical", label: "Classical" },

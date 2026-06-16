@@ -953,3 +953,176 @@ export const deleteNewsArticle = mutation({
     return { success: true, message: "News article deleted" };
   },
 });
+
+// ============================================
+// TAB 6: INSIGHTS
+// ============================================
+
+export const getPublishedInsights = query({
+  args: { category: v.optional(v.string()), limit: v.optional(v.number()) },
+  handler: async (ctx, args) => {
+    let items = await ctx.db.query("insights").collect();
+    items = items.filter((item: any) => item.isPublished === true);
+    if (args.category) {
+      items = items.filter((item: any) => item.category === args.category);
+    }
+    items = items.sort((a: any, b: any) => (b.publishDate ?? b.createdAt ?? 0) - (a.publishDate ?? a.createdAt ?? 0));
+    return items.map((item: any) => ({
+      _id: item._id,
+      title: item.title ?? "",
+      coverImage: item.coverImage ?? "",
+      content: item.content ?? "",
+      excerpt: item.excerpt ?? "",
+      category: item.category ?? "",
+      status: item.status ?? "upcoming",
+      publishDate: item.publishDate ?? 0,
+      eventDate: item.eventDate,
+      authorName: item.authorName ?? "",
+      isPublished: item.isPublished ?? false,
+      isFeatured: item.isFeatured ?? false,
+    }));
+  },
+});
+
+export const getInsightById = query({
+  args: { id: v.id("insights") },
+  handler: async (ctx, args) => {
+    const item = await ctx.db.get(args.id);
+    if (!item || item.isPublished !== true) return null;
+    return {
+      _id: item._id,
+      title: item.title ?? "",
+      coverImage: item.coverImage ?? "",
+      content: item.content ?? "",
+      excerpt: item.excerpt ?? "",
+      category: item.category ?? "",
+      status: item.status ?? "upcoming",
+      publishDate: item.publishDate ?? 0,
+      eventDate: item.eventDate,
+      authorName: item.authorName ?? "",
+      isPublished: item.isPublished ?? false,
+      isFeatured: item.isFeatured ?? false,
+      createdAt: item.createdAt ?? Date.now(),
+    };
+  },
+});
+
+export const listInsights = query({
+  args: {
+    callerEmail: v.optional(v.string()),
+    category: v.optional(v.string()),
+    status: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
+    let items = await ctx.db.query("insights").collect();
+    if (args.category) {
+      items = items.filter((item: any) => item.category === args.category);
+    }
+    if (args.status) {
+      items = items.filter((item: any) => (item.status ?? "upcoming") === args.status);
+    }
+    return items
+      .map((item: any) => ({
+        _id: item._id,
+        title: item.title ?? "",
+        coverImage: item.coverImage ?? "",
+        content: item.content ?? "",
+        excerpt: item.excerpt ?? "",
+        category: item.category ?? "",
+        status: item.status ?? "upcoming",
+        publishDate: item.publishDate ?? 0,
+        eventDate: item.eventDate,
+        authorName: item.authorName ?? "",
+        isPublished: item.isPublished ?? false,
+        isFeatured: item.isFeatured ?? false,
+        createdAt: item.createdAt ?? Date.now(),
+        updatedAt: item.updatedAt,
+      }))
+      .sort((a: any, b: any) => (b.publishDate ?? b.createdAt) - (a.publishDate ?? a.createdAt));
+  },
+});
+
+export const createInsight = mutation({
+  args: {
+    callerEmail: v.string(),
+    title: v.string(),
+    coverImage: v.optional(v.string()),
+    content: v.string(),
+    excerpt: v.optional(v.string()),
+    category: v.optional(v.string()),
+    eventDate: v.optional(v.number()),
+    publishDate: v.optional(v.number()),
+    authorEmail: v.optional(v.string()),
+    authorName: v.optional(v.string()),
+    isPublished: v.optional(v.boolean()),
+    isFeatured: v.optional(v.boolean()),
+    status: v.optional(v.union(v.literal("upcoming"), v.literal("past"), v.literal("draft"))),
+  },
+  handler: async (ctx, args) => {
+    const adminInfo = await requireAdmin(ctx, args.callerEmail);
+    const id = await ctx.db.insert("insights", {
+      title: args.title,
+      coverImage: args.coverImage,
+      content: args.content,
+      excerpt: args.excerpt,
+      category: args.category ?? "general",
+      eventDate: args.eventDate,
+      publishDate: args.publishDate ?? Date.now(),
+      authorEmail: args.authorEmail ?? adminInfo.email ?? undefined,
+      authorName: args.authorName ?? undefined,
+      isPublished: args.isPublished ?? false,
+      isFeatured: args.isFeatured ?? false,
+      status: args.status ?? "upcoming",
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
+    return { success: true, id, message: "Insight created" };
+  },
+});
+
+export const updateInsight = mutation({
+  args: {
+    callerEmail: v.string(),
+    id: v.id("insights"),
+    title: v.optional(v.string()),
+    coverImage: v.optional(v.string()),
+    content: v.optional(v.string()),
+    excerpt: v.optional(v.string()),
+    category: v.optional(v.string()),
+    eventDate: v.optional(v.number()),
+    publishDate: v.optional(v.number()),
+    authorEmail: v.optional(v.string()),
+    authorName: v.optional(v.string()),
+    isPublished: v.optional(v.boolean()),
+    isFeatured: v.optional(v.boolean()),
+    status: v.optional(v.union(v.literal("upcoming"), v.literal("past"), v.literal("draft"))),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
+    const updates: Record<string, any> = { updatedAt: Date.now() };
+    if (args.title !== undefined) updates.title = args.title;
+    if (args.coverImage !== undefined) updates.coverImage = args.coverImage;
+    if (args.content !== undefined) updates.content = args.content;
+    if (args.excerpt !== undefined) updates.excerpt = args.excerpt;
+    if (args.category !== undefined) updates.category = args.category;
+    if (args.eventDate !== undefined) updates.eventDate = args.eventDate;
+    if (args.publishDate !== undefined) updates.publishDate = args.publishDate;
+    if (args.authorEmail !== undefined) updates.authorEmail = args.authorEmail;
+    if (args.authorName !== undefined) updates.authorName = args.authorName;
+    if (args.isPublished !== undefined) updates.isPublished = args.isPublished;
+    if (args.isFeatured !== undefined) updates.isFeatured = args.isFeatured;
+    if (args.status !== undefined) updates.status = args.status;
+    await ctx.db.patch("insights", args.id, updates);
+    return { success: true, message: "Insight updated" };
+  },
+});
+
+export const deleteInsight = mutation({
+  args: { callerEmail: v.string(), id: v.id("insights") },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
+    await ctx.db.delete("insights", args.id);
+    return { success: true, message: "Insight deleted" };
+  },
+});

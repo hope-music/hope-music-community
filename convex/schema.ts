@@ -92,6 +92,29 @@ export default defineSchema(
       createdAt: v.optional(v.number()),
       updatedAt: v.optional(v.number()),
     }),
+
+    insights: defineTable({
+      title: v.string(),
+      coverImage: v.optional(v.string()),
+      content: v.string(),
+      excerpt: v.optional(v.string()),
+      publishDate: v.optional(v.number()),
+      authorEmail: v.optional(v.string()),
+      authorName: v.optional(v.string()),
+      category: v.string(),
+      eventDate: v.optional(v.number()),
+      status: v.optional(v.union(
+        v.literal("upcoming"),
+        v.literal("past"),
+        v.literal("draft")
+      )),
+      isPublished: v.optional(v.boolean()),
+      isFeatured: v.optional(v.boolean()),
+      createdAt: v.optional(v.number()),
+      updatedAt: v.optional(v.number()),
+    })
+      .index("by_category", ["category"])
+      .index("by_status", ["status"]),
   },
   {
     schemaValidation: false,

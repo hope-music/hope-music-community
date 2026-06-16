@@ -6,7 +6,7 @@ import Image from "next/image";
 import { CategoryBox } from "@/components/ui/CategoryBox";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { PERFORMANCE_CATEGORIES, PERFORMANCE_CATEGORY_SLUG_MAP, PLACEHOLDER_ARTICLE } from "@/lib/constants";
+import { PERFORMANCE_CATEGORIES, PERFORMANCE_CATEGORY_SLUG_MAP, CATEGORY_FALLBACK_IMAGES } from "@/lib/constants";
 
 interface PerformanceItem {
   id: string;
@@ -63,6 +63,9 @@ function CategoryCard({ category, data }: { category: string; data: CategoryData
   const item = data?.latest;
   const total = data?.total || 0;
 
+  const fallbackImage = CATEGORY_FALLBACK_IMAGES[category] || CATEGORY_FALLBACK_IMAGES["Others"];
+  const imageSrc = item?.coverImage && item.coverImage.startsWith("http") ? item.coverImage : fallbackImage;
+
   return (
     <CategoryBox title={category}>
       <article className="flex h-full flex-col">
@@ -74,14 +77,14 @@ function CategoryCard({ category, data }: { category: string; data: CategoryData
           className="flex flex-1 cursor-pointer flex-col gap-2 border border-hmc-placeholder-border border-b-0 bg-white p-2 transition-opacity duration-200 hover:opacity-80"
         >
           <h3 className="line-clamp-3 text-left text-xs font-semibold leading-snug text-hmc-text">
-            {item ? item.title : PLACEHOLDER_ARTICLE.title}
+            {item ? item.title : category}
           </h3>
           <time className="text-left text-[10px] text-hmc-text-muted" dateTime="2026-05-15">
-            {item ? new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : PLACEHOLDER_ARTICLE.date}
+            {item ? new Date(item.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "No upcoming events"}
           </time>
           <div className="aspect-[4/3] w-full overflow-hidden bg-hmc-placeholder">
             <Image
-              src={item?.coverImage || "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=500"}
+              src={imageSrc}
               alt={item?.title || "Performance thumbnail"}
               width={500}
               height={375}

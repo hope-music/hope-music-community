@@ -79,9 +79,9 @@ const SECTION_RESULTS: SearchResult[] = [
     searchText: "performance featured shows live performances categories cities",
   },
   {
-    id: "section-stage-production",
+    id: "section-insights",
     title: "Insights",
-    href: "/stage-production",
+    href: "/insights",
     description: "Explore stage, lighting, audio, effects, costumes, props, and related production work.",
     section: "Section",
     meta: "Insights",
@@ -269,7 +269,7 @@ function loadStageProductionResults(): SearchResult[] {
       return {
         id: `stage-production-${item.id}`,
         title: item.title,
-        href: `/stage-production/${item.category}/${item.id}`,
+        href: `/insights/${item.category}/${item.id}`,
         description,
         section: "Insights",
         meta: [categoryLabel, formatDate(item.eventDate)].filter(Boolean).join(" • "),

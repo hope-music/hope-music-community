@@ -215,6 +215,8 @@ export default function StageProductionsPage() {
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [dataSource, setDataSource] = useState<DataSource>("admin");
   const [isMerging, setIsMerging] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<string | null>(null);
 
   // Featured performances state
   const [featuredIds, setFeaturedIds] = useState<string[]>([]);
@@ -582,6 +584,31 @@ export default function StageProductionsPage() {
     setMessage({ type: "success", text: "Deleted" });
   };
 
+  // Sync from Ticketmaster API and save to public JSON file
+  const handleSyncFromTicketmaster = async () => {
+    if (!confirm("Sync now? This will fetch the latest events from Ticketmaster and save to the public data file. Continue?")) return;
+
+    setSyncing(true);
+    setMessage(null);
+    try {
+      const res = await fetch("/api/ticketmaster", { method: "POST" });
+      const data = await res.json();
+
+      if (data.success) {
+        setLastSync(data.fetchedAt);
+        // Refresh the data list
+        await loadAllData();
+        setMessage({ type: "success", text: `Sync complete! ${data.total} events fetched.` });
+      } else {
+        setMessage({ type: "error", text: `Sync failed: ${data.error}` });
+      }
+    } catch (err) {
+      setMessage({ type: "error", text: "Sync request failed. Please try again." });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const getStatusBadge = (s: string) => {
     switch (s) {
       case "upcoming": return <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-600">Upcoming</span>;
@@ -637,12 +664,31 @@ export default function StageProductionsPage() {
           </div>
         </div>
         <div className="flex gap-3">
-          <button 
-            onClick={loadAllData} 
+          <button
+            onClick={handleSyncFromTicketmaster}
+            disabled={syncing}
+            className="rounded-md border border-orange-400 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 disabled:opacity-50 flex items-center gap-2"
+          >
+            {syncing ? (
+              <>
+                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-300 border-t-orange-600" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Sync from Ticketmaster
+              </>
+            )}
+          </button>
+          <button
+            onClick={loadAllData}
             disabled={loading}
             className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
           >
-            {loading ? "Loading..." : "↻ Refresh from API"}
+            {loading ? "Loading..." : "↻ Refresh"}
           </button>
           <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
             + New Performance

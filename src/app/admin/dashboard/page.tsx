@@ -37,11 +37,11 @@ export default function AdminDashboardPage() {
       color: "border-orange-200 bg-white hover:border-orange-400",
     },
     {
-      title: "Insights",
-      description: "Manage sets, lighting, sound, and production resources",
-      href: "/admin/stage-production",
-      icon: "🎬",
-      color: "border-purple-200 bg-white hover:border-purple-400",
+      title: "Interaction",
+      description: "Manage software, hardware, and educational resources",
+      href: "/admin/interaction",
+      icon: "💻",
+      color: "border-green-200 bg-white hover:border-green-400",
     },
     {
       title: "Hope Studio",
@@ -51,11 +51,11 @@ export default function AdminDashboardPage() {
       color: "border-blue-200 bg-white hover:border-blue-400",
     },
     {
-      title: "Interaction",
-      description: "Manage software, hardware, and educational resources",
-      href: "/admin/interaction",
-      icon: "💻",
-      color: "border-green-200 bg-white hover:border-green-400",
+      title: "Insights",
+      description: "Manage sets, lighting, sound, and production resources",
+      href: "/admin/insights",
+      icon: "🎬",
+      color: "border-purple-200 bg-white hover:border-purple-400",
     },
     {
       title: "News",

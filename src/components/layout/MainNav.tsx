@@ -46,13 +46,22 @@ export function MainNav() {
                 </li>
               );
             }
-            if (link.href === "/stage-production") {
+            if (link.href === "/insights") {
               return (
-                <li key={link.href} className="relative">
-                  <StageProductionNavLink
-                    href={link.href}
-                    isActive={pathname.startsWith(link.href)}
-                  />
+                <li key={link.href} className="flex items-center">
+                  <Link
+                    href="/insights"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={`relative inline-flex items-center whitespace-nowrap px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-150 hover:opacity-85 lg:px-4 ${
+                      pathname.startsWith(link.href) ? "opacity-100" : "opacity-80"
+                    }`}
+                  >
+                    {link.label}
+                    {pathname.startsWith(link.href) && (
+                      <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-hmc-orange" />
+                    )}
+                  </Link>
                 </li>
               );
             }
@@ -62,6 +71,18 @@ export function MainNav() {
                   <InteractionNavLink
                     href={link.href}
                     isActive={pathname.startsWith(link.href)}
+                  />
+                </li>
+              );
+            }
+            if (link.href === "/news") {
+              return (
+                <li key={link.href} className="flex items-center">
+                  <NavLink
+                    href={link.href}
+                    label={link.label}
+                    isActive={pathname.startsWith(link.href)}
+                    external={!!(link as { external?: boolean }).external}
                   />
                 </li>
               );
@@ -95,7 +116,6 @@ export function MainNav() {
 }
 
 const PERFORMANCE_ITEMS = [
-  { label: "Legend Hall of Fame", slug: "legend-hall-of-fame" },
   { label: "Musical", slug: "musical" },
   { label: "Classical", slug: "classical" },
   { label: "EDM", slug: "edm" },
@@ -103,20 +123,14 @@ const PERFORMANCE_ITEMS = [
   { label: "Legendary Pop", slug: "legendary-pop" },
   { label: "Festival", slug: "festival" },
   { label: "Ballet", slug: "ballet" },
+  { label: "Drama", slug: "drama" },
   { label: "Others", slug: "others" },
-  { label: "Featured", slug: "", isFeatured: true },
 ];
 
-const STAGE_PRODUCTION_ITEMS = [
-  { label: "Stage", slug: "stage" },
-  { label: "Video", slug: "video" },
-  { label: "Lighting", slug: "lighting" },
-  { label: "Audio", slug: "audio" },
-  { label: "Effects", slug: "effects" },
-  { label: "Costumes", slug: "costumes" },
-  { label: "Props", slug: "props" },
-  { label: "Makeup", slug: "makeup" },
-  { label: "Others", slug: "others" },
+const NEWS_ITEMS = [
+  { label: "All News", slug: "" },
+  { label: "Latest Updates", slug: "latest" },
+  { label: "Press Releases", slug: "press" },
 ];
 
 const INTERACTION_ITEMS = [
@@ -185,7 +199,7 @@ function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolea
   );
 }
 
-function StageProductionNavLink({ href, isActive }: { href: string; isActive: boolean }) {
+function NewsNavLink({ href, isActive }: { href: string; isActive: boolean }) {
   return (
     <div className="group relative">
       <Link
@@ -194,7 +208,7 @@ function StageProductionNavLink({ href, isActive }: { href: string; isActive: bo
           isActive ? "opacity-100" : "opacity-80"
         }`}
       >
-        INSIGHTS
+        NEWS
         {isActive && (
           <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-hmc-orange" />
         )}
@@ -211,14 +225,13 @@ function StageProductionNavLink({ href, isActive }: { href: string; isActive: bo
         </svg>
       </Link>
 
-      {/* Dropdown — left-aligned with nav item, flush to bottom, light-blue theme */}
       <div
         className="pointer-events-none absolute left-0 top-full z-50 mt-0 w-52 rounded-b-xl border border-hmc-mainnav-bg/20 bg-hmc-dropdown-bg py-2 shadow-xl opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
       >
-        {STAGE_PRODUCTION_ITEMS.map((item) => (
+        {NEWS_ITEMS.map((item) => (
           <Link
             key={item.slug}
-            href={`/stage-production/${item.slug}`}
+            href={item.slug ? `/news?tab=${item.slug}` : "/news"}
             target="_blank"
             rel="noopener noreferrer"
             className="flex items-center px-5 py-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-white/20 hover:text-white"

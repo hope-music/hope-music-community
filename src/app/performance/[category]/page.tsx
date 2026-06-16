@@ -31,10 +31,12 @@ interface FilterGroup {
 }
 
 type TimeFilter = "all" | "week" | "month";
+type PastFilter = "recent" | "all";
 
 const ITEMS_PER_PAGE = 20;
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+const THREE_MONTHS_MS = 90 * 24 * 60 * 60 * 1000;
 const CUSTOM_CITY_VALUE = "__custom_city__";
 const GLOBAL_CITY_GROUPS = [
   {
@@ -137,12 +139,15 @@ function getEventDateStr(eventDate: string): string {
   return `${y}-${m}-${day}`;
 }
 
-function matchesPastFilter(eventDate?: string): boolean {
+function matchesPastFilter(eventDate?: string, filter: PastFilter): boolean {
   if (!eventDate) return false;
   const eventDateStr = getEventDateStr(eventDate);
   const now = new Date();
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
-  return eventDateStr < todayStr;
+  if (eventDateStr >= todayStr) return false;
+  if (filter === "all") return true;
+  const diff = now.getTime() - new Date(eventDateStr).getTime();
+  return diff <= THREE_MONTHS_MS;
 }
 
 function normalizeCity(city?: string): string {
@@ -185,6 +190,7 @@ export default function PerformanceCategoryPage() {
   const [selectedCity, setSelectedCity] = useState("all");
   const [customCity, setCustomCity] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
+  const [pastFilter, setPastFilter] = useState<PastFilter>("recent");
   const [viewMode, setViewMode] = useState<"upcoming" | "past">("upcoming");
 
   useEffect(() => {
@@ -253,6 +259,7 @@ export default function PerformanceCategoryPage() {
     setSelectedCity("all");
     setCustomCity("");
     setTimeFilter("all");
+    setPastFilter("recent");
   }, [params.category]);
 
   const cityOptionGroups = useMemo<FilterGroup[]>(() => {
@@ -313,7 +320,7 @@ export default function PerformanceCategoryPage() {
         normalizedActiveCity === "all" || normalizeCity(item.city) === normalizedActiveCity;
       const timeMatches = viewMode === "upcoming"
         ? matchesTimeFilter(item.eventDate, timeFilter)
-        : matchesPastFilter(item.eventDate);
+        : matchesPastFilter(item.eventDate, pastFilter);
       return cityMatches && timeMatches;
     });
 
@@ -334,7 +341,7 @@ export default function PerformanceCategoryPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCity, customCity, timeFilter, viewMode]);
+  }, [selectedCity, customCity, timeFilter, pastFilter, viewMode]);
 
   const formatDateTime = (d?: string) => {
     if (!d) return { date: "", time: "" };
@@ -591,12 +598,65 @@ export default function PerformanceCategoryPage() {
 
       {filteredItems.length === 0 ? (
         <div className="mx-auto max-w-6xl px-4 pb-12">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="h-6 w-1.5 bg-hmc-orange"></div>
+            <h2 className="text-base font-bold uppercase tracking-wider text-gray-800">Events</h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setViewMode("upcoming")}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  viewMode === "upcoming"
+                    ? "bg-hmc-orange text-white"
+                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                }`}
+              >
+                Upcoming
+              </button>
+              <button
+                onClick={() => setViewMode("past")}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  viewMode === "past"
+                    ? "bg-red-500 text-white"
+                    : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                }`}
+              >
+                Past Events
+              </button>
+              {viewMode === "past" && (
+                <>
+                  <span className="mx-1 text-gray-300">·</span>
+                  <button
+                    onClick={() => setPastFilter("recent")}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                      pastFilter === "recent"
+                        ? "bg-hmc-orange text-white"
+                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                    }`}
+                  >
+                    Last 3 Months
+                  </button>
+                  <button
+                    onClick={() => setPastFilter("all")}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                      pastFilter === "all"
+                        ? "bg-hmc-orange text-white"
+                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                    }`}
+                  >
+                    All Past
+                  </button>
+                </>
+              )}
+            </div>
+          </div>
           <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 py-16 text-center">
             <h2 className="text-lg font-semibold text-gray-800">No {viewMode} performances found</h2>
             <p className="mt-2 text-sm text-gray-500">
               {viewMode === "upcoming"
                 ? "Try another city or time range."
-                : "No past performances within two weeks."}
+                : pastFilter === "recent"
+                ? "No past performances within 3 months."
+                : "No past performances available."}
             </p>
           </div>
         </div>
@@ -627,6 +687,31 @@ export default function PerformanceCategoryPage() {
                 >
                   Past Events
                 </button>
+                {viewMode === "past" && (
+                  <>
+                    <span className="mx-1 text-gray-300">·</span>
+                    <button
+                      onClick={() => setPastFilter("recent")}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                        pastFilter === "recent"
+                          ? "bg-hmc-orange text-white"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      }`}
+                    >
+                      Last 3 Months
+                    </button>
+                    <button
+                      onClick={() => setPastFilter("all")}
+                      className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                        pastFilter === "all"
+                          ? "bg-hmc-orange text-white"
+                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                      }`}
+                    >
+                      All Past
+                    </button>
+                  </>
+                )}
               </div>
               <span className="rounded-full bg-gray-100 px-2 py-1 text-xs text-gray-400">{filteredItems.length}</span>
               <div className="h-px flex-1 bg-gradient-to-r from-gray-200 via-transparent to-transparent"></div>
