@@ -31,8 +31,8 @@ export function NewsSection() {
   return (
     <section className="py-6 pb-10" aria-labelledby="news-heading">
       <Container>
-        <div className="mb-4 flex items-center justify-between">
-          <h2 id="news-heading" className="text-lg font-semibold text-hmc-text">
+        <div className="mb-4 flex items-end justify-between gap-4 border-b border-hmc-placeholder-border pb-2">
+          <h2 id="news-heading" className="text-2xl font-bold text-hmc-orange">
             News
           </h2>
           <ViewMoreButton href="/news" />
