@@ -5,7 +5,7 @@ export const MAIN_NAV_LINKS = [
   { label: "PERFORMANCE", href: "/performance", variant: "default" as const },
   { label: "INTERACTION", href: "/interaction", variant: "default" as const },
   { label: "HOPE STUDIO", href: "/hope-studio", variant: "hope-studio" as const },
-  { label: "INSIGHTS", href: "/stage-production", variant: "default" as const },
+  { label: "INSIGHTS", href: "/insights", variant: "default" as const },
   { label: "NEWS", href: "/news", variant: "default" as const, external: true as const },
   { label: "COMMUNITY", href: "/", variant: "default" as const },
 ] as const;
@@ -14,7 +14,6 @@ export const COMMUNITY_TICKER_MESSAGE =
   "Welcome to our music community — discover performances, collaborations, and creative resources.";
 
 export const PERFORMANCE_CATEGORIES = [
-  "Legend Hall of Fame",
   "Musical",
   "Classical",
   "EDM",
@@ -22,11 +21,11 @@ export const PERFORMANCE_CATEGORIES = [
   "Legendary Pop",
   "Festival",
   "Ballet",
+  "Drama",
   "Others",
 ] as const;
 
 export const PERFORMANCE_CATEGORY_OPTIONS = [
-  { value: "legend-hall-of-fame", label: "Legend Hall of Fame" },
   { value: "musical", label: "Musical" },
   { value: "classical", label: "Classical" },
   { value: "edm", label: "EDM" },
@@ -34,6 +33,7 @@ export const PERFORMANCE_CATEGORY_OPTIONS = [
   { value: "legendary-pop", label: "Legendary Pop" },
   { value: "festival", label: "Festival" },
   { value: "ballet", label: "Ballet" },
+  { value: "drama", label: "Drama" },
   { value: "others", label: "Others" },
 ] as const;
 

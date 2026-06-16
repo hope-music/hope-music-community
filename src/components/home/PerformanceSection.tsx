@@ -98,7 +98,7 @@ function CategoryCard({ category, data }: { category: string; data: CategoryData
             rel="noopener noreferrer"
             className="flex-1 rounded bg-hmc-orange px-3 py-1.5 text-center text-xs font-medium text-white hover:bg-hmc-orange/90 transition-colors"
           >
-            View Details {total > 0 && `(${total})`}
+            View More {total > 0 && `(${total})`}
           </a>
         </div>
       </article>
