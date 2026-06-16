@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { useQuery } from "@/lib/convex";
 import { api } from "@/lib/convex";
@@ -55,9 +54,11 @@ export default function NewsListingPage() {
           <>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {currentItems.map((article) => (
-                <Link
+                <a
                   key={article._id}
                   href={`/news/${article._id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="group overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm transition-shadow hover:shadow-md"
                 >
                   <div className="aspect-[4/3] overflow-hidden bg-gray-100">
@@ -89,7 +90,7 @@ export default function NewsListingPage() {
                       </p>
                     )}
                   </div>
-                </Link>
+                </a>
               ))}
             </div>
 

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useQuery } from "convex/react";
 import { api } from "@/lib/convex";
 import { Container } from "@/components/ui/Container";
@@ -62,9 +61,11 @@ export function NewsSection() {
         ) : (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {newsItems.map((item) => (
-              <Link
+              <a
                 key={item.id}
                 href={item.href}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="group flex h-full flex-col overflow-hidden rounded-xl border border-hmc-placeholder-border bg-white shadow-sm transition-shadow duration-200 hover:shadow-md"
               >
                 <div className="aspect-[4/3] w-full overflow-hidden bg-hmc-placeholder">
@@ -94,7 +95,7 @@ export function NewsSection() {
                     {item.title}
                   </h3>
                 </div>
-              </Link>
+              </a>
             ))}
           </div>
         )}
