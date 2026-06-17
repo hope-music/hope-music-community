@@ -222,10 +222,16 @@ export default function PerformanceCategoryPage() {
           const data = JSON.parse(stored);
 
           const OLD_TO_NEW: Record<string, string> = {
-            "opera": "legend-hall-of-fame",
-            "concert": "musical",
-            "rock-roll": "classical",
-            "tourist-performance": "edm",
+            "legend-hall-of-fame": "opera",
+            "musical": "musical",
+            "classical": "classical",
+            "edm": "electronic",
+            "legendary-rock": "pop-rock",
+            "legendary-pop": "pop-rock",
+            "festival": "other",
+            "ballet": "dance",
+            "drama": "performance-art",
+            "others": "other",
           };
           let migrated = false;
           const updated = data.map((item: Production) => {

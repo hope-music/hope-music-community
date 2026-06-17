@@ -182,12 +182,18 @@ function loadItemsFromStorage(): Production[] {
     if (stored) {
       const data = JSON.parse(stored);
       // Migrate old categories
-      const OLD_TO_NEW_CATEGORY: Record<string, string> = {
-        "opera": "legend-hall-of-fame",
-        "concert": "musical",
-        "rock-roll": "classical",
-        "tourist-performance": "edm",
-      };
+          const OLD_TO_NEW_CATEGORY: Record<string, string> = {
+            "legend-hall-of-fame": "opera",
+            "musical": "musical",
+            "classical": "classical",
+            "edm": "electronic",
+            "legendary-rock": "pop-rock",
+            "legendary-pop": "pop-rock",
+            "festival": "other",
+            "ballet": "dance",
+            "drama": "performance-art",
+            "others": "other",
+          };
       return data.map((item: Production) => ({
         ...item,
         category: OLD_TO_NEW_CATEGORY[item.category] || item.category,

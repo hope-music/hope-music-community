@@ -117,14 +117,14 @@ export function MainNav() {
 
 const PERFORMANCE_ITEMS = [
   { label: "Musical", slug: "musical" },
+  { label: "Opera", slug: "opera" },
   { label: "Classical", slug: "classical" },
-  { label: "EDM", slug: "edm" },
-  { label: "Legendary Rock", slug: "legendary-rock" },
-  { label: "Legendary Pop", slug: "legendary-pop" },
-  { label: "Festival", slug: "festival" },
-  { label: "Ballet", slug: "ballet" },
-  { label: "Drama", slug: "drama" },
-  { label: "Others", slug: "others" },
+  { label: "Music", slug: "music" },
+  { label: "Electronic", slug: "electronic" },
+  { label: "Pop & Rock", slug: "pop-rock" },
+  { label: "Performance Art", slug: "performance-art" },
+  { label: "Dance", slug: "dance" },
+  { label: "Other", slug: "other" },
 ];
 
 const NEWS_ITEMS = [

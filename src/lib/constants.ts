@@ -15,38 +15,38 @@ export const COMMUNITY_TICKER_MESSAGE =
 
 export const PERFORMANCE_CATEGORIES = [
   "Musical",
+  "Opera",
   "Classical",
-  "EDM",
-  "Legendary Rock",
-  "Legendary Pop",
-  "Festival",
-  "Ballet",
-  "Drama",
-  "Others",
+  "Music",
+  "Electronic",
+  "Pop & Rock",
+  "Performance Art",
+  "Dance",
+  "Other",
 ] as const;
 
 export const CATEGORY_FALLBACK_IMAGES: Record<string, string> = {
   Musical:         "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=500",
-  Classical:        "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=500",
-  EDM:              "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500",
-  "Legendary Rock": "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=500",
-  "Legendary Pop":  "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=500",
-  Festival:         "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=500",
-  Ballet:           "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=500",
-  Drama:            "https://images.unsplash.com/photo-1503095396549-807759245b35?w=500",
-  Others:           "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=500",
+  Opera:           "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=500",
+  Classical:       "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=500",
+  Music:           "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=500",
+  Electronic:      "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=500",
+  "Pop & Rock":    "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=500",
+  "Performance Art": "https://images.unsplash.com/photo-1503095396549-807759245b35?w=500",
+  Dance:           "https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=500",
+  Other:           "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=500",
 };
 
 export const PERFORMANCE_CATEGORY_OPTIONS = [
   { value: "musical", label: "Musical" },
+  { value: "opera", label: "Opera" },
   { value: "classical", label: "Classical" },
-  { value: "edm", label: "EDM" },
-  { value: "legendary-rock", label: "Legendary Rock" },
-  { value: "legendary-pop", label: "Legendary Pop" },
-  { value: "festival", label: "Festival" },
-  { value: "ballet", label: "Ballet" },
-  { value: "drama", label: "Drama" },
-  { value: "others", label: "Others" },
+  { value: "music", label: "Music" },
+  { value: "electronic", label: "Electronic" },
+  { value: "pop-rock", label: "Pop & Rock" },
+  { value: "performance-art", label: "Performance Art" },
+  { value: "dance", label: "Dance" },
+  { value: "other", label: "Other" },
 ] as const;
 
 export const STAGE_PRODUCTION_CATEGORY_OPTIONS = [

@@ -40,9 +40,14 @@ export function CategoryListing({
     const isPerformance =
       normalizedCategory.includes("musical") ||
       normalizedCategory.includes("opera") ||
+      normalizedCategory.includes("classical") ||
       normalizedCategory.includes("concert") ||
-      normalizedCategory.includes("edm") ||
+      normalizedCategory.includes("electronic") ||
+      normalizedCategory.includes("pop") ||
       normalizedCategory.includes("rock") ||
+      normalizedCategory.includes("performance-art") ||
+      normalizedCategory.includes("dance") ||
+      normalizedCategory.includes("edm") ||
       normalizedCategory.includes("festival") ||
       normalizedCategory.includes("ballet") ||
       normalizedCategory.includes("tourist");

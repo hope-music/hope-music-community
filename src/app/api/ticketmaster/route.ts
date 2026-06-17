@@ -61,6 +61,14 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
     "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80",
     "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&q=80",
   ],
+  opera: [
+    "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
+    "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&q=80",
+    "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?w=800&q=80",
+    "https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=800&q=80",
+    "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=800&q=80",
+    "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&q=80",
+  ],
   classical: [
     "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=800&q=80",
     "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800&q=80",
@@ -69,23 +77,15 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
     "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80",
     "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80",
   ],
-  drama: [
-    "https://images.unsplash.com/photo-1503095396549-807759245b35?w=800&q=80",
-    "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&q=80",
-    "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?w=800&q=80",
-    "https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=800&q=80",
-    "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=800&q=80",
-    "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=800&q=80",
+  music: [
+    "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80",
+    "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80",
+    "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80",
+    "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&q=80",
+    "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80",
+    "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=800&q=80",
   ],
-  ballet: [
-    "https://images.unsplash.com/photo-1518834107812-67b0b7c58434?w=800&q=80",
-    "https://images.unsplash.com/photo-1547153760-18fc86324498?w=800&q=80",
-    "https://images.unsplash.com/photo-1508700929628-666bc8bd84ea?w=800&q=80",
-    "https://images.unsplash.com/photo-1485814837398-ed2048f57499?w=800&q=80",
-    "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80",
-    "https://images.unsplash.com/photo-1547153760-18fc86324498?w=800&q=80",
-  ],
-  edm: [
+  electronic: [
     "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80",
     "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
     "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80",
@@ -93,7 +93,7 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
     "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&q=80",
     "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80",
   ],
-  "legendary-rock": [
+  "pop-rock": [
     "https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?w=800&q=80",
     "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80",
     "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80",
@@ -101,23 +101,23 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
     "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80",
     "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&q=80",
   ],
-  "legendary-pop": [
-    "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80",
-    "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80",
-    "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=80",
-    "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80",
-    "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80",
+  "performance-art": [
+    "https://images.unsplash.com/photo-1503095396549-807759245b35?w=800&q=80",
+    "https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800&q=80",
+    "https://images.unsplash.com/photo-1460723237483-7a6dc9d0b212?w=800&q=80",
     "https://images.unsplash.com/photo-1514306191717-452ec28c7814?w=800&q=80",
+    "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=800&q=80",
+    "https://images.unsplash.com/photo-1504196606672-aef5c9cefc92?w=800&q=80",
   ],
-  festival: [
-    "https://images.unsplash.com/photo-1533174072545-7a4b6ad7a6c3?w=800&q=80",
-    "https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800&q=80",
-    "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=80",
-    "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80",
-    "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80",
-    "https://images.unsplash.com/photo-1429962714451-bb934ecdc4ec?w=800&q=80",
+  dance: [
+    "https://images.unsplash.com/photo-1518834107812-67b0b7c58434?w=800&q=80",
+    "https://images.unsplash.com/photo-1547153760-18fc86324498?w=800&q=80",
+    "https://images.unsplash.com/photo-1508700929628-666bc8bd84ea?w=800&q=80",
+    "https://images.unsplash.com/photo-1485814837398-ed2048f57499?w=800&q=80",
+    "https://images.unsplash.com/photo-1540039155733-5bb30b53aa14?w=800&q=80",
+    "https://images.unsplash.com/photo-1547153760-18fc86324498?w=800&q=80",
   ],
-  others: [
+  other: [
     "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?w=800&q=80",
     "https://images.unsplash.com/photo-1465847899084-d164df4dedc6?w=800&q=80",
     "https://images.unsplash.com/photo-1520523839897-bd0b52f945a0?w=800&q=80",
@@ -155,29 +155,75 @@ function mapEvent(event: TmEvent): PerformanceItem {
   const eventName = event.name.toLowerCase();
   const combined = `${genreName} ${subGenreName} ${eventName}`;
 
-  const knownLegendaryRock = [
-    "elvis presley", "beach boys", "ac/dc", "zz top", "guns n", "bon jovi",
-    "aerosmith", "u2", "queen", "kiss", "ozzy osbourne", "def leppard",
-    "journey", "foreigner", "stevie nicks", "fleetwood mac", "fleetwood",
-    "boston", "heart", "reba mc", "dolly parton", "garth brooks",
-    "billy joel", "bob dylan", "neil young", "bruce springsteen",
-    "rolling stones", "duran duran", "new kids", "kenny g",
-    "sting", "police", "dave matthews", "phish", "o.a.r.", "oar",
-    "santana", "doobie brothers", "lynyrd skynyrd", "creedence", "ccr",
-    "james taylor", "carly simon", "stevie wonder", "aretha franklin",
-    "al green", "neil diamond", "barry manilow", "donny osmond",
-    "our lady peace", "thievery corporation", "godsmack",
-    "cowboy junkies", "alison krauss",
-  ];
-  const knownLegendaryPop = [
-    "miley cyrus", "taylor swift", "beyonce", "beyoncé", "ed sheeran",
-    "billie eilish", "ariana grande", "justin bieber", "selena gomez", "selena",
-    "dua lipa", "harry styles", "camila cabello", "post malone", "drake",
-    "kendrick lamar", "the weeknd", "tame impala", "lana del rey",
-    "lorde", "madison beer", "olivia rodrigo", "carly pearce", "maren morris",
-    "kali uchis", "earl sweatshirt", "mgk", "holly humberstone",
-    "rio da yung og", "joe p",
-  ];
+  let category = "other";
+
+  const ticketmasterToSiteCategory: Record<string, string> = {
+    // 1. Musical
+    "Arts, Theater & Comedy -> Broadway": "musical",
+    "Arts, Theater & Comedy -> Theater": "musical",
+    
+    // 2. Opera
+    "Arts, Theater & Comedy -> Opera": "opera",
+    
+    // 3. Classical
+    "Arts, Theater & Comedy -> Classical": "classical",
+    "Concerts -> Classical": "classical",
+    
+    // 4. Music
+    "Arts, Theater & Comedy -> Music": "music",
+    
+    // 5. Electronic
+    "Concerts -> Dance/Electronic": "electronic",
+    
+    // 6. Pop & Rock
+    "Concerts -> Alternative": "pop-rock",
+    "Concerts -> Blues": "pop-rock",
+    "Concerts -> Country": "pop-rock",
+    "Concerts -> Folk": "pop-rock",
+    "Concerts -> Hip-Hop/Rap": "pop-rock",
+    "Concerts -> Jazz": "pop-rock",
+    "Concerts -> Latin": "pop-rock",
+    "Concerts -> Medieval/Renaissance": "pop-rock",
+    "Concerts -> Metal": "pop-rock",
+    "Concerts -> New Age": "pop-rock",
+    "Concerts -> Other": "pop-rock",
+    "Concerts -> Pop": "pop-rock",
+    "Concerts -> R&B": "pop-rock",
+    "Concerts -> Reggae": "pop-rock",
+    "Concerts -> Religious": "pop-rock",
+    "Concerts -> Rock": "pop-rock",
+    "Concerts -> World": "pop-rock",
+    
+    // 7. Performance Art
+    "Arts, Theater & Comedy -> Performance Art": "performance-art",
+    "Arts, Theater & Comedy -> Variety": "performance-art",
+    
+    // 8. Dance
+    "Arts, Theater & Comedy -> Dance": "dance",
+    
+    // 9. Other
+    "Concerts -> Ballads/Romantic": "other",
+    "Concerts -> Children's Music": "other",
+    "Concerts -> Holiday": "other",
+    "Arts, Theater & Comedy -> Children's Theater": "other",
+    "Arts, Theater & Comedy -> Circus & Specialty Acts": "other",
+    "Arts, Theater & Comedy -> Comedy": "other",
+    "Arts, Theater & Comedy -> Cultural": "other",
+    "Arts, Theater & Comedy -> Espectaculo": "other",
+    "Arts, Theater & Comedy -> Fashion": "other",
+    "Arts, Theater & Comedy -> Fine Art": "other",
+    "Arts, Theater & Comedy -> Magic & Illusion": "other",
+    "Arts, Theater & Comedy -> Miscellaneous": "other",
+    "Arts, Theater & Comedy -> Multimedia": "other",
+    "Arts, Theater & Comedy -> Puppetry": "other",
+    "Arts, Theater & Comedy -> Spectacular": "other",
+  };
+
+  const tmKey = `${segmentName} -> ${genreName}`;
+  const tmSubKey = `${segmentName} -> ${subGenreName}`;
+  
+  category = ticketmasterToSiteCategory[tmSubKey] || ticketmasterToSiteCategory[tmKey] || "other";
+
   const knownMusical = [
     "hamilton", "lion king", "aladdin", "phantom of", "wicked", "moulin rouge",
     "chicago", "mama mia", "mamma mia", "rent", "hadestown", "cats",
@@ -190,37 +236,25 @@ function mapEvent(event: TmEvent): PerformanceItem {
     "juliet", "frida", "rat pack is back", "second city", "atomic saloon",
     "the lost boys", "dog day afternoon",
   ];
+  const knownOpera = [
+    "opera", "la traviata", "carmen", "madama butterfly", "tosca",
+    "figaro", "don giovanni", "magic flute", "ring cycle", "wagner",
+  ];
   const knownClassical = [
     "max richter", "vivaldi", "bach", "mozart", "beethoven",
     "pavarotti", "andrea bocelli", "lang lang", "yuja wang",
     "anime soundtracks", "yoko kanno", "classical", "symphony",
     "orchestra", "philharmonic", "ballet",
   ];
-  const knownFestival = [
-    "festival", "carnival", "fair", "luau island", "dinosaur world",
-    "titanic", "art exhibit", "exhibit", "sea life",
-  ];
 
-  let category = "others";
-
-  // Check known names first
-  const lowerName = eventName;
-
-  if (knownMusical.some(n => lowerName.includes(n))) {
-    category = "musical";
-  } else if (knownLegendaryRock.some(n => lowerName.includes(n))) {
-    category = "legendary-rock";
-  } else if (knownLegendaryPop.some(n => lowerName.includes(n))) {
-    category = "legendary-pop";
-  } else if (knownClassical.some(n => lowerName.includes(n))) {
-    category = "classical";
-  } else if (knownFestival.some(n => lowerName.includes(n))) {
-    category = "festival";
-  } else {
-    // Distribute unmatched events across meaningful categories
-    const hash = Math.abs(event.id.split("").reduce((a, c) => a + c.charCodeAt(0), 0));
-    const distribution = ["musical", "classical", "legendary-rock", "legendary-pop", "edm", "ballet", "drama"];
-    category = distribution[hash % distribution.length];
+  if (category === "other") {
+    if (knownMusical.some(n => eventName.includes(n))) {
+      category = "musical";
+    } else if (knownOpera.some(n => eventName.includes(n))) {
+      category = "opera";
+    } else if (knownClassical.some(n => eventName.includes(n))) {
+      category = "classical";
+    }
   }
 
   const priceRange = event.priceRanges
