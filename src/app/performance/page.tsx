@@ -48,15 +48,28 @@ export default function FeaturedPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        // Load all items from JSON
-        const res = await fetch("/data/ticketmaster-events.json");
-        const data = await res.json();
-        const events = data.events || [];
-        setAllItems(events);
+        const categories = [
+          "musical", "opera", "classical", "music", "electronic",
+          "pop-rock", "performance-art", "dance", "other",
+        ];
+        let allEvents: Production[] = [];
 
-        // Load featured IDs and filter
+        for (const category of categories) {
+          try {
+            const res = await fetch(`/data/ticketmaster/${category}/events.json`);
+            if (res.ok) {
+              const data = await res.json();
+              allEvents = allEvents.concat(data.events || []);
+            }
+          } catch (e) {
+            // skip this category
+          }
+        }
+
+        setAllItems(allEvents);
+
         const featuredIds = loadFeaturedIds();
-        const featured = events.filter((item: Production) => featuredIds.includes(item.id));
+        const featured = allEvents.filter((item: Production) => featuredIds.includes(item.id));
         setFeaturedItems(featured);
       } catch (e) {
       } finally {

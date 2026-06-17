@@ -202,7 +202,7 @@ export default function PerformanceCategoryPage() {
       setCategoryName(sub?.label || category);
 
       try {
-        const res = await fetch("/data/ticketmaster-events.json");
+        const res = await fetch(`/data/ticketmaster/${category}/events.json`);
         if (res.ok) {
           const data = await res.json();
           const filtered = (data.events || [])

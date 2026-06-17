@@ -71,6 +71,7 @@ export default function PerformanceDetailPage() {
   }, []);
 
   const loadData = useCallback(async () => {
+    const category = params?.category as string;
     const id = params?.slug as string;
 
     if (!id) {
@@ -80,21 +81,52 @@ export default function PerformanceDetailPage() {
 
     setPageId(id);
 
-    // First try to find in Ticketmaster JSON data
+    // First try to find in the category-specific Ticketmaster JSON file
+    if (category) {
+      try {
+        const res = await fetch(`/data/ticketmaster/${category}/events.json`);
+        if (res.ok) {
+          const data = await res.json();
+          const found = data.events?.find((e: Performance) => e.id === id);
+          if (found) {
+            setItem(found);
+            const related = (data.events || [])
+              .filter((e: Performance) => e.category === found.category && e.id !== id && isVisible(e.eventDate))
+              .slice(0, 4);
+            setRelatedItems(related);
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+      }
+    }
+
+    // Fallback: search all category files (for backwards compatibility)
     try {
-      const res = await fetch("/data/ticketmaster-events.json");
-      if (res.ok) {
-        const data = await res.json();
-        const found = data.events?.find((e: Performance) => e.id === id);
-        if (found) {
-          setItem(found);
-          // Find related items from same category
-          const related = (data.events || [])
-            .filter((e: Performance) => e.category === found.category && e.id !== id && isVisible(e.eventDate))
-            .slice(0, 4);
-          setRelatedItems(related);
-          setLoading(false);
-          return;
+      const categories = [
+        "musical", "opera", "classical", "music", "electronic",
+        "pop-rock", "performance-art", "dance", "other",
+      ];
+      for (const cat of categories) {
+        if (cat === category) continue; // already tried above
+        try {
+          const res = await fetch(`/data/ticketmaster/${cat}/events.json`);
+          if (res.ok) {
+            const data = await res.json();
+            const found = data.events?.find((e: Performance) => e.id === id);
+            if (found) {
+              setItem(found);
+              const related = (data.events || [])
+                .filter((e: Performance) => e.category === found.category && e.id !== id && isVisible(e.eventDate))
+                .slice(0, 4);
+              setRelatedItems(related);
+              setLoading(false);
+              return;
+            }
+          }
+        } catch (e) {
+          // try next category
         }
       }
     } catch (e) {
@@ -106,18 +138,18 @@ export default function PerformanceDetailPage() {
       if (stored) {
         const data = JSON.parse(stored);
 
-          const OLD_TO_NEW: Record<string, string> = {
-            "legend-hall-of-fame": "opera",
-            "musical": "musical",
-            "classical": "classical",
-            "edm": "electronic",
-            "legendary-rock": "pop-rock",
-            "legendary-pop": "pop-rock",
-            "festival": "other",
-            "ballet": "dance",
-            "drama": "performance-art",
-            "others": "other",
-          };
+        const OLD_TO_NEW: Record<string, string> = {
+          "legend-hall-of-fame": "opera",
+          "musical": "musical",
+          "classical": "classical",
+          "edm": "electronic",
+          "legendary-rock": "pop-rock",
+          "legendary-pop": "pop-rock",
+          "festival": "other",
+          "ballet": "dance",
+          "drama": "performance-art",
+          "others": "other",
+        };
         let migrated = false;
         const updated = data.map((item: Performance) => {
           const newCat = OLD_TO_NEW[item.category];
@@ -146,7 +178,7 @@ export default function PerformanceDetailPage() {
     }
 
     setLoading(false);
-  }, [params?.slug]);
+  }, [params?.category, params?.slug]);
 
   useEffect(() => {
     loadData();

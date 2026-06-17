@@ -5,7 +5,81 @@ import path from "path";
 
 const CONSUMER_KEY = "G0AVxK4c8bvtFMp0pJapkWEYlyu8DtIE";
 const BASE_URL = "https://app.ticketmaster.com/discovery/v2";
-const OUTPUT_FILE = path.join(process.cwd(), "public", "data", "ticketmaster-events.json");
+
+// 每个前台子板块对应一组 Ticketmaster 抓取目标
+// 同一个 category 可能对应多个 (segmentName, genreName) 组合
+interface FetchTarget {
+  segmentName: string;
+  genreName?: string;
+}
+
+const CATEGORY_FETCH_MAP: Record<string, FetchTarget[]> = {
+  musical: [
+    { segmentName: "Arts & Theatre", genreName: "Broadway" },
+    { segmentName: "Arts & Theatre", genreName: "Theater" },
+  ],
+  opera: [
+    { segmentName: "Arts & Theatre", genreName: "Opera" },
+  ],
+  classical: [
+    { segmentName: "Arts & Theatre", genreName: "Classical" },
+    { segmentName: "Music", genreName: "Classical" },
+  ],
+  music: [
+    { segmentName: "Arts & Theatre", genreName: "Music" },
+  ],
+  electronic: [
+    { segmentName: "Music", genreName: "Dance/Electronic" },
+  ],
+  "pop-rock": [
+    { segmentName: "Music", genreName: "Alternative" },
+    { segmentName: "Music", genreName: "Blues" },
+    { segmentName: "Music", genreName: "Country" },
+    { segmentName: "Music", genreName: "Folk" },
+    { segmentName: "Music", genreName: "Hip-Hop/Rap" },
+    { segmentName: "Music", genreName: "Jazz" },
+    { segmentName: "Music", genreName: "Latin" },
+    { segmentName: "Music", genreName: "Medieval/Renaissance" },
+    { segmentName: "Music", genreName: "Metal" },
+    { segmentName: "Music", genreName: "New Age" },
+    { segmentName: "Music", genreName: "Other" },
+    { segmentName: "Music", genreName: "Pop" },
+    { segmentName: "Music", genreName: "R&B" },
+    { segmentName: "Music", genreName: "Reggae" },
+    { segmentName: "Music", genreName: "Religious" },
+    { segmentName: "Music", genreName: "Rock" },
+    { segmentName: "Music", genreName: "World" },
+  ],
+  "performance-art": [
+    { segmentName: "Arts & Theatre", genreName: "Performance Art" },
+    { segmentName: "Arts & Theatre", genreName: "Variety" },
+  ],
+  dance: [
+    { segmentName: "Arts & Theatre", genreName: "Dance" },
+  ],
+  other: [
+    { segmentName: "Music", genreName: "Ballads/Romantic" },
+    { segmentName: "Music", genreName: "Children's Music" },
+    { segmentName: "Music", genreName: "Holiday" },
+    { segmentName: "Arts & Theatre", genreName: "Children's Theater" },
+    { segmentName: "Arts & Theatre", genreName: "Circus & Specialty Acts" },
+    { segmentName: "Arts & Theatre", genreName: "Comedy" },
+    { segmentName: "Arts & Theatre", genreName: "Cultural" },
+    { segmentName: "Arts & Theatre", genreName: "Espectaculo" },
+    { segmentName: "Arts & Theatre", genreName: "Fashion" },
+    { segmentName: "Arts & Theatre", genreName: "Fine Art" },
+    { segmentName: "Arts & Theatre", genreName: "Magic & Illusion" },
+    { segmentName: "Arts & Theatre", genreName: "Miscellaneous" },
+    { segmentName: "Arts & Theatre", genreName: "Multimedia" },
+    { segmentName: "Arts & Theatre", genreName: "Puppetry" },
+    { segmentName: "Arts & Theatre", genreName: "Spectacular" },
+  ],
+};
+
+// 每个分类的输出文件路径
+function getOutputPath(category: string): string {
+  return path.join(process.cwd(), "public", "data", "ticketmaster", category, "events.json");
+}
 
 interface TmEvent {
   id: string;
@@ -147,118 +221,8 @@ async function fetchTm(url: string): Promise<any | null> {
   }
 }
 
-function mapEvent(event: TmEvent): PerformanceItem {
+function normalizeEvent(event: TmEvent, category: string): PerformanceItem {
   const venue = event._embedded?.venues?.[0];
-  const attraction = event._embedded?.attractions?.[0];
-  const genre = attraction?.classification?.[0];
-
-  const segmentName = genre?.segment?.name || "";
-  const genreName = genre?.genre?.name || "";
-  const subGenreName = genre?.subGenre?.name || "";
-  const eventName = event.name.toLowerCase();
-  const combined = `${genreName} ${subGenreName} ${eventName}`;
-
-  let category = "other";
-
-  const ticketmasterToSiteCategory: Record<string, string> = {
-    // 1. Musical
-    "Arts, Theater & Comedy -> Broadway": "musical",
-    "Arts, Theater & Comedy -> Theater": "musical",
-    
-    // 2. Opera
-    "Arts, Theater & Comedy -> Opera": "opera",
-    
-    // 3. Classical
-    "Arts, Theater & Comedy -> Classical": "classical",
-    "Concerts -> Classical": "classical",
-    
-    // 4. Music
-    "Arts, Theater & Comedy -> Music": "music",
-    
-    // 5. Electronic
-    "Concerts -> Dance/Electronic": "electronic",
-    
-    // 6. Pop & Rock
-    "Concerts -> Alternative": "pop-rock",
-    "Concerts -> Blues": "pop-rock",
-    "Concerts -> Country": "pop-rock",
-    "Concerts -> Folk": "pop-rock",
-    "Concerts -> Hip-Hop/Rap": "pop-rock",
-    "Concerts -> Jazz": "pop-rock",
-    "Concerts -> Latin": "pop-rock",
-    "Concerts -> Medieval/Renaissance": "pop-rock",
-    "Concerts -> Metal": "pop-rock",
-    "Concerts -> New Age": "pop-rock",
-    "Concerts -> Other": "pop-rock",
-    "Concerts -> Pop": "pop-rock",
-    "Concerts -> R&B": "pop-rock",
-    "Concerts -> Reggae": "pop-rock",
-    "Concerts -> Religious": "pop-rock",
-    "Concerts -> Rock": "pop-rock",
-    "Concerts -> World": "pop-rock",
-    
-    // 7. Performance Art
-    "Arts, Theater & Comedy -> Performance Art": "performance-art",
-    "Arts, Theater & Comedy -> Variety": "performance-art",
-    
-    // 8. Dance
-    "Arts, Theater & Comedy -> Dance": "dance",
-    
-    // 9. Other
-    "Concerts -> Ballads/Romantic": "other",
-    "Concerts -> Children's Music": "other",
-    "Concerts -> Holiday": "other",
-    "Arts, Theater & Comedy -> Children's Theater": "other",
-    "Arts, Theater & Comedy -> Circus & Specialty Acts": "other",
-    "Arts, Theater & Comedy -> Comedy": "other",
-    "Arts, Theater & Comedy -> Cultural": "other",
-    "Arts, Theater & Comedy -> Espectaculo": "other",
-    "Arts, Theater & Comedy -> Fashion": "other",
-    "Arts, Theater & Comedy -> Fine Art": "other",
-    "Arts, Theater & Comedy -> Magic & Illusion": "other",
-    "Arts, Theater & Comedy -> Miscellaneous": "other",
-    "Arts, Theater & Comedy -> Multimedia": "other",
-    "Arts, Theater & Comedy -> Puppetry": "other",
-    "Arts, Theater & Comedy -> Spectacular": "other",
-  };
-
-  const tmKey = `${segmentName} -> ${genreName}`;
-  const tmSubKey = `${segmentName} -> ${subGenreName}`;
-  
-  category = ticketmasterToSiteCategory[tmSubKey] || ticketmasterToSiteCategory[tmKey] || "other";
-
-  const knownMusical = [
-    "hamilton", "lion king", "aladdin", "phantom of", "wicked", "moulin rouge",
-    "chicago", "mama mia", "mamma mia", "rent", "hadestown", "cats",
-    "les mis", "lesmis", "lesmiz", "blue man group", "blue-man", "kinky boots",
-    "book of mormon", "dear evan hansen", "hello dolly", "waitress",
-    "beetlejuice", "mean girls", "peter pan", "frozen", "pippin",
-    "little shop of horrors", "beaches", "funny girl", "funnygirl",
-    "death becomes her", "sweeney todd", "sweeney", "harry potter", "hedwig",
-    "rocky horror", "wizard of oz at sphere", "wizard of oz",
-    "juliet", "frida", "rat pack is back", "second city", "atomic saloon",
-    "the lost boys", "dog day afternoon",
-  ];
-  const knownOpera = [
-    "opera", "la traviata", "carmen", "madama butterfly", "tosca",
-    "figaro", "don giovanni", "magic flute", "ring cycle", "wagner",
-  ];
-  const knownClassical = [
-    "max richter", "vivaldi", "bach", "mozart", "beethoven",
-    "pavarotti", "andrea bocelli", "lang lang", "yuja wang",
-    "anime soundtracks", "yoko kanno", "classical", "symphony",
-    "orchestra", "philharmonic", "ballet",
-  ];
-
-  if (category === "other") {
-    if (knownMusical.some(n => eventName.includes(n))) {
-      category = "musical";
-    } else if (knownOpera.some(n => eventName.includes(n))) {
-      category = "opera";
-    } else if (knownClassical.some(n => eventName.includes(n))) {
-      category = "classical";
-    }
-  }
 
   const priceRange = event.priceRanges
     ? `${event.priceRanges[0].currency || "USD"} ${event.priceRanges[0].min?.toFixed(0)}–${event.priceRanges[0].max?.toFixed(0)}`
@@ -295,20 +259,19 @@ function mapEvent(event: TmEvent): PerformanceItem {
   };
 }
 
-async function fetchAllEvents(): Promise<PerformanceItem[]> {
+async function fetchCategoryEvents(
+  category: string,
+  targets: FetchTarget[]
+): Promise<PerformanceItem[]> {
   const seen = new Set<string>();
   const events: PerformanceItem[] = [];
   const pageSize = 50;
 
-  const fetchCategory = async (segmentName: string, genreName?: string, subGenreName?: string) => {
-    const targetCategory =
-      (genreName || subGenreName || "").trim() === "" ? "other" : undefined;
-
+  for (const target of targets) {
     for (let page = 0; page < 10; page++) {
       const url = new URL(`${BASE_URL}/events.json`);
-      url.searchParams.set("segmentName", segmentName);
-      if (genreName) url.searchParams.set("genreName", genreName);
-      if (subGenreName) url.searchParams.set("subGenreName", subGenreName);
+      url.searchParams.set("segmentName", target.segmentName);
+      if (target.genreName) url.searchParams.set("genreName", target.genreName);
       url.searchParams.set("size", String(pageSize));
       url.searchParams.set("page", String(page));
       url.searchParams.set("sort", "date,asc");
@@ -320,59 +283,13 @@ async function fetchAllEvents(): Promise<PerformanceItem[]> {
       for (const event of data._embedded.events as TmEvent[]) {
         if (!seen.has(event.id)) {
           seen.add(event.id);
-          const mapped = mapEvent(event);
-          if (targetCategory && mapped.category === "other") {
-            mapped.category = targetCategory;
-          }
-          events.push(mapped);
+          events.push(normalizeEvent(event, category));
         }
       }
 
       if (page >= (data.page?.totalPages || 1) - 1) break;
     }
-  };
-
-  await fetchCategory("Music", "Dance/Electronic");
-  await fetchCategory("Arts & Theatre", "Classical");
-  await fetchCategory("Music", "Classical");
-  await fetchCategory("Arts & Theatre", "Opera");
-  await fetchCategory("Arts & Theatre", "Broadway");
-  await fetchCategory("Arts & Theatre", "Theater");
-  await fetchCategory("Arts & Theatre", "Music");
-  await fetchCategory("Arts & Theatre", "Performance Art");
-  await fetchCategory("Arts & Theatre", "Variety");
-  await fetchCategory("Arts & Theatre", "Dance");
-  await fetchCategory("Music", "Alternative");
-  await fetchCategory("Music", "Blues");
-  await fetchCategory("Music", "Country");
-  await fetchCategory("Music", "Folk");
-  await fetchCategory("Music", "Hip-Hop/Rap");
-  await fetchCategory("Music", "Jazz");
-  await fetchCategory("Music", "Latin");
-  await fetchCategory("Music", "Medieval/Renaissance");
-  await fetchCategory("Music", "Metal");
-  await fetchCategory("Music", "New Age");
-  await fetchCategory("Music", "Pop");
-  await fetchCategory("Music", "R&B");
-  await fetchCategory("Music", "Reggae");
-  await fetchCategory("Music", "Religious");
-  await fetchCategory("Music", "Rock");
-  await fetchCategory("Music", "World");
-  await fetchCategory("Music", "Ballads/Romantic");
-  await fetchCategory("Music", "Children's Music");
-  await fetchCategory("Music", "Holiday");
-  await fetchCategory("Arts & Theatre", "Children's Theater");
-  await fetchCategory("Arts & Theatre", "Circus & Specialty Acts");
-  await fetchCategory("Arts & Theatre", "Comedy");
-  await fetchCategory("Arts & Theatre", "Cultural");
-  await fetchCategory("Arts & Theatre", "Espectaculo");
-  await fetchCategory("Arts & Theatre", "Fashion");
-  await fetchCategory("Arts & Theatre", "Fine Art");
-  await fetchCategory("Arts & Theatre", "Magic & Illusion");
-  await fetchCategory("Arts & Theatre", "Miscellaneous");
-  await fetchCategory("Arts & Theatre", "Multimedia");
-  await fetchCategory("Arts & Theatre", "Puppetry");
-  await fetchCategory("Arts & Theatre", "Spectacular");
+  }
 
   events.sort((a, b) => {
     if (a.status === "upcoming" && b.status !== "upcoming") return -1;
@@ -385,25 +302,37 @@ async function fetchAllEvents(): Promise<PerformanceItem[]> {
 
 export async function POST() {
   try {
-    const dir = path.join(process.cwd(), "public", "data");
-    if (!existsSync(dir)) {
-      await mkdir(dir, { recursive: true });
+    const baseDir = path.join(process.cwd(), "public", "data", "ticketmaster");
+    if (!existsSync(baseDir)) {
+      await mkdir(baseDir, { recursive: true });
     }
 
-    const events = await fetchAllEvents();
+    let grandTotal = 0;
+    const results: Record<string, { total: number; fetchedAt: string }> = {};
 
-    const payload = {
-      events,
-      total: events.length,
-      fetchedAt: new Date().toISOString(),
-    };
+    for (const [category, targets] of Object.entries(CATEGORY_FETCH_MAP)) {
+      const events = await fetchCategoryEvents(category, targets);
+      const payload = {
+        events,
+        total: events.length,
+        fetchedAt: new Date().toISOString(),
+      };
 
-    await writeFile(OUTPUT_FILE, JSON.stringify(payload, null, 2), "utf-8");
+      const outDir = path.join(baseDir, category);
+      if (!existsSync(outDir)) {
+        await mkdir(outDir, { recursive: true });
+      }
+      await writeFile(getOutputPath(category), JSON.stringify(payload, null, 2), "utf-8");
+
+      grandTotal += events.length;
+      results[category] = { total: events.length, fetchedAt: payload.fetchedAt };
+    }
 
     return NextResponse.json({
       success: true,
-      total: events.length,
-      fetchedAt: payload.fetchedAt,
+      total: grandTotal,
+      categories: results,
+      fetchedAt: new Date().toISOString(),
     });
   } catch (err: any) {
     console.error("Ticketmaster sync error:", err);
@@ -416,20 +345,48 @@ export async function POST() {
 
 export async function GET() {
   try {
-    if (!existsSync(OUTPUT_FILE)) {
+    const baseDir = path.join(process.cwd(), "public", "data", "ticketmaster");
+
+    if (!existsSync(baseDir)) {
       return NextResponse.json(
         { success: false, error: "No cached data. Run a sync first." },
         { status: 404 }
       );
     }
 
-    const raw = await readFile(OUTPUT_FILE, "utf-8");
-    const payload = JSON.parse(raw);
+    const categories = Object.keys(CATEGORY_FETCH_MAP);
+    let grandTotal = 0;
+    const categoryDetails: Record<string, { total: number; fetchedAt: string }> = {};
+    let latestFetchedAt = "";
+
+    for (const category of categories) {
+      const filePath = getOutputPath(category);
+      if (existsSync(filePath)) {
+        const raw = await readFile(filePath, "utf-8");
+        const payload = JSON.parse(raw);
+        categoryDetails[category] = {
+          total: payload.total || 0,
+          fetchedAt: payload.fetchedAt || "",
+        };
+        grandTotal += categoryDetails[category].total;
+        if (categoryDetails[category].fetchedAt > latestFetchedAt) {
+          latestFetchedAt = categoryDetails[category].fetchedAt;
+        }
+      }
+    }
+
+    if (grandTotal === 0) {
+      return NextResponse.json(
+        { success: false, error: "No cached data. Run a sync first." },
+        { status: 404 }
+      );
+    }
 
     return NextResponse.json({
       success: true,
-      total: payload.total,
-      fetchedAt: payload.fetchedAt,
+      total: grandTotal,
+      fetchedAt: latestFetchedAt,
+      categories: categoryDetails,
     });
   } catch (err: any) {
     return NextResponse.json(

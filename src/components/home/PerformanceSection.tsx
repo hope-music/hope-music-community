@@ -25,36 +25,48 @@ interface CategoryData {
 }
 
 async function loadCategoryData(): Promise<Record<string, CategoryData>> {
+  const categories = [
+    "musical", "opera", "classical", "music", "electronic",
+    "pop-rock", "performance-art", "dance", "other",
+  ];
+
+  const result: Record<string, CategoryData> = {};
+  PERFORMANCE_CATEGORIES.forEach((category) => {
+    result[category] = { latest: null, total: 0 };
+  });
+
   try {
-    const res = await fetch("/data/ticketmaster-events.json");
-    if (!res.ok) return {};
-    const data = await res.json();
-    const events: PerformanceItem[] = data.events || [];
+    for (const category of categories) {
+      try {
+        const res = await fetch(`/data/ticketmaster/${category}/events.json`);
+        if (!res.ok) continue;
+        const data = await res.json();
+        const events: PerformanceItem[] = data.events || [];
 
-    const result: Record<string, CategoryData> = {};
-    PERFORMANCE_CATEGORIES.forEach((category) => {
-      const slug = PERFORMANCE_CATEGORY_SLUG_MAP[category];
-      const categoryItems = events.filter((item) => item.category === slug);
+        const categoryKey = PERFORMANCE_CATEGORY_SLUG_MAP[category];
+        const categoryItems = events.filter((item) => item.category === categoryKey);
 
-      if (categoryItems.length > 0) {
-        const sorted = categoryItems.sort((a, b) => {
-          const dateA = a.eventDate ? new Date(a.eventDate).getTime() : 0;
-          const dateB = b.eventDate ? new Date(b.eventDate).getTime() : 0;
-          return dateB - dateA;
-        });
-        result[category] = {
-          latest: sorted[0],
-          total: categoryItems.length,
-        };
-      } else {
-        result[category] = { latest: null, total: 0 };
+        if (categoryItems.length > 0) {
+          const sorted = categoryItems.sort((a, b) => {
+            const dateA = a.eventDate ? new Date(a.eventDate).getTime() : 0;
+            const dateB = b.eventDate ? new Date(b.eventDate).getTime() : 0;
+            return dateB - dateA;
+          });
+          const label = PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.value === categoryKey)?.label || categoryKey;
+          result[label] = {
+            latest: sorted[0],
+            total: categoryItems.length,
+          };
+        }
+      } catch (e) {
+        // skip this category
       }
-    });
-
-    return result;
+    }
   } catch (e) {
-    return {};
+    return result;
   }
+
+  return result;
 }
 
 function CategoryCard({ category, data }: { category: string; data: CategoryData }) {
