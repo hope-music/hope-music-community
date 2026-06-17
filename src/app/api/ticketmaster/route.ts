@@ -202,23 +202,34 @@ const CATEGORY_IMAGES: Record<string, string[]> = {
 };
 
 function getCategoryImage(category: string, eventId: string): string {
-  const pool = CATEGORY_IMAGES[category] || CATEGORY_IMAGES["others"];
+  const pool = CATEGORY_IMAGES[category] || CATEGORY_IMAGES["other"];
   const index = Math.abs(eventId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0)) % pool.length;
   return pool[index];
 }
 
 async function fetchTm(url: string): Promise<any | null> {
-  try {
-    const fullUrl = `${url}${url.includes("?") ? "&" : "?"}apikey=${CONSUMER_KEY}`;
-    const res = await fetch(fullUrl, {
-      next: { revalidate: 0 },
-      signal: AbortSignal.timeout(20_000),
-    });
-    if (!res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+  for (let attempt = 0; attempt <= 2; attempt++) {
+    try {
+      const fullUrl = `${url}${url.includes("?") ? "&" : "?"}apikey=${CONSUMER_KEY}`;
+      const res = await fetch(fullUrl, {
+        next: { revalidate: 0 },
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (res.status === 429) {
+        console.log(`[TM] 429 rate limited on attempt ${attempt + 1}, waiting...`);
+        await new Promise((r) => setTimeout(r, 3000 * (attempt + 1)));
+        continue;
+      }
+      if (!res.ok) {
+        console.log(`[TM] HTTP ${res.status}`);
+        return null;
+      }
+      return await res.json();
+    } catch {
+      if (attempt === 2) return null;
+    }
   }
+  return null;
 }
 
 function normalizeEvent(event: TmEvent, category: string): PerformanceItem {
