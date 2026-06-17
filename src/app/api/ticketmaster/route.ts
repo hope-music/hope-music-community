@@ -296,42 +296,81 @@ async function fetchAllEvents(): Promise<PerformanceItem[]> {
   const seen = new Set<string>();
   const events: PerformanceItem[] = [];
   const pageSize = 50;
-  const segments = ["Music", "Arts & Theatre"];
 
-  for (const segment of segments) {
-    for (let page = 0; page < 5; page++) {
-      const url = `${BASE_URL}/events.json?segmentName=${encodeURIComponent(segment)}&size=${pageSize}&page=${page}&sort=date,asc&countryCode=US`;
-      const data = await fetchTm(url);
+  const fetchCategory = async (segmentName: string, genreName?: string, subGenreName?: string) => {
+    const targetCategory =
+      (genreName || subGenreName || "").trim() === "" ? "other" : undefined;
+
+    for (let page = 0; page < 10; page++) {
+      const url = new URL(`${BASE_URL}/events.json`);
+      url.searchParams.set("segmentName", segmentName);
+      if (genreName) url.searchParams.set("genreName", genreName);
+      if (subGenreName) url.searchParams.set("subGenreName", subGenreName);
+      url.searchParams.set("size", String(pageSize));
+      url.searchParams.set("page", String(page));
+      url.searchParams.set("sort", "date,asc");
+      url.searchParams.set("countryCode", "US");
+
+      const data = await fetchTm(url.toString());
       if (!data?._embedded?.events?.length) break;
 
       for (const event of data._embedded.events as TmEvent[]) {
         if (!seen.has(event.id)) {
           seen.add(event.id);
-          events.push(mapEvent(event));
+          const mapped = mapEvent(event);
+          if (targetCategory && mapped.category === "other") {
+            mapped.category = targetCategory;
+          }
+          events.push(mapped);
         }
       }
 
       if (page >= (data.page?.totalPages || 1) - 1) break;
     }
-  }
+  };
 
-  // Extra pages without segment filter to catch remaining events
-  for (let page = 0; page < 3; page++) {
-    const url = `${BASE_URL}/events.json?size=${pageSize}&page=${page}&sort=date,asc&countryCode=US`;
-    const data = await fetchTm(url);
-    if (!data?._embedded?.events?.length) break;
+  await fetchCategory("Music", "Dance/Electronic");
+  await fetchCategory("Arts & Theatre", "Classical");
+  await fetchCategory("Music", "Classical");
+  await fetchCategory("Arts & Theatre", "Opera");
+  await fetchCategory("Arts & Theatre", "Broadway");
+  await fetchCategory("Arts & Theatre", "Theater");
+  await fetchCategory("Arts & Theatre", "Music");
+  await fetchCategory("Arts & Theatre", "Performance Art");
+  await fetchCategory("Arts & Theatre", "Variety");
+  await fetchCategory("Arts & Theatre", "Dance");
+  await fetchCategory("Music", "Alternative");
+  await fetchCategory("Music", "Blues");
+  await fetchCategory("Music", "Country");
+  await fetchCategory("Music", "Folk");
+  await fetchCategory("Music", "Hip-Hop/Rap");
+  await fetchCategory("Music", "Jazz");
+  await fetchCategory("Music", "Latin");
+  await fetchCategory("Music", "Medieval/Renaissance");
+  await fetchCategory("Music", "Metal");
+  await fetchCategory("Music", "New Age");
+  await fetchCategory("Music", "Pop");
+  await fetchCategory("Music", "R&B");
+  await fetchCategory("Music", "Reggae");
+  await fetchCategory("Music", "Religious");
+  await fetchCategory("Music", "Rock");
+  await fetchCategory("Music", "World");
+  await fetchCategory("Music", "Ballads/Romantic");
+  await fetchCategory("Music", "Children's Music");
+  await fetchCategory("Music", "Holiday");
+  await fetchCategory("Arts & Theatre", "Children's Theater");
+  await fetchCategory("Arts & Theatre", "Circus & Specialty Acts");
+  await fetchCategory("Arts & Theatre", "Comedy");
+  await fetchCategory("Arts & Theatre", "Cultural");
+  await fetchCategory("Arts & Theatre", "Espectaculo");
+  await fetchCategory("Arts & Theatre", "Fashion");
+  await fetchCategory("Arts & Theatre", "Fine Art");
+  await fetchCategory("Arts & Theatre", "Magic & Illusion");
+  await fetchCategory("Arts & Theatre", "Miscellaneous");
+  await fetchCategory("Arts & Theatre", "Multimedia");
+  await fetchCategory("Arts & Theatre", "Puppetry");
+  await fetchCategory("Arts & Theatre", "Spectacular");
 
-    for (const event of data._embedded.events as TmEvent[]) {
-      if (!seen.has(event.id)) {
-        seen.add(event.id);
-        events.push(mapEvent(event));
-      }
-    }
-
-    if (page >= (data.page?.totalPages || 1) - 1) break;
-  }
-
-  // Sort: upcoming first, then by date
   events.sort((a, b) => {
     if (a.status === "upcoming" && b.status !== "upcoming") return -1;
     if (a.status !== "upcoming" && b.status === "upcoming") return 1;
