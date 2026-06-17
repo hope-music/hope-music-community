@@ -189,6 +189,3 @@ export const OTHERS_PLACEHOLDER_ITEMS = [
 
 export const CTA_COPY =
   "Fusing diverse musical genres with immersive audio and visuals, the innovative Shangri-La sits at the cutting edge of modern musical theater.";
-
-export const HERO_CAPTION =
-  "(Shangri-La, HopeStudio's unperformed immersive musical)";

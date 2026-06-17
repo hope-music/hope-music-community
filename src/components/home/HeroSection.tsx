@@ -1,6 +1,5 @@
 import { Container } from "@/components/ui/Container";
 import Image from "next/image";
-import { HERO_CAPTION } from "@/lib/constants";
 
 export function HeroSection() {
   return (
@@ -17,10 +16,12 @@ export function HeroSection() {
         </div>
         <div className="mt-2 flex flex-col items-center gap-2">
           <a
-            href="/hope-studio"
+            href="/hope-studio/shangri-la"
+            target="_blank"
+            rel="noopener noreferrer"
             className="cursor-pointer text-[12px] text-hmc-text-muted transition-colors hover:text-hmc-orange"
           >
-            <span className="italic">Shangri-La</span>, HopeStudio&apos;s unperformed immersive musical
+            <span className="italic">Shangri-La</span>
           </a>
           <div className="w-full" style={{ borderBottom: "1px solid border-hmc-orange" }} />
         </div>
