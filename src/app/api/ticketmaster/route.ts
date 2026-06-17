@@ -136,7 +136,10 @@ function getCategoryImage(category: string, eventId: string): string {
 async function fetchTm(url: string): Promise<any | null> {
   try {
     const fullUrl = `${url}${url.includes("?") ? "&" : "?"}apikey=${CONSUMER_KEY}`;
-    const res = await fetch(fullUrl, { next: { revalidate: 0 } });
+    const res = await fetch(fullUrl, {
+      next: { revalidate: 0 },
+      signal: AbortSignal.timeout(20_000),
+    });
     if (!res.ok) return null;
     return await res.json();
   } catch {
@@ -413,11 +416,20 @@ export async function POST() {
 
 export async function GET() {
   try {
-    const events = await fetchAllEvents();
+    if (!existsSync(OUTPUT_FILE)) {
+      return NextResponse.json(
+        { success: false, error: "No cached data. Run a sync first." },
+        { status: 404 }
+      );
+    }
+
+    const raw = await readFile(OUTPUT_FILE, "utf-8");
+    const payload = JSON.parse(raw);
+
     return NextResponse.json({
       success: true,
-      total: events.length,
-      fetchedAt: new Date().toISOString(),
+      total: payload.total,
+      fetchedAt: payload.fetchedAt,
     });
   } catch (err: any) {
     return NextResponse.json(
