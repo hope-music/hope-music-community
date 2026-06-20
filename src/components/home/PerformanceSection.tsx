@@ -39,8 +39,8 @@ async function loadCategoryData(): Promise<Record<string, CategoryData>> {
     for (const category of categories) {
       try {
         // 【物理隔离智能接管】
-        if (category === "opera" || category === "musical") {
-          const fileName = category === "opera" ? "Opera" : "Musical";
+        if (category === "opera" || category === "musical" || category === "classical") {
+          const fileName = category.charAt(0).toUpperCase() + category.slice(1);
           const res = await fetch(`/data/ticketmaster/${fileName}/data.json`);
           if (!res.ok) continue;
           const rawEvents = await res.json();
