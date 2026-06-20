@@ -31,6 +31,27 @@ export default function PerformancePage() {
     hasEvents: false
   });
 
+  const [musicEvent, setMusicEvent] = useState<DisplayEvent>({
+    name: "Music",
+    date: "No upcoming events",
+    image: "",
+    hasEvents: false
+  });
+
+  const [electronicEvent, setElectronicEvent] = useState<DisplayEvent>({
+    name: "Electronic",
+    date: "No upcoming events",
+    image: "",
+    hasEvents: false
+  });
+
+  const [performanceArtEvent, setPerformanceArtEvent] = useState<DisplayEvent>({
+    name: "Performance Art",
+    date: "No upcoming events",
+    image: "",
+    hasEvents: false
+  });
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -102,14 +123,80 @@ export default function PerformancePage() {
       });
   }, []);
 
+  useEffect(() => {
+    fetch("/data/ticketmaster/Music/data.json")
+      .then((res) => {
+        if (!res.ok) throw new Error("No file yet");
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.length > 0) {
+          const firstEvent = data[0];
+          setMusicEvent({
+            name: firstEvent.name,
+            date: `Next: ${firstEvent.dates?.start?.localDate || "TBA"}`,
+            image: firstEvent.images?.[0]?.url || "",
+            hasEvents: true
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("Music data not ready:", err.message);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch("/data/ticketmaster/Electronic/data.json")
+      .then((res) => {
+        if (!res.ok) throw new Error("No file yet");
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.length > 0) {
+          const firstEvent = data[0];
+          setElectronicEvent({
+            name: firstEvent.name,
+            date: `Next: ${firstEvent.dates?.start?.localDate || "TBA"}`,
+            image: firstEvent.images?.[0]?.url || "",
+            hasEvents: true
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("Electronic data not ready:", err.message);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch("/data/ticketmaster/Performance Art/data.json")
+      .then((res) => {
+        if (!res.ok) throw new Error("No file yet");
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.length > 0) {
+          const firstEvent = data[0];
+          setPerformanceArtEvent({
+            name: firstEvent.name,
+            date: `Next: ${firstEvent.dates?.start?.localDate || "TBA"}`,
+            image: firstEvent.images?.[0]?.url || "",
+            hasEvents: true
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("Performance Art data not ready:", err.message);
+      });
+  }, []);
+
   const categories = [
     { id: "musical", label: "MUSICAL", defaultName: musicalEvent.name, status: musicalEvent.date, img: musicalEvent.image, has: musicalEvent.hasEvents, link: "/performance/musical" },
     { id: "opera", label: "OPERA", defaultName: operaEvent.name, status: operaEvent.date, img: operaEvent.image, has: operaEvent.hasEvents, link: "/performance/opera" },
     { id: "classical", label: "CLASSICAL", defaultName: classicalEvent.name, status: classicalEvent.date, img: classicalEvent.image, has: classicalEvent.hasEvents, link: "/performance/classical" },
-    { id: "music", label: "MUSIC", defaultName: "Music", status: "No upcoming events", img: "", has: false, link: "/performance/music" },
-    { id: "electronic", label: "ELECTRONIC", defaultName: "Electronic", status: "No upcoming events", img: "", has: false, link: "/performance/electronic" },
+    { id: "music", label: "MUSIC", defaultName: musicEvent.name, status: musicEvent.date, img: musicEvent.image, has: musicEvent.hasEvents, link: "/performance/music" },
+    { id: "electronic", label: "ELECTRONIC", defaultName: electronicEvent.name, status: electronicEvent.date, img: electronicEvent.image, has: electronicEvent.hasEvents, link: "/performance/electronic" },
     { id: "pop-rock", label: "POP & ROCK", defaultName: "Pop & Rock", status: "No upcoming events", img: "", has: false, link: "/performance/pop-rock" },
-    { id: "performance-art", label: "PERFORMANCE ART", defaultName: "Performance Art", status: "No upcoming events", img: "", has: false, link: "/performance/performance-art" },
+    { id: "performance-art", label: "PERFORMANCE ART", defaultName: performanceArtEvent.name, status: performanceArtEvent.date, img: performanceArtEvent.image, has: performanceArtEvent.hasEvents, link: "/performance/performance-art" },
     { id: "dance", label: "DANCE", defaultName: "Dance", status: "No upcoming events", img: "", has: false, link: "/performance/dance" },
     { id: "other", label: "OTHER", defaultName: "Other", status: "No upcoming events", img: "", has: false, link: "/performance/other" },
   ];
