@@ -35,18 +35,35 @@ async function loadCategoryData(): Promise<Record<string, CategoryData>> {
     result[cat] = { latest: null, total: 0 };
   });
 
+  const TICKETMASTER_SUBDIR: Record<string, string> = {
+    opera: "Opera",
+    musical: "Musical",
+    classical: "Classical",
+    music: "Music",
+    electronic: "Electronic",
+    "performance-art": "Performance Art",
+    "pop-rock": "Pop & Rock",
+    dance: "Dance",
+    other: "Other",
+  };
+
   try {
     for (const category of categories) {
       try {
         // 【物理隔离智能接管】
-        if (category === "opera" || category === "musical" || category === "classical" || category === "music" || category === "electronic" || category === "performance-art") {
-          const fileName = category.charAt(0).toUpperCase() + category.slice(1);
-          const res = await fetch(`/data/ticketmaster/${fileName}/data.json`);
+        if (category in TICKETMASTER_SUBDIR) {
+          const subdir = TICKETMASTER_SUBDIR[category];
+          const res = await fetch(`/data/ticketmaster/${subdir}/data.json`);
           if (!res.ok) continue;
           const rawEvents = await res.json();
 
           if (rawEvents && rawEvents.length > 0) {
-            const first = rawEvents[0];
+            const now = Date.now();
+            const firstUpcoming = rawEvents.find((e: { dates?: { start?: { localDate?: string } } }) => {
+              const d = e.dates?.start?.localDate;
+              return d && new Date(d).getTime() >= now;
+            });
+            const first = firstUpcoming || rawEvents[0];
             const parsedItem: PerformanceItem = {
               id: first.id,
               title: first.name,
@@ -131,7 +148,7 @@ function CategoryCard({ category, data }: { category: string; data: CategoryData
               width={500}
               height={375}
               className="h-full w-full object-cover"
-              unoptimized={category === "opera" || category === "musical" || category === "classical" || category === "music" || category === "electronic" || category === "performance-art"}
+              unoptimized={category in TICKETMASTER_SUBDIR}
             />
           </div>
         </a>
