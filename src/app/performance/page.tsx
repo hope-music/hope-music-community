@@ -10,7 +10,6 @@ interface DisplayEvent {
 }
 
 export default function PerformancePage() {
-  // 专门给 Opera 准备一个干净的状态抽屉
   const [operaEvent, setOperaEvent] = useState<DisplayEvent>({
     name: "Opera",
     date: "No upcoming events",
@@ -25,10 +24,16 @@ export default function PerformancePage() {
     hasEvents: false
   });
 
+  const [classicalEvent, setClassicalEvent] = useState<DisplayEvent>({
+    name: "Classical",
+    date: "No upcoming events",
+    image: "",
+    hasEvents: false
+  });
+
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 降维打击：直接去读你刚抓好的、绝对干净的 Opera 抽屉
     fetch("/data/ticketmaster/Opera/data.json")
       .then((res) => {
         if (!res.ok) throw new Error("No file yet");
@@ -36,7 +41,6 @@ export default function PerformancePage() {
       })
       .then((data) => {
         if (data && data.length > 0) {
-          // 抓取列表里的第一个最新演出拿来做封面展示
           const firstEvent = data[0];
           setOperaEvent({
             name: firstEvent.name,
@@ -47,13 +51,14 @@ export default function PerformancePage() {
         }
       })
       .catch((err) => {
-        console.log("Opera data not parsed yet or empty:", err.message);
+        console.log("Opera data not ready:", err.message);
       })
       .finally(() => {
         setLoading(false);
       });
+  }, []);
 
-    // Musical data
+  useEffect(() => {
     fetch("/data/ticketmaster/Musical/data.json")
       .then((res) => {
         if (!res.ok) throw new Error("No file yet");
@@ -71,15 +76,36 @@ export default function PerformancePage() {
         }
       })
       .catch((err) => {
-        console.log("Musical data not parsed yet or empty:", err.message);
+        console.log("Musical data not ready:", err.message);
       });
   }, []);
 
-  // 9个板块的控制面板，今天我们先点亮 OPERA
+  useEffect(() => {
+    fetch("/data/ticketmaster/Classical/data.json")
+      .then((res) => {
+        if (!res.ok) throw new Error("No file yet");
+        return res.json();
+      })
+      .then((data) => {
+        if (data && data.length > 0) {
+          const firstEvent = data[0];
+          setClassicalEvent({
+            name: firstEvent.name,
+            date: `Next: ${firstEvent.dates?.start?.localDate || "TBA"}`,
+            image: firstEvent.images?.[0]?.url || "",
+            hasEvents: true
+          });
+        }
+      })
+      .catch((err) => {
+        console.log("Classical data not ready:", err.message);
+      });
+  }, []);
+
   const categories = [
     { id: "musical", label: "MUSICAL", defaultName: musicalEvent.name, status: musicalEvent.date, img: musicalEvent.image, has: musicalEvent.hasEvents, link: "/performance/musical" },
     { id: "opera", label: "OPERA", defaultName: operaEvent.name, status: operaEvent.date, img: operaEvent.image, has: operaEvent.hasEvents, link: "/performance/opera" },
-    { id: "classical", label: "CLASSICAL", defaultName: "Classical", status: "No upcoming events", img: "", has: false, link: "/performance/classical" },
+    { id: "classical", label: "CLASSICAL", defaultName: classicalEvent.name, status: classicalEvent.date, img: classicalEvent.image, has: classicalEvent.hasEvents, link: "/performance/classical" },
     { id: "music", label: "MUSIC", defaultName: "Music", status: "No upcoming events", img: "", has: false, link: "/performance/music" },
     { id: "electronic", label: "ELECTRONIC", defaultName: "Electronic", status: "No upcoming events", img: "", has: false, link: "/performance/electronic" },
     { id: "pop-rock", label: "POP & ROCK", defaultName: "Pop & Rock", status: "No upcoming events", img: "", has: false, link: "/performance/pop-rock" },
