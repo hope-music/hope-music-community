@@ -62,7 +62,12 @@ export default function PerformancePage() {
       })
       .then((data) => {
         if (data && data.length > 0) {
-          const firstEvent = data[0];
+          const now = Date.now();
+          const firstUpcoming = data.find((e: { dates?: { start?: { localDate?: string } } }) => {
+            const d = e.dates?.start?.localDate;
+            return d && new Date(d).getTime() >= now;
+          });
+          const firstEvent = firstUpcoming || data[0];
           setOperaEvent({
             name: firstEvent.name,
             date: `Next: ${firstEvent.dates?.start?.localDate || "TBA"}`,
@@ -87,7 +92,12 @@ export default function PerformancePage() {
       })
       .then((data) => {
         if (data && data.length > 0) {
-          const firstEvent = data[0];
+          const now = Date.now();
+          const firstUpcoming = data.find((e: { dates?: { start?: { localDate?: string } } }) => {
+            const d = e.dates?.start?.localDate;
+            return d && new Date(d).getTime() >= now;
+          });
+          const firstEvent = firstUpcoming || data[0];
           setMusicalEvent({
             name: firstEvent.name,
             date: `Next: ${firstEvent.dates?.start?.localDate || "TBA"}`,
@@ -109,7 +119,12 @@ export default function PerformancePage() {
       })
       .then((data) => {
         if (data && data.length > 0) {
-          const firstEvent = data[0];
+          const now = Date.now();
+          const firstUpcoming = data.find((e: { dates?: { start?: { localDate?: string } } }) => {
+            const d = e.dates?.start?.localDate;
+            return d && new Date(d).getTime() >= now;
+          });
+          const firstEvent = firstUpcoming || data[0];
           setClassicalEvent({
             name: firstEvent.name,
             date: `Next: ${firstEvent.dates?.start?.localDate || "TBA"}`,
@@ -131,7 +146,12 @@ export default function PerformancePage() {
       })
       .then((data) => {
         if (data && data.length > 0) {
-          const firstEvent = data[0];
+          const now = Date.now();
+          const firstUpcoming = data.find((e: { dates?: { start?: { localDate?: string } } }) => {
+            const d = e.dates?.start?.localDate;
+            return d && new Date(d).getTime() >= now;
+          });
+          const firstEvent = firstUpcoming || data[0];
           setMusicEvent({
             name: firstEvent.name,
             date: `Next: ${firstEvent.dates?.start?.localDate || "TBA"}`,
@@ -153,7 +173,12 @@ export default function PerformancePage() {
       })
       .then((data) => {
         if (data && data.length > 0) {
-          const firstEvent = data[0];
+          const now = Date.now();
+          const firstUpcoming = data.find((e: { dates?: { start?: { localDate?: string } } }) => {
+            const d = e.dates?.start?.localDate;
+            return d && new Date(d).getTime() >= now;
+          });
+          const firstEvent = firstUpcoming || data[0];
           setElectronicEvent({
             name: firstEvent.name,
             date: `Next: ${firstEvent.dates?.start?.localDate || "TBA"}`,
@@ -175,7 +200,12 @@ export default function PerformancePage() {
       })
       .then((data) => {
         if (data && data.length > 0) {
-          const firstEvent = data[0];
+          const now = Date.now();
+          const firstUpcoming = data.find((e: { dates?: { start?: { localDate?: string } } }) => {
+            const d = e.dates?.start?.localDate;
+            return d && new Date(d).getTime() >= now;
+          });
+          const firstEvent = firstUpcoming || data[0];
           setPerformanceArtEvent({
             name: firstEvent.name,
             date: `Next: ${firstEvent.dates?.start?.localDate || "TBA"}`,
