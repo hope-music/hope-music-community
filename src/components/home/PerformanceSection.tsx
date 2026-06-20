@@ -24,6 +24,18 @@ interface CategoryData {
   total: number;
 }
 
+const TICKETMASTER_SUBDIR: Record<string, string> = {
+  opera: "Opera",
+  musical: "Musical",
+  classical: "Classical",
+  music: "Music",
+  electronic: "Electronic",
+  "performance-art": "Performance-Art",
+  "pop-rock": "Pop-Rock",
+  dance: "Dance",
+  other: "Other",
+};
+
 async function loadCategoryData(): Promise<Record<string, CategoryData>> {
   const categories = [
     "musical", "opera", "classical", "music", "electronic",
@@ -34,18 +46,6 @@ async function loadCategoryData(): Promise<Record<string, CategoryData>> {
   categories.forEach((cat) => {
     result[cat] = { latest: null, total: 0 };
   });
-
-  const TICKETMASTER_SUBDIR: Record<string, string> = {
-    opera: "Opera",
-    musical: "Musical",
-    classical: "Classical",
-    music: "Music",
-    electronic: "Electronic",
-    "performance-art": "Performance-Art",
-    "pop-rock": "Pop-Rock",
-    dance: "Dance",
-    other: "Other",
-  };
 
   try {
     for (const category of categories) {
