@@ -27,5 +27,5 @@ if (category === "opera" || category === "musical" || category === "classical") 
 unoptimized={category === "opera" || category === "musical" || category === "classical"}
 ```
 
-**已加入白名单**：opera、musical、classical、music
-**待处理**（已有文件夹但未入白名单）：dance、electronic、other、pop-rock、performance-art
+**已加入白名单**：opera、musical、classical、music、electronic
+**待处理**（已有文件夹但未入白名单）：dance、other、pop-rock、performance-art
