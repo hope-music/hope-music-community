@@ -41,8 +41,8 @@ async function loadCategoryData(): Promise<Record<string, CategoryData>> {
     classical: "Classical",
     music: "Music",
     electronic: "Electronic",
-    "performance-art": "Performance Art",
-    "pop-rock": "Pop & Rock",
+    "performance-art": "Performance-Art",
+    "pop-rock": "Pop-Rock",
     dance: "Dance",
     other: "Other",
   };

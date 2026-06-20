@@ -193,7 +193,7 @@ export default function PerformancePage() {
   }, []);
 
   useEffect(() => {
-    fetch("/data/ticketmaster/Performance Art/data.json")
+    fetch("/data/ticketmaster/Performance-Art/data.json")
       .then((res) => {
         if (!res.ok) throw new Error("No file yet");
         return res.json();

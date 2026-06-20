@@ -3,7 +3,7 @@ const path = require('path');
 
 const API_KEY = 'G0AVxK4c8bvtFMp0pJapkWEYlyu8DtIE';
 const BASE_URL = 'https://app.ticketmaster.com/discovery/v2';
-const OUTPUT_DIR = path.join(__dirname, 'public', 'data', 'ticketmaster', 'Performance Art');
+const OUTPUT_DIR = path.join(__dirname, 'public', 'data', 'ticketmaster', 'Performance-Art');
 const OUTPUT_FILE = path.join(OUTPUT_DIR, 'data.json');
 
 const PAGE_SIZE = 200;

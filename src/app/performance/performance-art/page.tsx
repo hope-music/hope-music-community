@@ -175,7 +175,7 @@ export default function PerformanceArtPage() {
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    fetch('/data/ticketmaster/Performance Art/data.json')
+    fetch('/data/ticketmaster/Performance-Art/data.json')
       .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
       .then((data) => { setAllEvents(data); setLoading(false); })
       .catch(() => setLoading(false));
