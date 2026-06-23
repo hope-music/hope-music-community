@@ -1,64 +1,66 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { PERFORMANCE_CATEGORY_OPTIONS } from "@/lib/constants";
+import { useStageProductionDetail } from "@/lib/useSupabase";
 
-interface Performance {
-  id: string;
+interface Production {
+  _id: string;
   title: string;
   category: string;
   description: string;
   coverImage: string;
   content: string;
   status: "upcoming" | "past" | "draft";
-  eventDate?: string;
-  venue?: string;
+  eventDate?: number;
   city?: string;
-  priceRange?: string;
-  artist?: string;
-  duration?: string;
   url?: string;
-  createdAt: number;
 }
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
 type DisplayStatus = "upcoming" | "recent" | "archived";
 
-function getDisplayStatus(eventDate?: string): DisplayStatus {
+function getDisplayStatus(eventDate?: number): DisplayStatus {
   if (!eventDate) return "upcoming";
-  const eventTime = new Date(eventDate).getTime();
   const now = Date.now();
-  if (eventTime > now) return "upcoming";
-  const elapsed = now - eventTime;
+  if (eventDate > now) return "upcoming";
+  const elapsed = now - eventDate;
   if (elapsed <= TWO_WEEKS_MS) return "recent";
   return "archived";
 }
 
-function isVisible(eventDate?: string): boolean {
+function isVisible(eventDate?: number): boolean {
   return getDisplayStatus(eventDate) !== "archived";
 }
 
-function canBookTickets(eventDate?: string): boolean {
+function canBookTickets(eventDate?: number): boolean {
   if (!eventDate) return false;
-  const eventTime = new Date(eventDate).getTime();
-  const now = Date.now();
-  return eventTime >= now;
+  return eventDate >= Date.now();
 }
 
 export default function PerformanceDetailPage() {
   const params = useParams();
-  const [item, setItem] = useState<Performance | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [pageId, setPageId] = useState<string | null>(null);
-  const [relatedItems, setRelatedItems] = useState<Performance[]>([]);
+  const category = (params?.category as string) || "";
+  const slug = (params?.slug as string) || "";
+
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Track scroll progress for reading indicator
+  // Supabase query
+  const { item, loading } = useStageProductionDetail(slug);
+
+  const relatedItems = []; // Supabase detail fetch doesn't include related items; skip for now
+
+  const categoryLabel = useMemo(() =>
+    PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.value === item?.category)?.label || item?.category || "",
+    [item?.category]
+  );
+
+  // Track scroll progress
   useEffect(() => {
     const handleScroll = () => {
       const winScroll = document.documentElement.scrollTop || document.body.scrollTop;
@@ -70,133 +72,19 @@ export default function PerformanceDetailPage() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  const loadData = useCallback(async () => {
-    const category = params?.category as string;
-    const id = params?.slug as string;
-
-    if (!id) {
-      setLoading(false);
-      return;
-    }
-
-    setPageId(id);
-
-    // First try to find in the category-specific Ticketmaster JSON file
-    if (category) {
-      try {
-        const res = await fetch(`/data/ticketmaster/${category}/events.json`);
-        if (res.ok) {
-          const data = await res.json();
-          const found = data.events?.find((e: Performance) => e.id === id);
-          if (found) {
-            setItem(found);
-            const related = (data.events || [])
-              .filter((e: Performance) => e.category === found.category && e.id !== id && isVisible(e.eventDate))
-              .slice(0, 4);
-            setRelatedItems(related);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (e) {
-      }
-    }
-
-    // Fallback: search all category files (for backwards compatibility)
-    try {
-      const categories = [
-        "musical", "opera", "classical", "music", "electronic",
-        "pop-rock", "performance-art", "dance", "other",
-      ];
-      for (const cat of categories) {
-        if (cat === category) continue; // already tried above
-        try {
-          const res = await fetch(`/data/ticketmaster/${cat}/events.json`);
-          if (res.ok) {
-            const data = await res.json();
-            const found = data.events?.find((e: Performance) => e.id === id);
-            if (found) {
-              setItem(found);
-              const related = (data.events || [])
-                .filter((e: Performance) => e.category === found.category && e.id !== id && isVisible(e.eventDate))
-                .slice(0, 4);
-              setRelatedItems(related);
-              setLoading(false);
-              return;
-            }
-          }
-        } catch (e) {
-          // try next category
-        }
-      }
-    } catch (e) {
-    }
-
-    // Fallback to localStorage for backwards compatibility
-    try {
-      const stored = localStorage.getItem("admin_performance");
-      if (stored) {
-        const data = JSON.parse(stored);
-
-        const OLD_TO_NEW: Record<string, string> = {
-          "legend-hall-of-fame": "opera",
-          "musical": "musical",
-          "classical": "classical",
-          "edm": "electronic",
-          "legendary-rock": "pop-rock",
-          "legendary-pop": "pop-rock",
-          "festival": "other",
-          "ballet": "dance",
-          "drama": "performance-art",
-          "others": "other",
-        };
-        let migrated = false;
-        const updated = data.map((item: Performance) => {
-          const newCat = OLD_TO_NEW[item.category];
-          if (newCat) {
-            migrated = true;
-            return { ...item, category: newCat };
-          }
-          return item;
-        });
-        if (migrated) {
-          localStorage.setItem("admin_performance", JSON.stringify(updated));
-        }
-
-        const found = updated.find((item: Performance) => item.id === id);
-        setItem(found || null);
-
-        if (found) {
-          const related = updated
-            .filter((e: Performance) => e.category === found.category && e.id !== id && e.status !== "draft" && isVisible(e.eventDate))
-            .slice(0, 4);
-          setRelatedItems(related);
-        }
-      }
-    } catch (e) {
-      setItem(null);
-    }
-
-    setLoading(false);
-  }, [params?.category, params?.slug]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "";
-    return new Date(dateStr).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+  const formatDate = (ts?: number) => {
+    if (!ts) return "";
+    return new Date(ts).toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
   };
 
-  const formatTime = (dateStr?: string) => {
-    if (!dateStr) return "";
-    return new Date(dateStr).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
+  const formatTime = (ts?: number) => {
+    if (!ts) return "";
+    return new Date(ts).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
   };
 
-  const formatShortDate = (dateStr?: string) => {
-    if (!dateStr) return "";
-    return new Date(dateStr).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  const formatShortDate = (ts?: number) => {
+    if (!ts) return "";
+    return new Date(ts).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
   };
 
   const formatDateTime = (dateStr?: string) => {
@@ -337,15 +225,6 @@ export default function PerformanceDetailPage() {
 
             {/* Quick Info Pills */}
             <div className="flex flex-wrap items-center gap-4">
-              {item.venue && (
-                <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white">
-                  <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <span>{item.venue}</span>
-                </div>
-              )}
               {item.city && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-full text-white">
                   <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -419,7 +298,7 @@ export default function PerformanceDetailPage() {
                       </div>
                     )}
 
-                    {item.venue && (
+                    {item.city && (
                       <div className="flex items-start gap-3">
                         <div className="w-10 h-10 rounded-lg bg-hmc-orange/20 flex items-center justify-center flex-shrink-0">
                           <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -428,50 +307,8 @@ export default function PerformanceDetailPage() {
                           </svg>
                         </div>
                         <div>
-                          <p className="text-xs text-white/40">Venue</p>
-                          <p className="font-medium">{item.venue}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {item.city && (
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-hmc-orange/20 flex items-center justify-center flex-shrink-0">
-                          <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-xs text-white/40">City</p>
-                          <p className="font-medium">{item.city}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {item.priceRange && (
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-hmc-orange/20 flex items-center justify-center flex-shrink-0">
-                          <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-xs text-white/40">Price Range</p>
-                          <p className="font-medium">{item.priceRange}</p>
-                        </div>
-                      </div>
-                    )}
-
-                    {item.duration && (
-                      <div className="flex items-start gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-hmc-orange/20 flex items-center justify-center flex-shrink-0">
-                          <svg className="w-5 h-5 text-hmc-orange" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <p className="text-xs text-white/40">Duration</p>
-                          <p className="font-medium">{item.duration}</p>
+                          <p className="text-xs text-white/40">Venue / City</p>
+                          <p className="font-medium">{item.city || "TBD"}</p>
                         </div>
                       </div>
                     )}
@@ -532,10 +369,10 @@ export default function PerformanceDetailPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedItems.map((related, idx) => (
+              {relatedItems.map((related) => (
                 <Link
-                  key={related.id}
-                  href={`/performance/${related.category}/${related.id}`}
+                  key={related._id}
+                  href={`/performance/${related.category}/${related._id}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group block"
@@ -561,9 +398,6 @@ export default function PerformanceDetailPage() {
                   <h3 className="font-semibold text-gray-900 group-hover:text-hmc-orange transition-colors line-clamp-2">
                     {related.title}
                   </h3>
-                  {related.venue && (
-                    <p className="text-sm text-gray-500 mt-1">{related.venue}</p>
-                  )}
                 </Link>
               ))}
             </div>
@@ -579,10 +413,10 @@ export default function PerformanceDetailPage() {
             <h2 className="text-2xl font-bold text-gray-900">Comments</h2>
           </div>
 
-          {pageId && (
+          {slug && (
             <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100">
               <CommentSection
-                pageId={pageId}
+                pageId={slug}
                 storageKey="performance_comments"
                 bannedUsersKey="performance_banned_users"
               />

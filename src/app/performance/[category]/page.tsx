@@ -5,19 +5,19 @@ import Link from "next/link";
 import Image from "next/image";
 import { useParams } from "next/navigation";
 import { PERFORMANCE_CATEGORY_OPTIONS } from "@/lib/constants";
+import { useStageProductionsPublic } from "@/lib/useSupabase";
 
 interface Production {
+  _id: string;
   id: string;
   title: string;
   category: string;
   description: string;
   coverImage: string;
   status: "upcoming" | "past" | "draft";
-  eventDate?: string;
-  venue?: string;
+  eventDate?: number;
   city?: string;
   url?: string;
-  sourceUrl?: string;
 }
 
 interface FilterOption {
@@ -128,25 +128,24 @@ const GLOBAL_CITY_GROUPS = [
   },
 ];
 
-function getEventDateStr(eventDate: string): string {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(eventDate)) {
-    return eventDate;
-  }
+function getEventDateStr(eventDate: number): string {
+  if (!eventDate) return "";
+  // All event_date values in DB are UTC midnight — parse as UTC to avoid local TZ drift
   const d = new Date(eventDate);
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const day = String(d.getUTCDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
 }
 
-function matchesPastFilter(eventDate?: string, filter: PastFilter): boolean {
+function matchesPastFilter(eventDate?: number, filter: PastFilter): boolean {
   if (!eventDate) return false;
   const eventDateStr = getEventDateStr(eventDate);
   const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
   if (eventDateStr >= todayStr) return false;
   if (filter === "all") return true;
-  const diff = now.getTime() - new Date(eventDateStr).getTime();
+  const diff = now.getTime() - eventDate;
   return diff <= THREE_MONTHS_MS;
 }
 
@@ -165,27 +164,25 @@ function getTimeFilterLabel(value: TimeFilter): string {
   }
 }
 
-function matchesTimeFilter(eventDate: string | undefined, filter: TimeFilter): boolean {
+function matchesTimeFilter(eventDate: number | undefined, filter: TimeFilter): boolean {
   if (!eventDate) return false;
 
-  const eventDateStr = getEventDateStr(eventDate);
   const now = new Date();
-  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}";
+  const eventDateStr = getEventDateStr(eventDate);
 
   if (eventDateStr < todayStr) return false;
   if (filter === "all") return true;
 
   const maxRange = filter === "week" ? ONE_WEEK_MS : ONE_MONTH_MS;
-  const eventTime = new Date(eventDateStr).getTime();
-  const nowTime = now.getTime();
-  return eventTime - nowTime <= maxRange;
+  return eventDate - now.getTime() <= maxRange;
 }
 
 export default function PerformanceCategoryPage() {
   const params = useParams();
-  const [items, setItems] = useState<Production[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [categoryName, setCategoryName] = useState("");
+  const category = (params.category as string) || "";
+  const categoryLabel = PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.value === category)?.label || category;
+
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCity, setSelectedCity] = useState("all");
   const [customCity, setCustomCity] = useState("");
@@ -193,72 +190,14 @@ export default function PerformanceCategoryPage() {
   const [pastFilter, setPastFilter] = useState<PastFilter>("recent");
   const [viewMode, setViewMode] = useState<"upcoming" | "past">("upcoming");
 
-  useEffect(() => {
-    const loadData = async () => {
-      const category = params.category as string;
-      if (!category) return;
+  // Supabase query
+  const { productions: allProductions, loading } = useStageProductionsPublic(category);
 
-      const sub = PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.value === category);
-      setCategoryName(sub?.label || category);
-
-      try {
-        const res = await fetch(`/data/ticketmaster/${category}/events.json`);
-        if (res.ok) {
-          const data = await res.json();
-          const filtered = (data.events || [])
-            .filter((item: Production) => item.category === category);
-          if (filtered.length > 0) {
-            setItems(filtered);
-            setLoading(false);
-            return;
-          }
-        }
-      } catch (e) {
-      }
-
-      try {
-        const stored = localStorage.getItem("admin_performance");
-        if (stored) {
-          const data = JSON.parse(stored);
-
-          const OLD_TO_NEW: Record<string, string> = {
-            "legend-hall-of-fame": "opera",
-            "musical": "musical",
-            "classical": "classical",
-            "edm": "electronic",
-            "legendary-rock": "pop-rock",
-            "legendary-pop": "pop-rock",
-            "festival": "other",
-            "ballet": "dance",
-            "drama": "performance-art",
-            "others": "other",
-          };
-          let migrated = false;
-          const updated = data.map((item: Production) => {
-            const newCat = OLD_TO_NEW[item.category];
-            if (newCat) {
-              migrated = true;
-              return { ...item, category: newCat };
-            }
-            return item;
-          });
-          if (migrated) {
-            localStorage.setItem("admin_performance", JSON.stringify(updated));
-          }
-
-          const filtered = updated.filter(
-            (item: Production) =>
-              item.category === category && item.status !== "draft"
-          );
-          setItems(filtered);
-        }
-      } catch (e) {
-      }
-      setLoading(false);
-    };
-
-    loadData();
-  }, [params.category]);
+  const productions: Production[] = (allProductions || []).map((p) => ({
+    ...p,
+    id: p._id,
+    eventDate: p.eventDate as number | undefined,
+  }));
 
   useEffect(() => {
     setCurrentPage(1);
@@ -266,11 +205,11 @@ export default function PerformanceCategoryPage() {
     setCustomCity("");
     setTimeFilter("all");
     setPastFilter("recent");
-  }, [params.category]);
+  }, [category]);
 
   const cityOptionGroups = useMemo<FilterGroup[]>(() => {
     const availableCities = Array.from(
-      new Set(items.map((item) => item.city?.trim()).filter((city): city is string => Boolean(city)))
+      new Set(productions.map((item) => item.city?.trim()).filter((city): city is string => Boolean(city)))
     ).sort((a, b) => a.localeCompare(b));
 
     const availableByNormalized = new Map(availableCities.map((city) => [normalizeCity(city), city]));
@@ -314,14 +253,14 @@ export default function PerformanceCategoryPage() {
     });
 
     return groupedOptions;
-  }, [items]);
+  }, [productions]);
 
   const normalizedCustomCity = customCity.trim();
   const activeCityValue = selectedCity === CUSTOM_CITY_VALUE ? normalizedCustomCity : selectedCity;
   const normalizedActiveCity = activeCityValue === "all" ? "all" : normalizeCity(activeCityValue);
 
   const filteredItems = useMemo(() => {
-    const result = items.filter((item) => {
+    const result = productions.filter((item) => {
       const cityMatches =
         normalizedActiveCity === "all" || normalizeCity(item.city) === normalizedActiveCity;
       const timeMatches = viewMode === "upcoming"
@@ -343,26 +282,18 @@ export default function PerformanceCategoryPage() {
         return dateB.localeCompare(dateA);
       });
     }
-  }, [items, normalizedActiveCity, timeFilter, viewMode]);
+  }, [productions, normalizedActiveCity, timeFilter, viewMode]);
 
   useEffect(() => {
     setCurrentPage(1);
   }, [selectedCity, customCity, timeFilter, pastFilter, viewMode]);
 
-  const formatDateTime = (d?: string) => {
-    if (!d) return { date: "", time: "" };
-    const date = new Date(d);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) {
-      const [y, m, day] = d.split("-").map(Number);
-      const local = new Date(y, m - 1, day);
-      return {
-        date: local.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        time: ""
-      };
-    }
+  const formatDateTime = (ts?: number) => {
+    if (!ts) return { date: "", time: "" };
+    const d = new Date(ts);
     return {
-      date: date.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-      time: date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
+      date: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+      time: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true })
     };
   };
 
@@ -403,8 +334,8 @@ export default function PerformanceCategoryPage() {
 
   const renderEventCard = (item: Production, itemNumber: number) => (
     <a
-      key={item.id}
-      href={`/performance/${item.category}/${item.id}`}
+      key={item._id}
+      href={`/performance/${item.category}/${item._id}`}
       target="_blank"
       rel="noopener noreferrer"
       className="group relative flex gap-4 rounded-2xl border border-gray-100 bg-white p-3 transition-all duration-300 hover:border-hmc-orange/40 hover:shadow-lg hover:shadow-hmc-orange/5"
@@ -462,13 +393,12 @@ export default function PerformanceCategoryPage() {
           )}
           {item.city && <span>{item.city}</span>}
         </div>
-        {item.venue && <p className="mt-1 truncate text-xs text-gray-400">{item.venue}</p>}
-        {(item.url || item.sourceUrl) && (
+        {(item.url) && (
           <button
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              window.open(item.url || item.sourceUrl, "_blank", "noopener,noreferrer");
+              window.open(item.url, "_blank", "noopener,noreferrer");
             }}
             className="mt-2 inline-flex w-fit items-center gap-1 rounded bg-hmc-orange px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-hmc-orange/90 cursor-pointer"
           >
@@ -487,7 +417,7 @@ export default function PerformanceCategoryPage() {
       <main className="min-h-screen bg-white">
         <div className="border-b border-t border-hmc-orange">
           <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-            <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">{categoryName}</h1>
+            <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">{categoryLabel}</h1>
           </div>
         </div>
         <div className="mx-auto max-w-6xl px-4 py-4">
@@ -502,12 +432,12 @@ export default function PerformanceCategoryPage() {
     );
   }
 
-  if (items.length === 0) {
+  if (filteredItems.length === 0) {
     return (
       <main className="min-h-screen bg-white">
         <div className="border-b border-t border-hmc-orange">
           <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-            <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">{categoryName}</h1>
+            <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">{categoryLabel}</h1>
           </div>
         </div>
         <div className="mx-auto max-w-6xl px-4 py-4">
@@ -529,7 +459,7 @@ export default function PerformanceCategoryPage() {
     <main className="min-h-screen bg-white">
       <div className="border-b border-t border-hmc-orange">
         <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-          <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">{categoryName}</h1>
+          <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">{categoryLabel}</h1>
         </div>
       </div>
       <div className="mx-auto max-w-6xl px-4 py-4">

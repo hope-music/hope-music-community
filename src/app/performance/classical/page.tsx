@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo, useRef } from 'react';
+import { useStageProductionsEvents } from "@/lib/useSupabase";
 
 const PAGE_SIZE = 10;
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
@@ -164,8 +165,7 @@ function Pagination({ current, total, onChange }: { current: number; total: numb
 }
 
 export default function ClassicalPerformancePage() {
-  const [allEvents, setAllEvents] = useState<TicketmasterEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { events: allEvents, loading } = useStageProductionsEvents("classical");
 
   const [activeTab, setActiveTab] = useState<Tab>('upcoming');
   const [selectedCity, setSelectedCity] = useState('All Cities');
@@ -173,13 +173,6 @@ export default function ClassicalPerformancePage() {
   const [showDropdown, setShowDropdown] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    fetch('/data/ticketmaster/Classical/data.json')
-      .then((r) => { if (!r.ok) throw new Error(); return r.json(); })
-      .then((data) => { setAllEvents(data); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, []);
 
   useEffect(() => {
     function handler(e: MouseEvent) {
