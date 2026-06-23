@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo, useRef } from 'react';
 import { useStageProductionsEvents } from "@/lib/useSupabase";
+import { PerformancePageHeader } from "@/components/performance/PerformancePageHeader";
 
 const PAGE_SIZE = 10;
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
@@ -264,10 +265,7 @@ export default function MusicalPerformancePage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
-      <div className="mb-6 pb-4 border-b border-gray-200">
-        <h1 className="text-2xl font-bold text-gray-900">Musical &amp; Theatre</h1>
-        <p className="text-sm text-gray-500 mt-1">{allEvents.length} events in database</p>
-      </div>
+      <PerformancePageHeader title="Musical &amp; Theatre" totalCount={allEvents.length} />
 
       {/* Controls: Tab + City Filter */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">

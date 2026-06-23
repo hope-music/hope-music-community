@@ -336,6 +336,22 @@ export default function PerformanceDetailPage() {
                     </div>
                   )}
 
+                  {/* Disclaimer */}
+                  <div className="mt-4 px-4 py-3 bg-white/10 rounded-xl border border-white/20">
+                    <p className="text-xs text-white/70 leading-relaxed">
+                      Notice: This is a free informational guide only — we do not sell tickets. Schedules may not reflect real-time changes. For tickets and latest updates, visit{" "}
+                      <a
+                        href="https://www.ticketmaster.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-white"
+                      >
+                        Ticketmaster
+                      </a>
+                      .
+                    </p>
+                  </div>
+
                   {/* Share & Actions */}
                   <div className="flex items-center gap-2 mt-4">
                     <button className="flex-1 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors flex items-center justify-center gap-2">
