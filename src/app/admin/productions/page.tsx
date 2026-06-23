@@ -2,8 +2,144 @@
 
 import { useState, useRef, useEffect } from "react";
 import { PERFORMANCE_CATEGORY_OPTIONS } from "@/lib/constants";
+import { useStageProductions, adminStageProductions, useStageProductionsForAdmin, type StageProduction } from "@/lib/useSupabase";
 
-// Rich text editor
+// ── Ticketmaster sync helpers ──────────────────────────────────────────────────
+const SYNC_CATEGORIES = [
+  { value: "musical", label: "Musical", sources: "Theatre, Musicals" },
+  { value: "opera", label: "Opera", sources: "Opera" },
+  { value: "classical", label: "Classical", sources: "Classical" },
+  { value: "music", label: "Music", sources: "Music" },
+  { value: "electronic", label: "Electronic", sources: "Electronic" },
+  { value: "pop-rock", label: "Pop & Rock", sources: "18 sub-genres" },
+  { value: "performance-art", label: "Performance Art", sources: "Performance Art, Variety" },
+  { value: "dance", label: "Dance", sources: "Dance" },
+  { value: "other", label: "Other", sources: "17 sub-genres" },
+];
+
+type SyncState = "idle" | "previewing" | "syncing";
+
+interface SyncStatus {
+  state: SyncState;
+  result: any | null;
+  error: string | null;
+}
+
+// ── Ticketmaster Sync Panel ────────────────────────────────────────────────────
+function TMSyncPanel() {
+  const [statuses, setStatuses] = useState<Record<string, SyncStatus>>({});
+
+  const runSync = async (category: string, mode: "preview" | "sync") => {
+    setStatuses((prev) => ({
+      ...prev,
+      [category]: { state: mode === "preview" ? "previewing" : "syncing", result: null, error: null },
+    }));
+
+    try {
+      const res = await fetch("/api/ticketmaster-sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, mode }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+      setStatuses((prev) => ({
+        ...prev,
+        [category]: { state: "idle", result: data, error: null },
+      }));
+    } catch (err: any) {
+      setStatuses((prev) => ({
+        ...prev,
+        [category]: { state: "idle", result: null, error: err.message },
+      }));
+    }
+  };
+
+  const isRunning = (cat: string) =>
+    statuses[cat]?.state === "previewing" || statuses[cat]?.state === "syncing";
+
+  const result = (cat: string) => statuses[cat]?.result;
+
+  return (
+    <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <h2 className="text-base font-semibold text-blue-900">Ticketmaster Sync</h2>
+          <p className="text-xs text-blue-600 mt-0.5">
+            Preview counts first, then sync to pull events into the database.
+          </p>
+        </div>
+        <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
+          API v2
+        </span>
+      </div>
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="text-left text-xs text-blue-700 uppercase tracking-wide border-b border-blue-200">
+              <th className="pb-2 pr-4 font-medium">Category</th>
+              <th className="pb-2 pr-4 font-medium">Ticketmaster Sources</th>
+              <th className="pb-2 font-medium text-center">Actions</th>
+              <th className="pb-2 pl-4 font-medium">Result</th>
+            </tr>
+          </thead>
+          <tbody>
+            {SYNC_CATEGORIES.map((cat) => {
+              const s = statuses[cat.value];
+              return (
+                <tr key={cat.value} className="border-b border-blue-100 last:border-0">
+                  <td className="py-2 pr-4 font-medium text-gray-800">{cat.label}</td>
+                  <td className="py-2 pr-4 text-xs text-gray-500">{cat.sources}</td>
+                  <td className="py-2">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={() => runSync(cat.value, "preview")}
+                        disabled={isRunning(cat.value)}
+                        className="px-3 py-1 text-xs rounded border border-blue-300 bg-white text-blue-700 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {s?.state === "previewing" ? "..." : "Preview"}
+                      </button>
+                      <button
+                        onClick={() => runSync(cat.value, "sync")}
+                        disabled={isRunning(cat.value)}
+                        className="px-3 py-1 text-xs rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      >
+                        {s?.state === "syncing" ? "..." : "Sync"}
+                      </button>
+                    </div>
+                  </td>
+                  <td className="py-2 pl-4">
+                    {s?.error && (
+                      <span className="text-xs text-red-600">Error: {s.error}</span>
+                    )}
+                    {s?.state === "previewing" && (
+                      <span className="text-xs text-gray-400">Fetching...</span>
+                    )}
+                    {s?.state === "syncing" && (
+                      <span className="text-xs text-blue-500">Writing to database...</span>
+                    )}
+                    {s?.state === "idle" && result(cat.value) && (
+                      <span className="text-xs text-green-700">
+                        {result(cat.value).mode === "preview"
+                          ? `${result(cat.value).afterDedup} events (${result(cat.value).totalFetched} raw)`
+                          : `Synced: ${result(cat.value).upserted} upserted, ${result(cat.value).errors} errors`}
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ============================================
+// Rich Text Editor
+// ============================================
 function RichTextEditor({
   content,
   onChange,
@@ -75,162 +211,30 @@ function RichTextEditor({
   );
 }
 
-interface Production {
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  coverImage: string;
-  content: string;
-  status: "upcoming" | "past" | "draft";
-  eventDate?: string;
-  url?: string;
-  createdAt: number;
-  updatedAt: number;
+// ============================================
+// Helpers
+// ============================================
+function formatDate(timestamp?: number): string {
+  if (!timestamp) return "";
+  return new Date(timestamp).toLocaleDateString();
 }
 
-interface Comment {
-  id: string;
-  authorName: string;
-  authorEmail: string;
-  authorAvatar: string;
-  content: string;
-  createdAt: number;
-  replies: Comment[];
+function formatDateForInput(timestamp?: number): string {
+  if (!timestamp) return "";
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) return "";
+  return d.toISOString().split("T")[0];
 }
 
-// Ban duration options
-interface BanEntry {
-  email: string;
-  expiresAt: number | null; // null means permanent
-}
-
-// Default comments (same as frontend)
-const DEFAULT_COMMENTS: Comment[] = [
-  {
-    id: "placeholder_1",
-    authorName: "Sarah Johnson",
-    authorEmail: "sarah@example.com",
-    authorAvatar: "🎵",
-    content: "This was absolutely amazing! The performances were top-notch and the atmosphere was electric. Highly recommend catching this show!",
-    createdAt: Date.now() - 86400000 * 3,
-    replies: [
-      {
-        id: "placeholder_1_reply",
-        authorName: "Mike Chen",
-        authorEmail: "mike@example.com",
-        authorAvatar: "🎤",
-        content: "Totally agree! I was there opening night and it exceeded all expectations.",
-        createdAt: Date.now() - 86400000 * 2,
-        replies: [],
-      },
-    ],
-  },
-  {
-    id: "placeholder_2",
-    authorName: "Emily Davis",
-    authorEmail: "emily@example.com",
-    authorAvatar: "🎹",
-    content: "Brought my whole family and we all loved it. The production quality is outstanding!",
-    createdAt: Date.now() - 86400000 * 5,
-    replies: [],
-  },
-  {
-    id: "placeholder_3",
-    authorName: "Alex Thompson",
-    authorEmail: "alex@example.com",
-    authorAvatar: "🥁",
-    content: "The attention to detail in every aspect of this production is remarkable. A must-see!",
-    createdAt: Date.now() - 86400000 * 7,
-    replies: [],
-  },
-];
-
-const COMMENTS_STORAGE_KEY = "performance_comments";
-
-// Data source enum
-type DataSource = "admin" | "ticketmaster";
-
-// Load from Ticketmaster JSON API
-async function loadItemsFromApi(): Promise<Production[]> {
-  try {
-    const res = await fetch("/data/ticketmaster-events.json");
-    if (!res.ok) return [];
-    const data = await res.json();
-    return (data.events || []).map((event: any) => ({
-      id: event.id || event._id,
-      title: event.title || event.name,
-      category: event.category,
-      description: event.description || "",
-      coverImage: event.coverImage || event.image || "",
-      content: event.content || "",
-      status: event.status || "upcoming",
-      eventDate: event.eventDate || event.date,
-      url: event.url || "",
-      createdAt: event.createdAt || Date.now(),
-      updatedAt: event.updatedAt || Date.now(),
-    }));
-  } catch (e) {
-    return [];
-  }
-}
-
-// Load from localStorage (admin-managed data)
-function loadItemsFromStorage(): Production[] {
-  try {
-    const stored = localStorage.getItem("admin_performance");
-    if (stored) {
-      const data = JSON.parse(stored);
-      // Migrate old categories
-          const OLD_TO_NEW_CATEGORY: Record<string, string> = {
-            "legend-hall-of-fame": "opera",
-            "musical": "musical",
-            "classical": "classical",
-            "edm": "electronic",
-            "legendary-rock": "pop-rock",
-            "legendary-pop": "pop-rock",
-            "festival": "other",
-            "ballet": "dance",
-            "drama": "performance-art",
-            "others": "other",
-          };
-      return data.map((item: Production) => ({
-        ...item,
-        category: OLD_TO_NEW_CATEGORY[item.category] || item.category,
-      }));
-    }
-  } catch (e) {
-  }
-  return [];
-}
-
-// Merge admin data with API data (admin data takes precedence for duplicates)
-function mergePerformanceData(apiData: Production[], adminData: Production[]): Production[] {
-  const adminIds = new Set(adminData.map(item => item.id));
-  const uniqueApiData = apiData.filter(item => !adminIds.has(item.id));
-  return [...adminData, ...uniqueApiData];
-}
-
+// ============================================
+// Main Component
+// ============================================
 export default function StageProductionsPage() {
-  const [items, setItems] = useState<Production[]>([]);
   const [filterCategory, setFilterCategory] = useState<string>(PERFORMANCE_CATEGORY_OPTIONS[0]?.value ?? "musical");
   const [filterStatus, setFilterStatus] = useState<"all" | "upcoming" | "past" | "draft">("all");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [dataSource, setDataSource] = useState<DataSource>("admin");
-  const [isMerging, setIsMerging] = useState(false);
-  const [syncing, setSyncing] = useState(false);
-  const [lastSync, setLastSync] = useState<string | null>(null);
-
-  // Featured performances state
-  const [featuredIds, setFeaturedIds] = useState<string[]>([]);
-  const FEATURED_STORAGE_KEY = "hmc_featured_performances";
-
-  // Comment management state
-  const [comments, setComments] = useState<Comment[]>([]);
-  const [bannedUsers, setBannedUsers] = useState<BanEntry[]>([]);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -245,86 +249,20 @@ export default function StageProductionsPage() {
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
 
-  // Load data on mount
+  // Featured IDs (tracked separately in local state)
+  const [featuredIds, setFeaturedIds] = useState<Set<string>>(new Set());
+
+  // Supabase query
+  const { productions: allProductions, loading, refresh } = useStageProductionsForAdmin();
+
+  // Load featured IDs from fetched data
   useEffect(() => {
-    loadAllData();
-
-    // Load banned users
-    const banned = localStorage.getItem("performance_banned_users");
-    if (banned) {
-      setBannedUsers(JSON.parse(banned));
+    if (allProductions) {
+      setFeaturedIds(new Set(allProductions.filter(p => p.is_featured).map(p => p.id)));
     }
+  }, [allProductions]);
 
-    // Load featured IDs
-    const featured = localStorage.getItem(FEATURED_STORAGE_KEY);
-    if (featured) {
-      setFeaturedIds(JSON.parse(featured));
-    }
-  }, []);
-
-  // Load all data sources
-  const loadAllData = async () => {
-    setLoading(true);
-    try {
-      // Always load admin data from localStorage
-      const adminData = loadItemsFromStorage();
-      
-      // Load API data
-      const apiData = await loadItemsFromApi();
-      
-      // Merge data
-      const merged = mergePerformanceData(apiData, adminData);
-      setItems(merged);
-      
-      if (apiData.length > 0 && adminData.length > 0) {
-        setDataSource("admin");
-      } else if (apiData.length > 0) {
-        setDataSource("ticketmaster");
-      } else {
-        setDataSource("admin");
-      }
-    } catch (e) {
-      console.error("Error loading data:", e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Check and clean up expired bans
-  const cleanupExpiredBans = () => {
-    const now = Date.now();
-    const validBans = bannedUsers.filter(b => b.expiresAt === null || b.expiresAt > now);
-    if (validBans.length !== bannedUsers.length) {
-      setBannedUsers(validBans);
-      localStorage.setItem("performance_banned_users", JSON.stringify(validBans));
-    }
-    return validBans;
-  };
-
-  const isUserBanned = (email: string): boolean => {
-    const now = Date.now();
-    return bannedUsers.some(b => b.email === email && (b.expiresAt === null || b.expiresAt > now));
-  };
-
-  const saveToStorage = (data: Production[]) => {
-    // Only save items that were created/edited in admin (have admin-created timestamps or match localStorage items)
-    const stored = localStorage.getItem("admin_performance");
-    let adminItems: Production[] = [];
-    if (stored) {
-      try {
-        adminItems = JSON.parse(stored);
-      } catch (e) {
-      }
-    }
-    
-    // Keep only admin-created items (those that were originally in localStorage or newly created)
-    const adminIds = new Set(adminItems.map(item => item.id));
-    const adminOnlyItems = data.filter(item => adminIds.has(item.id) || item.id.startsWith("admin_"));
-    
-    localStorage.setItem("admin_performance", JSON.stringify(adminOnlyItems));
-    setItems(data);
-  };
-
+  // Clear message after 5s
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(null), 5000);
@@ -332,119 +270,24 @@ export default function StageProductionsPage() {
     }
   }, [message]);
 
-  // Load comments for the current editing item
-  const loadComments = (itemId: string) => {
-    const stored = localStorage.getItem(COMMENTS_STORAGE_KEY);
-    if (stored) {
-      const allComments = JSON.parse(stored);
-      const pageComments = allComments[itemId] || [];
-      setComments(pageComments.length > 0 ? pageComments : DEFAULT_COMMENTS);
-    } else {
-      setComments(DEFAULT_COMMENTS);
-    }
-
-    // Also reload banned users when switching items
-    const banned = localStorage.getItem("performance_banned_users");
-    if (banned) {
-      setBannedUsers(JSON.parse(banned));
-    } else {
-      setBannedUsers([]);
-    }
-  };
-
-  const saveComments = (itemId: string, newComments: Comment[]) => {
-    const stored = localStorage.getItem(COMMENTS_STORAGE_KEY);
-    const allComments = stored ? JSON.parse(stored) : {};
-    allComments[itemId] = newComments;
-    localStorage.setItem(COMMENTS_STORAGE_KEY, JSON.stringify(allComments));
-    setComments(newComments);
-  };
-
-  const handleDeleteComment = (commentId: string) => {
-    if (!confirm("Delete this comment and all its replies?")) return;
-    const updated = comments.filter((c) => c.id !== commentId);
-    if (editingId) {
-      saveComments(editingId, updated);
-    }
-    setMessage({ type: "success", text: "Comment and replies deleted" });
-  };
-
-  const handleDeleteReply = (parentId: string, replyId: string) => {
-    if (!confirm("Delete this reply?")) return;
-    const updated = comments.map((c) => {
-      if (c.id === parentId) {
-        return { ...c, replies: c.replies.filter((r) => r.id !== replyId) };
-      }
-      return c;
-    });
-    if (editingId) {
-      saveComments(editingId, updated);
-    }
-    setMessage({ type: "success", text: "Reply deleted" });
-  };
-
-  const handleBanUser = (email: string, duration: number | null, deleteComments: boolean = false) => {
-    // duration: null = permanent, number = milliseconds until expiry
-    const expiresAt = duration === null ? null : Date.now() + duration;
-
-    let updatedComments = comments;
-    if (deleteComments) {
-      updatedComments = comments
-        .filter((c) => c.authorEmail !== email)
-        .map((c) => ({
-          ...c,
-          replies: c.replies.filter((r) => r.authorEmail !== email),
-        }));
-    }
-
-    const newBanned = bannedUsers.filter(b => b.email !== email); // Remove existing ban for this user
-    newBanned.push({ email, expiresAt });
-    setBannedUsers(newBanned);
-    localStorage.setItem("performance_banned_users", JSON.stringify(newBanned));
-
-    if (editingId && deleteComments) {
-      saveComments(editingId, updatedComments);
-    }
-
-    const durationText = duration === null ? "permanently" :
-      duration === 86400000 ? "for 1 day" :
-      duration === 604800000 ? "for 7 days" :
-      duration === 2592000000 ? "for 30 days" : `for ${duration / 86400000} days`;
-
-    setMessage({ type: "success", text: `User ${email} banned ${durationText}` });
-  };
-
-  const handleUnbanUser = (email: string) => {
-    const newBanned = bannedUsers.filter(b => b.email !== email);
-    setBannedUsers(newBanned);
-    localStorage.setItem("performance_banned_users", JSON.stringify(newBanned));
-    setMessage({ type: "success", text: `User ${email} unbanned` });
-  };
-
-  const formatTime = (timestamp: number): string => {
-    const seconds = Math.floor((Date.now() - timestamp) / 1000);
-    if (seconds < 60) return "just now";
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes}m ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days}d ago`;
-    return new Date(timestamp).toLocaleDateString();
-  };
-
-  const filteredItems = items.filter((p) => {
+  // Filtered items
+  const filteredItems = (allProductions || []).filter((p) => {
     if (p.category !== filterCategory) return false;
     if (filterStatus !== "all" && p.status !== filterStatus) return false;
     return true;
   });
 
-  // Group items by category
+  // Items grouped by category (for stats)
   const itemsByCategory = PERFORMANCE_CATEGORY_OPTIONS.map((sub) => ({
     ...sub,
-    items: items.filter((p) => p.category === sub.value),
+    count: (allProductions || []).filter((p) => p.category === sub.value).length,
   }));
 
+  // Category counts for dropdown
+  const getCategoryCount = (catValue: string) =>
+    (allProductions || []).filter((p) => p.category === catValue).length;
+
+  // Handle cover image selection
   const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file && file.type.startsWith("image/")) {
@@ -459,6 +302,7 @@ export default function StageProductionsPage() {
     if (coverInputRef.current) coverInputRef.current.value = "";
   };
 
+  // Reset form for new item
   const handleNew = () => {
     setEditingId(null);
     setTitle("");
@@ -471,62 +315,52 @@ export default function StageProductionsPage() {
     setUrl("");
     setCoverImage("");
     setCoverPreview(null);
-    setComments([]);
     setShowForm(true);
   };
 
-  // Convert date string to YYYY-MM-DD format for HTML date input
-  const formatDateForInput = (dateStr?: string): string => {
-    if (!dateStr) return "";
-    try {
-      const date = new Date(dateStr);
-      if (isNaN(date.getTime())) return "";
-      return date.toISOString().split("T")[0];
-    } catch {
-      return "";
-    }
-  };
-
-  const handleEdit = (item: Production) => {
+  // Load item data into form for editing
+  const handleEdit = (item: StageProduction) => {
     setEditingId(item.id);
     setTitle(item.title || "");
     setDescription(item.description || "");
     setContent(item.content || "");
-    setCategory(item.category || "musical");
+    setCategory(item.category || filterCategory);
     setStatus(item.status || "draft");
-    const dateVal = formatDateForInput(item.eventDate);
+    const dateVal = formatDateForInput(item.event_date);
     setEventDate(dateVal);
-    setEventTime(dateVal && item.eventDate?.includes("T") ? item.eventDate.split("T")[1]?.slice(0, 5) || "" : "");
+    setEventTime(dateVal && item.event_time ? item.event_time.slice(0, 5) : "");
     setUrl(item.url || "");
-    setCoverImage(item.coverImage || "");
-    setCoverPreview(item.coverImage || null);
-
-    loadComments(item.id);
+    setCoverImage(item.cover_image || "");
+    setCoverPreview(item.cover_image || null);
     setShowForm(true);
   };
 
-  // Toggle featured status
-  const toggleFeatured = (itemId: string) => {
-    let updated: string[];
-    if (featuredIds.includes(itemId)) {
-      updated = featuredIds.filter(id => id !== itemId);
-    } else {
-      if (featuredIds.length >= 9) {
-        setMessage({ type: "error", text: "Maximum 9 featured items allowed" });
-        return;
-      }
-      updated = [...featuredIds, itemId];
+  // Toggle featured
+  const toggleFeatured = async (itemId: string) => {
+    const item = (allProductions || []).find(p => p.id === itemId);
+    if (!item) return;
+    const newFeatured = !item.is_featured;
+    if (newFeatured && featuredIds.size >= 9) {
+      setMessage({ type: "error", text: "Maximum 9 featured items allowed" });
+      return;
     }
-    setFeaturedIds(updated);
-    localStorage.setItem(FEATURED_STORAGE_KEY, JSON.stringify(updated));
-    // Notify frontend pages
-    window.dispatchEvent(new Event("featuredUpdated"));
-    setMessage({
-      type: "success",
-      text: featuredIds.includes(itemId) ? "Removed from Featured" : "Added to Featured"
-    });
+    try {
+      const { error } = await adminStageProductions.update(itemId, { is_featured: newFeatured });
+      if (error) throw new Error(error.message);
+      setFeaturedIds(prev => {
+        const next = new Set(prev);
+        if (newFeatured) next.add(itemId);
+        else next.delete(itemId);
+        return next;
+      });
+      refresh();
+      setMessage({ type: "success", text: newFeatured ? "Added to Featured" : "Removed from Featured" });
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Failed to update" });
+    }
   };
 
+  // Save (create or update)
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -534,84 +368,50 @@ export default function StageProductionsPage() {
       return;
     }
 
-    setLoading(true);
-    try {
-      const now = Date.now();
+    const eventDateMs = eventDate
+      ? new Date(eventDate + "T" + (eventTime || "00:00:00")).getTime()
+      : undefined;
 
+    const payload = {
+      title: title.trim(),
+      description,
+      content,
+      cover_image: coverImage,
+      url,
+      category,
+      status,
+      event_date: eventDateMs,
+      event_time: eventTime,
+      media_links: [],
+    };
+
+    try {
       if (editingId) {
-        const updated = items.map((item) => {
-          if (item.id === editingId) {
-            return {
-              ...item,
-              title: title.trim(),
-              description,
-              content,
-              category,
-              status,
-              eventDate: eventDate && eventTime ? `${eventDate}T${eventTime}:00` : eventDate || "",
-              url,
-              coverImage,
-              updatedAt: now
-            };
-          }
-          return item;
-        });
-        saveToStorage(updated);
+        const { error } = await adminStageProductions.update(editingId, payload);
+        if (error) throw new Error(error.message);
         setMessage({ type: "success", text: "Updated successfully!" });
       } else {
-        const newItem: Production = {
-          id: `admin_${now}_${Math.random().toString(36).substr(2, 9)}`,
-          title: title.trim(),
-          category,
-          description,
-          content,
-          coverImage,
-          status,
-          eventDate,
-          url,
-          createdAt: now,
-          updatedAt: now,
-        };
-        saveToStorage([newItem, ...items]);
+        const { error } = await adminStageProductions.create(payload);
+        if (error) throw new Error(error.message);
         setMessage({ type: "success", text: "Created successfully!" });
       }
+      refresh();
       setShowForm(false);
-    } catch (err) {
-      setMessage({ type: "error", text: "Failed to save" });
-    } finally {
-      setLoading(false);
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Failed to save" });
     }
   };
 
-  const handleDelete = (id: string) => {
+  // Delete
+  const handleDelete = async (id: string) => {
     if (!confirm("Delete this item?")) return;
-    const updated = items.filter((item) => item.id !== id);
-    saveToStorage(updated);
-    setMessage({ type: "success", text: "Deleted" });
-  };
-
-  // Sync from Ticketmaster API and save to public JSON file
-  const handleSyncFromTicketmaster = async () => {
-    if (!confirm("Sync now? This will fetch the latest events from Ticketmaster and save to the public data file. Continue?")) return;
-
-    setSyncing(true);
-    setMessage(null);
     try {
-      const res = await fetch("/api/ticketmaster", { method: "POST" });
-      const data = await res.json();
-
-      if (data.success) {
-        setLastSync(data.fetchedAt);
-        // Refresh the data list
-        await loadAllData();
-        setMessage({ type: "success", text: `Sync complete! ${data.total} events fetched.` });
-      } else {
-        setMessage({ type: "error", text: `Sync failed: ${data.error}` });
-      }
-    } catch (err) {
-      setMessage({ type: "error", text: "Sync request failed. Please try again." });
-    } finally {
-      setSyncing(false);
+      const { error } = await adminStageProductions.delete(id);
+      if (error) throw new Error(error.message);
+      refresh();
+      setMessage({ type: "success", text: "Deleted" });
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Failed to delete" });
     }
   };
 
@@ -623,98 +423,58 @@ export default function StageProductionsPage() {
     }
   };
 
-  const formatDate = (dateStr?: string) => {
-    if (!dateStr) return "";
-    return new Date(dateStr).toLocaleDateString();
-  };
-
-  // Get all unique authors from comments
-  const getCommentAuthors = () => {
-    const authors = new Map<string, { email: string; avatar: string; count: number }>();
-    comments.forEach((c) => {
-      const existing = authors.get(c.authorEmail);
-      authors.set(c.authorEmail, {
-        email: c.authorEmail,
-        avatar: c.authorAvatar,
-        count: existing ? existing.count + 1 : 1,
-      });
-      c.replies.forEach((r) => {
-        const replyExisting = authors.get(r.authorEmail);
-        authors.set(r.authorEmail, {
-          email: r.authorEmail,
-          avatar: r.authorAvatar,
-          count: replyExisting ? replyExisting.count + 1 : 1,
-        });
-      });
-    });
-    return Array.from(authors.values());
-  };
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Performance</h1>
-          <p className="mt-1 text-sm text-gray-500">Manage performances ({items.length} total)</p>
+          <p className="mt-1 text-sm text-gray-500">
+            Manage performances ({(allProductions || []).length} total)
+          </p>
           <div className="mt-2 flex items-center gap-4">
             <span className="text-sm">
-              Total: <span className="font-semibold">{items.length}</span> items
+              Featured: <span className={`font-semibold ${featuredIds.size > 0 ? "text-yellow-600" : "text-gray-400"}`}>
+                {featuredIds.size}/9
+              </span>
             </span>
-            <span className="text-sm">
-              Featured: <span className={`font-semibold ${featuredIds.length > 0 ? "text-yellow-600" : "text-gray-400"}`}>{featuredIds.length}/9</span>
-            </span>
-            <span className="text-xs text-gray-400">
-              (Source: {dataSource === "ticketmaster" ? "Ticketmaster API" : "Admin + Ticketmaster"})
-            </span>
+            {loading && <span className="text-xs text-gray-400">Loading...</span>}
           </div>
         </div>
-        <div className="flex gap-3">
-          <button
-            onClick={handleSyncFromTicketmaster}
-            disabled={syncing}
-            className="rounded-md border border-orange-400 bg-orange-50 px-4 py-2 text-sm font-medium text-orange-700 hover:bg-orange-100 disabled:opacity-50 flex items-center gap-2"
-          >
-            {syncing ? (
-              <>
-                <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-orange-300 border-t-orange-600" />
-                Syncing...
-              </>
-            ) : (
-              <>
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                </svg>
-                Sync from Ticketmaster
-              </>
-            )}
-          </button>
-          <button
-            onClick={loadAllData}
-            disabled={loading}
-            className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50"
-          >
-            {loading ? "Loading..." : "↻ Refresh"}
-          </button>
-          <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">
-            + New Performance
-          </button>
-        </div>
+        <button
+          onClick={handleNew}
+          className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+        >
+          + New Performance
+        </button>
       </div>
+
+      {/* Ticketmaster Sync Panel */}
+      <TMSyncPanel />
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4">
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Category</label>
-          <select value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
+          <label className="mb-1 block text-xs text-gray-500">Category</label>
+          <select
+            value={filterCategory}
+            onChange={(e) => setFilterCategory(e.target.value)}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          >
             {PERFORMANCE_CATEGORY_OPTIONS.map((cat) => (
-              <option key={cat.value} value={cat.value}>{cat.label} ({itemsByCategory.find(c => c.value === cat.value)?.items.length || 0})</option>
+              <option key={cat.value} value={cat.value}>
+                {cat.label} ({getCategoryCount(cat.value)})
+              </option>
             ))}
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-500 mb-1">Status</label>
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value as any)} className="rounded-md border border-gray-300 px-3 py-2 text-sm">
+          <label className="mb-1 block text-xs text-gray-500">Status</label>
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value as any)}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm"
+          >
             <option value="all">All</option>
             <option value="draft">Drafts</option>
             <option value="upcoming">Upcoming</option>
@@ -733,16 +493,28 @@ export default function StageProductionsPage() {
       {/* Form */}
       {showForm && (
         <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="mb-4 text-lg font-semibold">{editingId ? "Edit" : "New"} Performance</h2>
+          <h2 className="mb-4 text-lg font-semibold">
+            {editingId ? "Edit" : "New"} Performance
+          </h2>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="grid gap-4 md:grid-cols-2">
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Title</label>
-                <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" required />
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                  required
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
-                <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2">
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                >
                   {PERFORMANCE_CATEGORY_OPTIONS.map((cat) => (
                     <option key={cat.value} value={cat.value}>{cat.label}</option>
                   ))}
@@ -750,7 +522,11 @@ export default function StageProductionsPage() {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Status</label>
-                <select value={status} onChange={(e) => setStatus(e.target.value as any)} className="w-full rounded-md border border-gray-300 px-3 py-2">
+                <select
+                  value={status}
+                  onChange={(e) => setStatus(e.target.value as any)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                >
                   <option value="draft">Draft</option>
                   <option value="upcoming">Upcoming</option>
                   <option value="past">Past</option>
@@ -758,30 +534,63 @@ export default function StageProductionsPage() {
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Event Date</label>
-                <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" />
+                <input
+                  type="date"
+                  value={eventDate}
+                  onChange={(e) => setEventDate(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Event Time</label>
-                <input type="time" value={eventTime} onChange={(e) => setEventTime(e.target.value)} className="w-full rounded-md border border-gray-300 px-3 py-2" />
+                <input
+                  type="time"
+                  value={eventTime}
+                  onChange={(e) => setEventTime(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Ticket URL</label>
-                <input type="url" value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://www.ticketmaster.com/..." className="w-full rounded-md border border-gray-300 px-3 py-2" />
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  placeholder="https://www.ticketmaster.com/..."
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                />
               </div>
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-gray-700">Cover Image</label>
                 <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverSelect} className="hidden" />
-                <button type="button" onClick={() => coverInputRef.current?.click()} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Choose Cover Image</button>
+                <button
+                  type="button"
+                  onClick={() => coverInputRef.current?.click()}
+                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm"
+                >
+                  Choose Cover Image
+                </button>
                 {coverPreview && (
                   <div className="mt-2 flex items-center gap-4">
                     <img src={coverPreview} alt="Preview" className="h-20 w-32 rounded-md object-cover" />
-                    <button type="button" onClick={() => { setCoverImage(""); setCoverPreview(null); }} className="text-sm text-red-500 hover:text-red-700">Remove</button>
+                    <button
+                      type="button"
+                      onClick={() => { setCoverImage(""); setCoverPreview(null); }}
+                      className="text-sm text-red-500 hover:text-red-700"
+                    >
+                      Remove
+                    </button>
                   </div>
                 )}
               </div>
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-gray-700">Summary (for list display)</label>
-                <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full rounded-md border border-gray-300 px-3 py-2" />
+                <textarea
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                />
               </div>
               <div className="md:col-span-2">
                 <label className="mb-1 block text-sm font-medium text-gray-700">Full Content</label>
@@ -789,261 +598,96 @@ export default function StageProductionsPage() {
               </div>
             </div>
             <div className="flex justify-end gap-3 border-t pt-4">
-              <button type="button" onClick={() => setShowForm(false)} className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm">Cancel</button>
-              <button type="submit" disabled={loading} className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50">
-                {loading ? "Saving..." : editingId ? "Update" : "Create"}
+              <button
+                type="button"
+                onClick={() => setShowForm(false)}
+                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                {editingId ? "Update" : "Create"}
               </button>
             </div>
           </form>
-
-          {/* Comment Management Section - Only show when editing */}
-          {editingId && (
-            <div className="mt-8 border-t border-gray-200 pt-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Comments ({comments.length})</h3>
-
-              {/* Authors Summary */}
-              {getCommentAuthors().length > 0 && (
-                <div className="mb-4 p-4 bg-gray-50 rounded-lg">
-                  <h4 className="text-sm font-medium text-gray-700 mb-2">Authors</h4>
-                  <div className="flex flex-wrap gap-2">
-                    {getCommentAuthors().map((author) => {
-                      const banInfo = bannedUsers.find(b => b.email === author.email);
-                      const isBanned = isUserBanned(author.email);
-
-                      return (
-                        <div key={author.email} className="flex items-center gap-2 bg-white px-3 py-1 rounded-full border border-gray-200">
-                          <span className="text-sm">{author.avatar}</span>
-                          <span className="text-sm text-gray-700">{author.email}</span>
-                          <span className="text-xs text-gray-400">({author.count})</span>
-                          {isBanned ? (
-                            <div className="flex items-center gap-1">
-                              <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">
-                                {banInfo?.expiresAt ? `Banned` : `Banned`}
-                              </span>
-                              <button
-                                onClick={() => handleUnbanUser(author.email)}
-                                className="text-xs text-green-600 hover:text-green-700 font-medium"
-                              >
-                                Unban
-                              </button>
-                            </div>
-                          ) : (
-                            <div className="relative group">
-                              <button className="text-xs text-red-600 hover:text-red-700 font-medium">
-                                Ban ▾
-                              </button>
-                              <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
-                                <button
-                                  onClick={() => handleBanUser(author.email, 86400000, false)}
-                                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-t-lg"
-                                >
-                                  Ban for 1 day
-                                </button>
-                                <button
-                                  onClick={() => handleBanUser(author.email, 604800000, false)}
-                                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50"
-                                >
-                                  Ban for 7 days
-                                </button>
-                                <button
-                                  onClick={() => handleBanUser(author.email, 2592000000, false)}
-                                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50"
-                                >
-                                  Ban for 30 days
-                                </button>
-                                <button
-                                  onClick={() => handleBanUser(author.email, null, false)}
-                                  className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-b-lg"
-                                >
-                                  Ban permanently
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {/* Comments List */}
-              {comments.length === 0 ? (
-                <p className="text-center text-gray-500 py-8">No comments yet.</p>
-              ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto">
-                  {comments.map((comment) => {
-                    const isBanned = isUserBanned(comment.authorEmail);
-
-                    return (
-                      <div key={comment.id} className="border border-gray-200 rounded-lg p-4 bg-white">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-start gap-3">
-                            <span className="text-2xl">{comment.authorAvatar}</span>
-                            <div>
-                              <div className="flex items-center gap-2">
-                                <span className="font-medium text-gray-900">{comment.authorName}</span>
-                                <span className="text-xs text-gray-400">{comment.authorEmail}</span>
-                                {isBanned && (
-                                  <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Banned</span>
-                                )}
-                              </div>
-                              <span className="text-xs text-gray-400">{formatTime(comment.createdAt)}</span>
-                              <p className="mt-2 text-gray-700 text-sm">{comment.content}</p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleDeleteComment(comment.id)}
-                              className="text-xs text-red-600 hover:text-red-700 font-medium"
-                            >
-                              Delete
-                            </button>
-                            {!isBanned && (
-                              <div className="relative group">
-                                <button className="text-xs text-orange-600 hover:text-orange-700 font-medium">
-                                  Ban ▾
-                                </button>
-                                <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10 min-w-[180px]">
-                                  <button
-                                    onClick={() => handleBanUser(comment.authorEmail, 86400000, true)}
-                                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-t-lg"
-                                  >
-                                    Ban 1 day + Delete comments
-                                  </button>
-                                  <button
-                                    onClick={() => handleBanUser(comment.authorEmail, 604800000, true)}
-                                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50"
-                                  >
-                                    Ban 7 days + Delete comments
-                                  </button>
-                                  <button
-                                    onClick={() => handleBanUser(comment.authorEmail, 2592000000, true)}
-                                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50"
-                                  >
-                                    Ban 30 days + Delete comments
-                                  </button>
-                                  <button
-                                    onClick={() => handleBanUser(comment.authorEmail, null, true)}
-                                    className="w-full text-left px-3 py-2 text-xs hover:bg-gray-50 rounded-b-lg"
-                                  >
-                                    Ban permanently + Delete comments
-                                  </button>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Replies */}
-                        {comment.replies.length > 0 && (
-                          <div className="ml-12 mt-3 space-y-3 border-t border-gray-100 pt-3">
-                            {comment.replies.map((reply) => {
-                              const replyBanned = isUserBanned(reply.authorEmail);
-
-                              return (
-                                <div key={reply.id} className="flex items-start justify-between">
-                                  <div className="flex items-start gap-2">
-                                    <span className="text-lg">{reply.authorAvatar}</span>
-                                    <div>
-                                      <div className="flex items-center gap-2">
-                                        <span className="font-medium text-gray-900 text-sm">{reply.authorName}</span>
-                                        {replyBanned && (
-                                          <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded">Banned</span>
-                                        )}
-                                      </div>
-                                      <span className="text-xs text-gray-400">{formatTime(reply.createdAt)}</span>
-                                      <p className="mt-1 text-gray-700 text-sm">{reply.content}</p>
-                                    </div>
-                                  </div>
-                                  <button
-                                    onClick={() => handleDeleteReply(comment.id, reply.id)}
-                                    className="text-xs text-red-600 hover:text-red-700 font-medium"
-                                  >
-                                    Delete
-                                  </button>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </div>
       )}
 
-      {/* Subcategories with Items */}
-      <div className="space-y-6">
-        {itemsByCategory.map((sub) => {
-          const categoryItems = sub.value === filterCategory
-            ? sub.items.filter(item => filterStatus === "all" || item.status === filterStatus)
-            : [];
+      {/* Items List */}
+      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <span className="font-medium text-gray-900">
+              {PERFORMANCE_CATEGORY_OPTIONS.find(c => c.value === filterCategory)?.label || filterCategory}
+            </span>
+            <span className="text-sm text-gray-500">({filteredItems.length})</span>
+          </div>
+          <span className="text-xs text-gray-400">
+            {filteredItems.filter(i => i.status === "upcoming").length} upcoming,{" "}
+            {filteredItems.filter(i => i.status === "past").length} past
+          </span>
+        </div>
 
-          if (filterCategory !== sub.value) return null;
-
-          return (
-            <div key={sub.value} className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <div className="flex items-center gap-3">
-                  <span className="font-medium text-gray-900">{sub.label}</span>
-                  <span className="text-sm text-gray-500">({categoryItems.length})</span>
-                </div>
-                {categoryItems.length > 0 && (
-                  <span className="text-xs text-gray-400">
-                    {categoryItems.filter(i => i.status === "upcoming").length} upcoming, {categoryItems.filter(i => i.status === "past").length} past
-                  </span>
-                )}
-              </div>
-
-              <div className="divide-y divide-gray-100">
-                {categoryItems.length === 0 ? (
-                <div className="px-4 py-6 text-center text-gray-500 text-sm">
-                  No performances in this category
-                </div>
-                ) : (
-                  categoryItems.map((item) => (
-                    <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        {item.coverImage && (
-                          <img src={item.coverImage} alt="" className="h-10 w-16 rounded object-cover shrink-0" />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-gray-900 truncate">{item.title}</span>
-                            {getStatusBadge(item.status)}
-                          </div>
-                          {item.eventDate && (
-                            <span className="text-xs text-gray-400">{formatDate(item.eventDate)}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 ml-4">
-                        <button
-                          onClick={() => toggleFeatured(item.id)}
-                          className={`px-3 py-1 text-xs font-medium rounded ${
-                            featuredIds.includes(item.id)
-                              ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                              : "text-gray-400 hover:text-yellow-600 hover:bg-gray-100"
-                          }`}
-                          title={featuredIds.includes(item.id) ? "Remove from Featured" : "Add to Featured"}
-                        >
-                          {featuredIds.includes(item.id) ? "★" : "☆"}
-                        </button>
-                        <button onClick={() => handleEdit(item)} className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded">Edit</button>
-                        <button onClick={() => handleDelete(item.id)} className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded">Delete</button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
+        <div className="divide-y divide-gray-100">
+          {loading ? (
+            <div className="px-4 py-6 text-center text-gray-500 text-sm">Loading...</div>
+          ) : filteredItems.length === 0 ? (
+            <div className="px-4 py-6 text-center text-gray-500 text-sm">
+              No performances in this category
             </div>
-          );
-        })}
+          ) : (
+            filteredItems.map((item) => (
+              <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  {item.cover_image && (
+                    <img
+                      src={item.cover_image}
+                      alt=""
+                      className="h-10 w-16 rounded object-cover shrink-0"
+                    />
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-gray-900 truncate">{item.title}</span>
+                      {getStatusBadge(item.status)}
+                    </div>
+                    {item.event_date && (
+                      <span className="text-xs text-gray-400">{formatDate(item.event_date)}</span>
+                    )}
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <button
+                    onClick={() => toggleFeatured(item.id)}
+                    className={`px-3 py-1 text-xs font-medium rounded ${
+                      featuredIds.has(item.id)
+                        ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                        : "text-gray-400 hover:text-yellow-600 hover:bg-gray-100"
+                    }`}
+                    title={featuredIds.has(item.id) ? "Remove from Featured" : "Add to Featured"}
+                  >
+                    {featuredIds.has(item.id) ? "★" : "☆"}
+                  </button>
+                  <button
+                    onClick={() => handleEdit(item)}
+                    className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id)}
+                    className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );
