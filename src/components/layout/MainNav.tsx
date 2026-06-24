@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { HopeStudioNavLink } from "@/components/layout/HopeStudioNavLink";
 import { HeaderContainer } from "@/components/layout/HeaderContainer";
 import { NavSearchGroup } from "@/components/layout/NavSearchGroup";
-import { UserMenu } from "@/components/layout/UserMenu";
 import { MAIN_NAV_LINKS } from "@/lib/constants";
 
 export function MainNav() {

@@ -10,6 +10,7 @@ import {
   INTERACTION_CATEGORY_LABELS,
 } from "@/lib/constants";
 import { api } from "@/lib/convex";
+import { supabase } from "@/lib/supabase";
 
 type SearchResult = {
   id: string;
@@ -219,10 +220,12 @@ function formatDate(value?: string | number) {
 
 async function loadPerformanceResults(): Promise<SearchResult[]> {
   try {
-    const response = await fetch("/data/ticketmaster-events.json");
-    if (!response.ok) return [];
-    const data = await response.json();
-    const events: PerformanceEvent[] = Array.isArray(data?.events) ? data.events : [];
+    const { data, error } = await supabase
+      .from("stage_productions")
+      .select("id, title, event_date, category, description")
+      .limit(200);
+
+    if (error || !data) return [];
 
     const categoryResults = Object.entries(PERFORMANCE_CATEGORY_LABELS).map(([slug, label]) => ({
       id: `performance-category-${slug}`,
@@ -234,19 +237,18 @@ async function loadPerformanceResults(): Promise<SearchResult[]> {
       searchText: normalizeSearchText(`${label} performance category ${slug}`),
     }));
 
-    const eventResults = events.map((event) => {
-      const categoryLabel = PERFORMANCE_CATEGORY_LABELS[event.category] ?? event.category;
-      const description = stripHtml(event.description) || `Performance in ${event.city || "multiple cities"}`;
-      const metaParts = [categoryLabel, event.city, formatDate(event.eventDate)].filter(Boolean);
+    const eventResults = data.map((ev) => {
+      const categoryLabel = PERFORMANCE_CATEGORY_LABELS[ev.category] ?? ev.category;
+      const description = (ev.description ?? "").slice(0, 150) || `Performance event`;
       return {
-        id: `performance-${event.id}`,
-        title: event.title,
-        href: `/performance/${event.category}/${event.id}`,
+        id: `performance-${ev.id}`,
+        title: ev.title,
+        href: `/performance/${ev.category}`,
         description,
         section: "Performance",
-        meta: metaParts.join(" • "),
+        meta: [categoryLabel, ev.event_date ? String(ev.event_date) : ""].filter(Boolean).join(" • "),
         searchText: normalizeSearchText(
-          `${event.title} ${description} ${categoryLabel} ${event.city ?? ""} ${event.status ?? ""} ${event.category}`
+          `${ev.title} ${description} ${categoryLabel} ${ev.event_date ?? ""} ${ev.category}`
         ),
       } satisfies SearchResult;
     });

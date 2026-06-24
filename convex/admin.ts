@@ -618,25 +618,234 @@ export const restoreComment = mutation({
 // TAB 3: PERFORMANCE HISTORY
 // ============================================
 
-export const listStageProductions = query({
+// Public query for frontend - no auth required
+export const getPublicStageProductions = query({
   args: {
-    callerEmail: v.optional(v.string()),
-    status: v.optional(v.union(v.literal("upcoming"), v.literal("past"), v.literal("draft"))),
+    category: v.optional(v.string()),
+    limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.callerEmail);
     let productions = await ctx.db.query("stageProductions").collect();
-    if (args.status) {
-      productions = productions.filter((p: any) => p.status === args.status);
+    // Only show upcoming/past, exclude drafts from public view
+    productions = productions.filter((p: any) => p.status === "upcoming" || p.status === "past");
+    if (args.category) {
+      productions = productions.filter((p: any) => p.category === args.category);
+    }
+    // Sort by eventDate descending
+    productions.sort((a: any, b: any) => (b.eventDate ?? 0) - (a.eventDate ?? 0));
+    if (args.limit) {
+      productions = productions.slice(0, args.limit);
     }
     return productions.map((p: any) => ({
       _id: p._id,
       title: p.title ?? "",
       description: p.description ?? "",
+      coverImage: p.coverImage ?? "",
+      url: p.url ?? "",
+      category: p.category ?? "",
+      status: p.status ?? "upcoming",
+      eventDate: p.eventDate,
+      isFeatured: p.isFeatured ?? false,
+    }));
+  },
+});
+
+// Public query: counts per category (for homepage cards)
+export const getStageProductionsCount = query({
+  args: {},
+  handler: async (ctx) => {
+    const productions = await ctx.db.query("stageProductions").collect();
+    const counts: Record<string, number> = {};
+    productions.forEach((p: any) => {
+      if (p.status === "upcoming" || p.status === "past") {
+        const cat = p.category ?? "other";
+        counts[cat] = (counts[cat] ?? 0) + 1;
+      }
+    });
+    return counts;
+  },
+});
+
+// Public query: latest production per category
+export const getLatestStageProduction = query({
+  args: { category: v.string() },
+  handler: async (ctx, args) => {
+    let productions = (await ctx.db.query("stageProductions").collect()).filter(
+      (p: any) => p.category === args.category && (p.status === "upcoming" || p.status === "past")
+    );
+    productions.sort((a: any, b: any) => (b.eventDate ?? 0) - (a.eventDate ?? 0));
+    if (productions.length === 0) return null;
+    const p = productions[0];
+    return {
+      _id: p._id,
+      title: p.title ?? "",
+      coverImage: p.coverImage ?? "",
+      url: p.url ?? "",
+      eventDate: p.eventDate,
+      status: p.status,
+    };
+  },
+});
+
+// Public query: get single production by ID
+export const getStageProductionById = query({
+  args: { id: v.id("stageProductions") },
+  handler: async (ctx, args) => {
+    const p = await ctx.db.get(args.id);
+    if (!p) return null;
+    return {
+      _id: p._id,
+      title: p.title ?? "",
+      description: p.description ?? "",
+      content: p.content ?? "",
+      coverImage: p.coverImage ?? "",
+      url: p.url ?? "",
+      category: p.category ?? "",
+      city: p.city ?? "",
+      status: p.status ?? "draft",
+      eventDate: p.eventDate,
+      isFeatured: p.isFeatured ?? false,
+    };
+  },
+});
+
+// Public query: get productions by category with pagination
+export const getStageProductionsByCategory = query({
+  args: {
+    category: v.string(),
+    status: v.optional(v.string()),
+    limit: v.optional(v.number()),
+    offset: v.optional(v.number()),
+  },
+  handler: async (ctx, args) => {
+    let productions = await ctx.db.query("stageProductions").collect();
+    productions = productions.filter((p: any) => {
+      if (p.category !== args.category) return false;
+      if (args.status === "upcoming" || args.status === "past") {
+        return p.status === args.status;
+      }
+      return p.status === "upcoming" || p.status === "past";
+    });
+    productions.sort((a: any, b: any) => (b.eventDate ?? 0) - (a.eventDate ?? 0));
+    const total = productions.length;
+    const offset = args.offset ?? 0;
+    const limit = args.limit ?? 20;
+    const items = productions.slice(offset, offset + limit);
+    return {
+      items: items.map((p: any) => ({
+        _id: p._id,
+        title: p.title ?? "",
+        description: p.description ?? "",
+        coverImage: p.coverImage ?? "",
+        url: p.url ?? "",
+        category: p.category ?? "",
+        city: p.city ?? "",
+        status: p.status ?? "draft",
+        eventDate: p.eventDate,
+      })),
+      total,
+    };
+  },
+});
+
+// Public query: get all public productions (for detail page slug lookup)
+export const getAllPublicStageProductions = query({
+  args: {},
+  handler: async (ctx) => {
+    let productions = await ctx.db.query("stageProductions").collect();
+    productions = productions.filter((p: any) => p.status === "upcoming" || p.status === "past");
+    return productions.map((p: any) => ({
+      _id: p._id,
+      title: p.title ?? "",
+      description: p.description ?? "",
+      content: p.content ?? "",
+      coverImage: p.coverImage ?? "",
+      url: p.url ?? "",
+      category: p.category ?? "",
+      city: p.city ?? "",
+      status: p.status ?? "draft",
+      eventDate: p.eventDate,
+      isFeatured: p.isFeatured ?? false,
+    }));
+  },
+});
+
+// Batch import: one-time migration from Ticketmaster JSON (Super Admin only)
+export const batchImportStageProductions = mutation({
+  args: {
+    callerEmail: v.string(),
+    items: v.array(v.object({
+      title: v.string(),
+      description: v.string(),
+      coverImage: v.string(),
+      url: v.string(),
+      category: v.string(),
+      status: v.union(v.literal("draft"), v.literal("upcoming"), v.literal("past")),
+      eventDate: v.number(),
+    })),
+  },
+  handler: async (ctx, args) => {
+    await requireSuperAdmin(ctx, args.callerEmail);
+    const now = Date.now();
+    const inserted: string[] = [];
+    for (const item of args.items) {
+      const id = await ctx.db.insert("stageProductions", {
+        title: item.title,
+        description: item.description,
+        content: "",
+        coverImage: item.coverImage,
+        url: item.url,
+        category: item.category,
+        mediaLinks: [],
+        status: item.status,
+        eventDate: item.eventDate,
+        eventTime: "",
+        isFeatured: false,
+        createdAt: now,
+        updatedAt: now,
+      });
+      inserted.push(id.toString());
+    }
+    return { success: true, count: inserted.length, ids: inserted };
+  },
+});
+
+export const listStageProductions = query({
+  args: {
+    callerEmail: v.optional(v.string()),
+    category: v.optional(v.string()),
+    status: v.optional(v.union(v.literal("draft"), v.literal("upcoming"), v.literal("past"))),
+    searchQuery: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx, args.callerEmail);
+    let productions = await ctx.db.query("stageProductions").collect();
+    if (args.category) {
+      productions = productions.filter((p: any) => p.category === args.category);
+    }
+    if (args.status) {
+      productions = productions.filter((p: any) => p.status === args.status);
+    }
+    if (args.searchQuery) {
+      const q = args.searchQuery.toLowerCase();
+      productions = productions.filter((p: any) =>
+        p.title?.toLowerCase().includes(q) ||
+        p.description?.toLowerCase().includes(q)
+      );
+    }
+    return productions.map((p: any) => ({
+      _id: p._id,
+      title: p.title ?? "",
+      description: p.description ?? "",
+      content: p.content ?? "",
+      coverImage: p.coverImage ?? "",
+      url: p.url ?? "",
       category: p.category ?? "",
       mediaLinks: p.mediaLinks ?? [],
       status: p.status ?? "draft",
       eventDate: p.eventDate,
+      eventTime: p.eventTime ?? "",
+      isFeatured: p.isFeatured ?? false,
       createdAt: p.createdAt ?? Date.now(),
       updatedAt: p.updatedAt,
     }));
@@ -647,21 +856,31 @@ export const createStageProduction = mutation({
   args: {
     callerEmail: v.string(),
     title: v.string(),
-    description: v.string(),
+    description: v.optional(v.string()),
+    content: v.optional(v.string()),
+    coverImage: v.optional(v.string()),
+    url: v.optional(v.string()),
     category: v.string(),
     mediaLinks: v.optional(v.array(v.string())),
-    status: v.optional(v.union(v.literal("upcoming"), v.literal("past"), v.literal("draft"))),
+    status: v.optional(v.union(v.literal("draft"), v.literal("upcoming"), v.literal("past"))),
     eventDate: v.optional(v.number()),
+    eventTime: v.optional(v.string()),
+    isFeatured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.callerEmail);
     const id = await ctx.db.insert("stageProductions", {
       title: args.title,
-      description: args.description,
+      description: args.description ?? "",
+      content: args.content ?? "",
+      coverImage: args.coverImage ?? "",
+      url: args.url ?? "",
       category: args.category,
       mediaLinks: args.mediaLinks ?? [],
       status: args.status ?? "draft",
       eventDate: args.eventDate,
+      eventTime: args.eventTime ?? "",
+      isFeatured: args.isFeatured ?? false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -675,20 +894,30 @@ export const updateStageProduction = mutation({
     id: v.id("stageProductions"),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
+    content: v.optional(v.string()),
+    coverImage: v.optional(v.string()),
+    url: v.optional(v.string()),
     category: v.optional(v.string()),
     mediaLinks: v.optional(v.array(v.string())),
-    status: v.optional(v.union(v.literal("upcoming"), v.literal("past"), v.literal("draft"))),
+    status: v.optional(v.union(v.literal("draft"), v.literal("upcoming"), v.literal("past"))),
     eventDate: v.optional(v.number()),
+    eventTime: v.optional(v.string()),
+    isFeatured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.callerEmail);
     const updates: Record<string, any> = { updatedAt: Date.now() };
     if (args.title !== undefined) updates.title = args.title;
     if (args.description !== undefined) updates.description = args.description;
+    if (args.content !== undefined) updates.content = args.content;
+    if (args.coverImage !== undefined) updates.coverImage = args.coverImage;
+    if (args.url !== undefined) updates.url = args.url;
     if (args.category !== undefined) updates.category = args.category;
     if (args.mediaLinks !== undefined) updates.mediaLinks = args.mediaLinks;
     if (args.status !== undefined) updates.status = args.status;
     if (args.eventDate !== undefined) updates.eventDate = args.eventDate;
+    if (args.eventTime !== undefined) updates.eventTime = args.eventTime;
+    if (args.isFeatured !== undefined) updates.isFeatured = args.isFeatured;
     await ctx.db.patch("stageProductions", args.id, updates);
     return { success: true, message: "Stage production updated" };
   },

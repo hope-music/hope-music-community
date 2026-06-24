@@ -15,9 +15,9 @@ export default function RegistrationPage() {
       
       <p className="mt-8 text-center text-sm text-gray-500">
         Already have an account?{" "}
-        <Link href="/login" className="text-hmc-orange hover:underline font-medium">
+        <button onClick={() => window.history.back()} className="text-hmc-orange hover:underline font-medium">
           Sign In
-        </Link>
+        </button>
       </p>
     </div>
   );

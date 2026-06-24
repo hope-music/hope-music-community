@@ -1,31 +1,24 @@
 @AGENTS.md
 
-## 项目开发笔记（持续更新）
+## 项目数据源现状（2026-06-22 更新）
 
-### 首页 PerformanceSection 卡片不显示数据的根因与解法
+### stage_productions → 全量走 Supabase
 
-**问题现象**：新增子板块（Opera、Musical、Classical...）的二级页面有数据，但首页 Performance 区块对应卡片空白。
+- 后台 admin/productions、前台首页 PerformanceSection、performance/[category]、performance/[category]/[slug] 全部从 Supabase 读取
+- `src/lib/useSupabase.ts` 是数据访问层，包含 `useStageProductionsPublic`、`useStageProductionDetail`、`useStageProductionsForAdmin`、`useStageProductionsCount` 等 hook
+- `StageProduction` 类型使用 snake_case（Supabase 规范），前台页面通过 `PublicProduction` 适配成 camelCase
+- 注意：Supabase `stage_productions` 表没有 `city` 字段，前台 detail 页面 `item.city` 始终为 undefined
 
-**根本原因**：`src/components/home/PerformanceSection.tsx` 中的 `loadCategoryData()` 函数维护着一个"新路径白名单"。只有进入白名单的分类才会去读 `/data/ticketmaster/{CategoryName}/data.json`（Ticketmaster API 原始数据），其余分类仍走旧的 `/data/ticketmaster/{slug}/events.json` 路径。
+### News / Insights / Employees 后台 → 继续用 Convex
 
-旧路径的文件从未被创建过，所以会 404，卡片空白。
+- `npx convex dev` 必须保持运行
+- 相关 convex 函数在 `convex/admin.ts` 和 `convex/schema.ts`
 
-**解法**：将新分类加入白名单（同时补上通用的大小写转换逻辑）：
+### 为什么选 Supabase 而不是 Convex（stage_productions）
 
-```typescript
-// Before
-if (category === "opera" || category === "musical") {
-  const fileName = category === "opera" ? "Opera" : "Musical";
+- Convex 有行数限制（约 1 万行），`stage_productions` 有 2.5 万行数据，超限
+- Supabase 无行数限制，作为 stage_productions 的存储后端
 
-// After
-if (category === "opera" || category === "musical" || category === "classical") {
-  const fileName = category.charAt(0).toUpperCase() + category.slice(1);
-```
+### 旧 localStorage 数据
 
-注意：`Image` 组件的 `unoptimized` 属性也需要同步更新，否则外站图片加载失败：
-```typescript
-unoptimized={category === "opera" || category === "musical" || category === "classical"}
-```
-
-**已加入白名单**：opera、musical、classical、music、electronic、performance-art
-**待处理**（已有文件夹但未入白名单）：dance、other、pop-rock
+- 旧后台数据存在 `localStorage` 的 `admin_performance`，Supabase 迁移完成后可清除

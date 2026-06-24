@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { AuthModal } from "@/components/auth/AuthModal";
 import {
   getInteractionCategoryLabel,
   INTERACTION_CATEGORIES,
@@ -154,6 +155,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
   const [currentUser, setCurrentUser] = useState<any>(null);
   const [isBanned, setIsBanned] = useState(false);
   const [banExpiry, setBanExpiry] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Check if user is banned
   const checkBanStatus = (email: string, bannedData: BanEntry[]): boolean => {
@@ -200,6 +202,21 @@ export default function InteractionDetailPage({ params }: PageProps) {
       }
     }
   }, []);
+
+  useEffect(() => {
+    if (!showAuthModal) return;
+    const interval = setInterval(() => {
+      const userData = localStorage.getItem("hmc_current_user");
+      if (userData) {
+        const user = JSON.parse(userData);
+        setCurrentUser(user);
+        setAuthorName(user.username);
+        setShowAuthModal(false);
+        clearInterval(interval);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [showAuthModal]);
 
   useEffect(() => {
     if (!postId || !category) return;
@@ -453,20 +470,12 @@ export default function InteractionDetailPage({ params }: PageProps) {
               ) : (
                 <div>
                   <p className="text-sm text-gray-500 mb-3">Sign in to join the conversation</p>
-                  <div className="flex items-center gap-3">
-                    <Link
-                      href="/login"
-                      className="px-4 py-2 text-sm font-medium text-hmc-orange border border-hmc-orange rounded-full hover:bg-hmc-orange/10 transition-colors"
-                    >
-                      Sign In
-                    </Link>
-                    <Link
-                      href="/registration"
-                      className="px-4 py-2 text-sm font-medium text-white bg-hmc-orange rounded-full hover:bg-hmc-orange transition-colors"
-                    >
-                      Sign Up
-                    </Link>
-                  </div>
+                  <button
+                    onClick={() => setShowAuthModal(true)}
+                    className="px-4 py-2 text-sm font-medium text-white bg-hmc-orange rounded-full hover:bg-hmc-orange/90 transition-colors"
+                  >
+                    Sign In / Sign Up
+                  </button>
                 </div>
               )}
             </div>
@@ -549,5 +558,6 @@ export default function InteractionDetailPage({ params }: PageProps) {
         </div>
       </div>
     </main>
+    <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(true)} initialMode="register" />
   );
 }

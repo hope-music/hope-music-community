@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { AuthModal } from "@/components/auth/AuthModal";
 import { getInteractionCategoryLabel, INTERACTION_STORAGE_KEY, normalizeInteractionCategory, readInteractionItems } from "@/lib/interaction";
 
 interface Post {
@@ -25,6 +26,7 @@ export default function NewPostPage({ params }: PageProps) {
   const [currentUser, setCurrentUser] = useState<{ username: string; email: string } | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -37,15 +39,25 @@ export default function NewPostPage({ params }: PageProps) {
     const userData = localStorage.getItem("hmc_current_user");
     if (userData) {
       const user = JSON.parse(userData);
-      setCurrentUser({
-        username: user.username,
-        email: user.email,
-      });
+      setCurrentUser({ username: user.username, email: user.email });
     } else {
-      // For non-signed in users, redirect to login
-      router.push("/login");
+      setShowAuthModal(true);
     }
-  }, [router]);
+  }, []);
+
+  useEffect(() => {
+    if (!showAuthModal) return;
+    const interval = setInterval(() => {
+      const userData = localStorage.getItem("hmc_current_user");
+      if (userData) {
+        const user = JSON.parse(userData);
+        setCurrentUser({ username: user.username, email: user.email });
+        setShowAuthModal(false);
+        clearInterval(interval);
+      }
+    }, 500);
+    return () => clearInterval(interval);
+  }, [showAuthModal]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -75,9 +87,12 @@ export default function NewPostPage({ params }: PageProps) {
 
   if (!currentUser) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-hmc-orange" />
-      </div>
+      <>
+        <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(true)} initialMode="register" />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-hmc-orange" />
+        </div>
+      </>
     );
   }
 

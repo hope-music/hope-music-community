@@ -58,14 +58,25 @@ export default defineSchema(
     stageProductions: defineTable({
       title: v.optional(v.string()),
       description: v.optional(v.string()),
+      content: v.optional(v.string()),
+      coverImage: v.optional(v.string()),
+      url: v.optional(v.string()),
       category: v.optional(v.string()),
       city: v.optional(v.string()),
       mediaLinks: v.optional(v.array(v.string())),
-      status: v.optional(v.string()),
+      status: v.optional(v.union(
+        v.literal("draft"),
+        v.literal("upcoming"),
+        v.literal("past")
+      )),
       eventDate: v.optional(v.number()),
+      eventTime: v.optional(v.string()),
+      isFeatured: v.optional(v.boolean()),
       createdAt: v.optional(v.number()),
       updatedAt: v.optional(v.number()),
-    }),
+    })
+      .index("by_category", ["category"])
+      .index("by_status", ["status"]),
 
     hopeStudio: defineTable({
       serviceName: v.optional(v.string()),
