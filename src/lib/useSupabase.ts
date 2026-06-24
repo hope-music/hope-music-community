@@ -438,7 +438,7 @@ export function useStageProductionDetail(id: string) {
           coverImage: data.cover_image,
           status: data.status,
           eventDate: data.event_date ?? undefined,
-          city: undefined,
+          city: (data as any).city ?? undefined,
           url: data.url,
         });
       }
@@ -457,11 +457,27 @@ export function useStageProductionDetail(id: string) {
 }
 
 /**
- * Fetch ALL stage productions for the admin panel (no category filter).
- * Exposes a refresh() trigger so parent can call it after mutations.
+ * Fetch stage productions for the admin panel with server-side pagination and filter push-down.
+ * Only loads the current page instead of all 25k+ rows.
  */
-export function useStageProductionsForAdmin(_filterCategory?: string) {
+export interface AdminProductionsFilters {
+  category: string;
+  status: string; // "all" | "upcoming" | "past" | "draft"
+  city: string;
+  page: number;
+}
+
+const ADMIN_PAGE_SIZE = 50;
+
+export function useStageProductionsForAdmin(initialFilters?: Partial<AdminProductionsFilters>) {
+  const [filters, setFilters] = useState<AdminProductionsFilters>({
+    category: initialFilters?.category ?? "",
+    status: initialFilters?.status ?? "all",
+    city: initialFilters?.city ?? "",
+    page: initialFilters?.page ?? 1,
+  });
   const [productions, setProductions] = useState<StageProduction[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -470,26 +486,60 @@ export function useStageProductionsForAdmin(_filterCategory?: string) {
   useEffect(() => {
     let cancelled = false;
 
-    async function fetchAll() {
+    async function fetchPage() {
       setLoading(true);
-      const { data, error } = await adminStageProductions.list();
+
+      // ── Build query filters ──────────────────────────────────────────────
+      const base = supabase
+        .from("stage_productions")
+        .select("*", { count: "exact", head: true });
+
+      if (filters.category) base.eq("category", filters.category);
+      if (filters.status !== "all") base.eq("status", filters.status);
+      if (filters.city) base.ilike("city", `%${filters.city}%`);
+
+      // Count (single fast query)
+      const { count } = await base;
       if (cancelled) return;
+      setTotalCount(count ?? 0);
+
+      // Data (range query)
+      const start = (filters.page - 1) * ADMIN_PAGE_SIZE;
+      const dataQuery = supabase
+        .from("stage_productions")
+        .select("*")
+        .order("created_at", { ascending: false })
+        .range(start, start + ADMIN_PAGE_SIZE - 1);
+
+      if (filters.category) dataQuery.eq("category", filters.category);
+      if (filters.status !== "all") dataQuery.eq("status", filters.status);
+      if (filters.city) dataQuery.ilike("city", `%${filters.city}%`);
+
+      const { data, error } = await dataQuery;
+      if (cancelled) return;
+
       if (!error && data) {
-        setProductions(
-          data.map((row) => ({
-            ...row,
-            event_date: row.event_date,
-          }))
-        );
+        setProductions(data as StageProduction[]);
+      } else {
+        setProductions([]);
       }
+
       setLoading(false);
     }
 
-    fetchAll();
+    fetchPage();
     return () => { cancelled = true; };
-  }, [refreshKey]);
+  }, [filters.category, filters.status, filters.city, filters.page, refreshKey]);
 
-  return { productions, loading, refresh };
+  const totalPages = Math.max(1, Math.ceil(totalCount / ADMIN_PAGE_SIZE));
+
+  const updateFilter = useCallback(<K extends keyof AdminProductionsFilters>(
+    key: K, value: AdminProductionsFilters[K]
+  ) => {
+    setFilters((prev) => ({ ...prev, [key]: value, page: key === "page" ? value : 1 }));
+  }, []);
+
+  return { productions, totalCount, totalPages, loading, filters, updateFilter, refresh };
 }
 
 /**

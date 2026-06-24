@@ -230,9 +230,6 @@ function formatDateForInput(timestamp?: number): string {
 // Main Component
 // ============================================
 export default function StageProductionsPage() {
-  const [filterCategory, setFilterCategory] = useState<string>(PERFORMANCE_CATEGORY_OPTIONS[0]?.value ?? "musical");
-  const [filterStatus, setFilterStatus] = useState<"all" | "upcoming" | "past" | "draft">("all");
-  const [filterCity, setFilterCity] = useState("");
   const [filterCityCustom, setFilterCityCustom] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -256,15 +253,14 @@ export default function StageProductionsPage() {
   // Featured IDs (tracked separately in local state)
   const [featuredIds, setFeaturedIds] = useState<Set<string>>(new Set());
 
-  // Supabase query
-  const { productions: allProductions, loading, refresh } = useStageProductionsForAdmin();
+  // Server-side paginated query
+  const { productions, totalCount, totalPages, loading, filters, updateFilter, refresh } =
+    useStageProductionsForAdmin();
 
   // Load featured IDs from fetched data
   useEffect(() => {
-    if (allProductions) {
-      setFeaturedIds(new Set(allProductions.filter(p => p.is_featured).map(p => p.id)));
-    }
-  }, [allProductions]);
+    setFeaturedIds(new Set(productions.filter(p => p.is_featured).map(p => p.id)));
+  }, [productions]);
 
   // Clear message after 5s
   useEffect(() => {
@@ -273,24 +269,6 @@ export default function StageProductionsPage() {
       return () => clearTimeout(timer);
     }
   }, [message]);
-
-  // Filtered items
-  const filteredItems = (allProductions || []).filter((p) => {
-    if (p.category !== filterCategory) return false;
-    if (filterStatus !== "all" && p.status !== filterStatus) return false;
-    if (filterCity && p.city && !p.city.toLowerCase().includes(filterCity.toLowerCase())) return false;
-    return true;
-  });
-
-  // Items grouped by category (for stats)
-  const itemsByCategory = PERFORMANCE_CATEGORY_OPTIONS.map((sub) => ({
-    ...sub,
-    count: (allProductions || []).filter((p) => p.category === sub.value).length,
-  }));
-
-  // Category counts for dropdown
-  const getCategoryCount = (catValue: string) =>
-    (allProductions || []).filter((p) => p.category === catValue).length;
 
   // Handle cover image selection
   const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -313,7 +291,7 @@ export default function StageProductionsPage() {
     setTitle("");
     setDescription("");
     setContent("");
-    setCategory(filterCategory);
+    setCategory(filters.category || "musical");
     setStatus("draft");
     setEventDate("");
     setEventTime("");
@@ -330,7 +308,7 @@ export default function StageProductionsPage() {
     setTitle(item.title || "");
     setDescription(item.description || "");
     setContent(item.content || "");
-    setCategory(item.category || filterCategory);
+    setCategory(item.category || filters.category);
     setStatus(item.status || "draft");
     const dateVal = formatDateForInput(item.event_date);
     setEventDate(dateVal);
@@ -344,7 +322,7 @@ export default function StageProductionsPage() {
 
   // Toggle featured
   const toggleFeatured = async (itemId: string) => {
-    const item = (allProductions || []).find(p => p.id === itemId);
+    const item = productions.find(p => p.id === itemId);
     if (!item) return;
     const newFeatured = !item.is_featured;
     if (newFeatured && featuredIds.size >= 9) {
@@ -451,7 +429,7 @@ export default function StageProductionsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Performance</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Manage performances ({(allProductions || []).length} total)
+            Manage performances ({totalCount} total)
           </p>
           <div className="mt-2 flex items-center gap-4">
             <span className="text-sm">
@@ -478,13 +456,13 @@ export default function StageProductionsPage() {
         <div>
           <label className="mb-1 block text-xs text-gray-500">Category</label>
           <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
+            value={filters.category}
+            onChange={(e) => updateFilter("category", e.target.value)}
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           >
             {PERFORMANCE_CATEGORY_OPTIONS.map((cat) => (
               <option key={cat.value} value={cat.value}>
-                {cat.label} ({getCategoryCount(cat.value)})
+                {cat.label}
               </option>
             ))}
           </select>
@@ -492,8 +470,8 @@ export default function StageProductionsPage() {
         <div>
           <label className="mb-1 block text-xs text-gray-500">Status</label>
           <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as any)}
+            value={filters.status}
+            onChange={(e) => updateFilter("status", e.target.value)}
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           >
             <option value="all">All</option>
@@ -505,8 +483,8 @@ export default function StageProductionsPage() {
         <div>
           <label className="mb-1 block text-xs text-gray-500">City</label>
           <select
-            value={filterCity}
-            onChange={(e) => setFilterCity(e.target.value)}
+            value={filters.city}
+            onChange={(e) => updateFilter("city", e.target.value)}
             className="rounded-md border border-gray-300 px-3 py-2 text-sm w-48"
           >
             <option value="">All cities</option>
@@ -521,22 +499,42 @@ export default function StageProductionsPage() {
               <option value="__custom__">Other (type below)...</option>
             </optgroup>
           </select>
-          {filterCity === "__custom__" && (
+          {filters.city === "__custom__" && (
             <input
               type="text"
               value={filterCityCustom}
               onChange={(e) => {
                 setFilterCityCustom(e.target.value);
-                setFilterCity(e.target.value);
+                updateFilter("city", e.target.value);
               }}
               onBlur={() => {
-                if (filterCityCustom.trim()) setFilterCity(filterCityCustom.trim());
+                if (filterCityCustom.trim()) updateFilter("city", filterCityCustom.trim());
               }}
               placeholder="Type city name..."
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1 text-sm"
               autoFocus
             />
           )}
+        </div>
+        {/* Pagination */}
+        <div className="ml-auto flex items-center gap-2">
+          <span className="text-xs text-gray-500 whitespace-nowrap">
+            Page {filters.page} / {totalPages}
+          </span>
+          <button
+            onClick={() => updateFilter("page", filters.page - 1)}
+            disabled={filters.page <= 1}
+            className="px-3 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Prev
+          </button>
+          <button
+            onClick={() => updateFilter("page", filters.page + 1)}
+            disabled={filters.page >= totalPages}
+            className="px-3 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+          >
+            Next
+          </button>
         </div>
       </div>
 
@@ -689,25 +687,25 @@ export default function StageProductionsPage() {
         <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
           <div className="flex items-center gap-3">
             <span className="font-medium text-gray-900">
-              {PERFORMANCE_CATEGORY_OPTIONS.find(c => c.value === filterCategory)?.label || filterCategory}
+              {PERFORMANCE_CATEGORY_OPTIONS.find(c => c.value === filters.category)?.label || filters.category}
             </span>
-            <span className="text-sm text-gray-500">({filteredItems.length})</span>
+            <span className="text-sm text-gray-500">({totalCount})</span>
           </div>
           <span className="text-xs text-gray-400">
-            {filteredItems.filter(i => i.status === "upcoming").length} upcoming,{" "}
-            {filteredItems.filter(i => i.status === "past").length} past
+            {productions.filter(i => i.status === "upcoming").length} upcoming,{" "}
+            {productions.filter(i => i.status === "past").length} past
           </span>
         </div>
 
         <div className="divide-y divide-gray-100">
           {loading ? (
             <div className="px-4 py-6 text-center text-gray-500 text-sm">Loading...</div>
-          ) : filteredItems.length === 0 ? (
+          ) : productions.length === 0 ? (
             <div className="px-4 py-6 text-center text-gray-500 text-sm">
               No performances in this category
             </div>
           ) : (
-            filteredItems.map((item) => (
+            productions.map((item) => (
               <div key={item.id} className="px-4 py-3 hover:bg-gray-50">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 flex-1 min-w-0">
