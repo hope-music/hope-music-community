@@ -1,11 +1,10 @@
 'use client';
 
-import { useEffect, useState, useMemo, useRef } from 'react';
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { useStageProductionsEvents } from "@/lib/useSupabase";
 import { PerformancePageHeader } from "@/components/performance/PerformancePageHeader";
 
 const PAGE_SIZE = 10;
-const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
 const MAJOR_CITIES = [
   'All Cities',
@@ -20,8 +19,6 @@ const MAJOR_CITIES = [
   'Mexico City', 'São Paulo', 'Buenos Aires', 'Rio de Janeiro',
   'Dubai', 'Tel Aviv', 'Istanbul', 'Cairo', 'Cape Town',
 ];
-
-type Tab = 'upcoming' | 'past';
 
 interface TicketmasterEvent {
   id: string;
@@ -38,28 +35,11 @@ interface TicketmasterEvent {
   info?: string;
 }
 
-function toDate(date?: string, time?: string): Date | null {
-  if (!date) return null;
-  const str = time ? `${date}T${time}` : `${date}T00:00:00`;
-  return new Date(str);
-}
-
 function formatDate(date?: string, time?: string) {
   if (!date) return 'TBA';
   const d = new Date(date);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) +
     (time ? ` ${time}` : '');
-}
-
-function cityMatch(event: TicketmasterEvent, query: string): boolean {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  const venue = event._embedded?.venues?.[0];
-  const city = (venue?.city?.name || '').toLowerCase();
-  const state = (venue?.state?.name || '').toLowerCase();
-  const country = (venue?.country?.name || '').toLowerCase();
-  const venueName = (venue?.name || '').toLowerCase();
-  return city.includes(q) || state.includes(q) || country.includes(q) || venueName.includes(q);
 }
 
 interface EventCardProps {
@@ -173,14 +153,12 @@ function Pagination({ current, total, onChange }: { current: number; total: numb
 }
 
 export default function MusicalPerformancePage() {
-  const { events: allEvents, loading } = useStageProductionsEvents("musical");
+  const { events: allEvents, loading, totalCount, totalPages, tab, updateTab, page, updatePage } =
+    useStageProductionsEvents("musical");
 
-  const [activeTab, setActiveTab] = useState<Tab>('upcoming');
   const [selectedCity, setSelectedCity] = useState('All Cities');
   const [customCity, setCustomCity] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-
-  const [currentPage, setCurrentPage] = useState(1);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Close dropdown on outside click
@@ -195,59 +173,24 @@ export default function MusicalPerformancePage() {
   }, []);
 
   // Reset to page 1 when filter changes
-  function handleFilterChange() {
-    setCurrentPage(1);
-  }
+  const handleFilterChange = useCallback(() => {
+    updatePage(1);
+  }, [updatePage]);
 
-  const now = Date.now();
-
+  // Data is already server-filtered by tab from the hook
   const filteredEvents = useMemo(() => {
-    const cityQ = selectedCity === 'All Cities' ? customCity : selectedCity;
+    return allEvents;
+  }, [allEvents]);
 
-    return allEvents.filter((ev) => {
-      if (!cityMatch(ev, cityQ)) return false;
-      const d = toDate(ev.dates?.start?.localDate, ev.dates?.start?.localTime);
-      if (!d) return false;
-
-      if (activeTab === 'upcoming') {
-        return d.getTime() >= now;
-      } else {
-        const age = now - d.getTime();
-        return age > 0 && age <= TWO_WEEKS_MS; // Recent (0–2 weeks past)
-      }
-    });
-  }, [allEvents, activeTab, selectedCity, customCity, now]);
-
+  // archivedCount placeholder - actual archived count comes from "archived" tab
   const archivedCount = useMemo(() => {
-    return allEvents.filter((ev) => {
-      const d = toDate(ev.dates?.start?.localDate, ev.dates?.start?.localTime);
-      if (!d || d.getTime() >= now) return false;
-      return now - d.getTime() > TWO_WEEKS_MS;
-    }).length;
-  }, [allEvents, now]);
+    return 0;
+  }, []);
 
-  const pages = useMemo(() => {
-    const p: TicketmasterEvent[][] = [];
-    for (let i = 0; i < filteredEvents.length; i += PAGE_SIZE) p.push(filteredEvents.slice(i, i + PAGE_SIZE));
-    return p;
-  }, [filteredEvents]);
-
-  const totalPages = pages.length;
-  const currentItems = pages[currentPage - 1] || [];
+  // page slicing handled by hook
+  const currentItems = allEvents;
   const leftCol = currentItems.slice(0, 5);
   const rightCol = currentItems.slice(5, 10);
-
-  const upcomingCount = allEvents.filter((ev) => {
-    const d = toDate(ev.dates?.start?.localDate, ev.dates?.start?.localTime);
-    return d && d.getTime() >= now;
-  }).length;
-
-  const pastRecentCount = allEvents.filter((ev) => {
-    const d = toDate(ev.dates?.start?.localDate, ev.dates?.start?.localTime);
-    if (!d) return false;
-    const age = now - d.getTime();
-    return age > 0 && age <= TWO_WEEKS_MS;
-  }).length;
 
   if (loading) {
     return (
@@ -265,33 +208,25 @@ export default function MusicalPerformancePage() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Header */}
-      <PerformancePageHeader title="Musical &amp; Theatre" totalCount={allEvents.length} />
+      <PerformancePageHeader title="Musical &amp; Theatre" totalCount={totalCount} />
 
       {/* Controls: Tab + City Filter */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
         {/* Upcoming / Past Tabs */}
         <div className="flex bg-gray-100 rounded-lg p-1 flex-shrink-0">
-          {(['upcoming', 'past'] as Tab[]).map((tab) => {
-            const count = tab === 'upcoming' ? upcomingCount : pastRecentCount;
-            const showArchiveNote = tab === 'past' && archivedCount > 0;
+          {(['upcoming', 'past'] as const).map((t) => {
+            const showArchiveNote = t === 'past' && archivedCount > 0;
             return (
               <button
-                key={tab}
-                onClick={() => { setActiveTab(tab); handleFilterChange(); }}
+                key={t}
+                onClick={() => { updateTab(t); handleFilterChange(); }}
                 className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-all ${
-                  activeTab === tab
+                  tab === t
                     ? 'bg-white text-orange-600 shadow-sm'
                     : 'text-gray-500 hover:text-gray-700'
                 }`}
               >
-                {tab === 'upcoming' ? 'Upcoming' : 'Past'}
-                {count > 0 && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded-full ${
-                    activeTab === tab ? 'bg-orange-100 text-orange-600' : 'bg-gray-200 text-gray-500'
-                  }`}>
-                    {count}
-                  </span>
-                )}
+                {t === 'upcoming' ? 'Upcoming' : 'Past'}
                 {showArchiveNote && (
                   <span className="text-[10px] text-gray-400 hidden sm:inline">({archivedCount} archived)</span>
                 )}
@@ -369,21 +304,21 @@ export default function MusicalPerformancePage() {
         {/* Result count */}
         <div className="flex-shrink-0 pt-5">
           <span className="text-sm text-gray-500">
-            {filteredEvents.length === 0 ? 'No results' :
-              `Showing ${filteredEvents.length} event${filteredEvents.length !== 1 ? 's' : ''}`}
+            {totalCount === 0 ? 'No results' :
+              `Showing ${totalCount} event${totalCount !== 1 ? 's' : ''}`}
             {displayCity && displayCity !== 'All Cities' ? ` in ${displayCity}` : ''}
           </span>
         </div>
       </div>
 
       {/* Page dots */}
-      <PageDots total={totalPages} current={currentPage} />
+      <PageDots total={totalPages} current={page} />
 
       {/* Two-column list */}
-      {filteredEvents.length === 0 ? (
+      {totalCount === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <p className="text-4xl mb-3">🎭</p>
-          <p className="text-sm">No {activeTab === 'upcoming' ? 'upcoming' : 'recent past'} events found{activeTab === 'past' ? ' (within the last 2 weeks)' : ''}.</p>
+          <p className="text-sm">No {tab === 'upcoming' ? 'upcoming' : 'recent past'} events found{tab === 'past' ? ' (within the last 2 weeks)' : ''}.</p>
           {displayCity && displayCity !== 'All Cities' && (
             <p className="text-xs mt-2">Try a different city or clear the filter.</p>
           )}
@@ -397,7 +332,7 @@ export default function MusicalPerformancePage() {
                 <EventCard
                   key={ev.id}
                   event={ev}
-                  tag={activeTab === 'past' ? 'recent' : 'upcoming'}
+                  tag={tab === 'past' ? 'recent' : 'upcoming'}
                 />
               ))}
             </div>
@@ -407,7 +342,7 @@ export default function MusicalPerformancePage() {
               <div className="absolute inset-x-0 flex flex-col items-center">
                 <div className="absolute top-0 bottom-0 w-px bg-gray-300" />
                 <div className="relative z-10 mt-20 w-8 h-8 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center shadow-md">
-                  {currentPage}
+                  {page}
                 </div>
               </div>
             </div>
@@ -418,7 +353,7 @@ export default function MusicalPerformancePage() {
                 <EventCard
                   key={ev.id}
                   event={ev}
-                  tag={activeTab === 'past' ? 'recent' : 'upcoming'}
+                  tag={tab === 'past' ? 'recent' : 'upcoming'}
                 />
               ))}
             </div>
@@ -427,7 +362,7 @@ export default function MusicalPerformancePage() {
       )}
 
       {/* Pagination */}
-      <Pagination current={currentPage} total={totalPages} onChange={(p) => setCurrentPage(p)} />
+      <Pagination current={page} total={totalPages} onChange={updatePage} />
     </div>
   );
 }

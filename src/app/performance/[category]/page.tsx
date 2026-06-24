@@ -188,10 +188,10 @@ export default function PerformanceCategoryPage() {
   const [customCity, setCustomCity] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
   const [pastFilter, setPastFilter] = useState<PastFilter>("recent");
-  const [viewMode, setViewMode] = useState<"upcoming" | "past">("upcoming");
 
-  // Supabase query
-  const { productions: allProductions, loading } = useStageProductionsPublic(category);
+  // Supabase query — server-side upcoming/past filter, page 1 on viewMode change
+  const { productions: allProductions, loading, totalCount, totalPages, viewMode, updateViewMode } =
+    useStageProductionsPublic(category);
 
   const productions: Production[] = (allProductions || []).map((p) => ({
     ...p,
@@ -507,7 +507,7 @@ export default function PerformanceCategoryPage() {
             </div>
 
             <div className="rounded-xl bg-white/80 px-4 py-3 text-sm text-gray-600">
-              <span className="font-semibold text-hmc-orange">{filteredItems.length}</span> {viewMode === "upcoming" ? "upcoming" : "past"} events
+              <span className="font-semibold text-hmc-orange">{totalCount}</span> {viewMode === "upcoming" ? "upcoming" : "past"} events
               <span className="mx-2 text-gray-300">•</span>
               <span>{selectedCity === "all" ? "All cities" : selectedCity === CUSTOM_CITY_VALUE ? normalizedCustomCity || "Custom city" : selectedCity}</span>
               <span className="mx-2 text-gray-300">•</span>
@@ -539,7 +539,7 @@ export default function PerformanceCategoryPage() {
             <h2 className="text-base font-bold uppercase tracking-wider text-gray-800">Events</h2>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setViewMode("upcoming")}
+                onClick={() => updateViewMode("upcoming")}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   viewMode === "upcoming"
                     ? "bg-hmc-orange text-white"
@@ -549,7 +549,7 @@ export default function PerformanceCategoryPage() {
                 Upcoming
               </button>
               <button
-                onClick={() => setViewMode("past")}
+                onClick={() => updateViewMode("past")}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   viewMode === "past"
                     ? "bg-red-500 text-white"
@@ -604,7 +604,7 @@ export default function PerformanceCategoryPage() {
               <h2 className="text-base font-bold uppercase tracking-wider text-gray-800">Events</h2>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setViewMode("upcoming")}
+                  onClick={() => updateViewMode("upcoming")}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                     viewMode === "upcoming"
                       ? "bg-hmc-orange text-white"
@@ -614,7 +614,7 @@ export default function PerformanceCategoryPage() {
                   Upcoming
                 </button>
                 <button
-                  onClick={() => setViewMode("past")}
+                  onClick={() => updateViewMode("past")}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                     viewMode === "past"
                       ? "bg-red-500 text-white"

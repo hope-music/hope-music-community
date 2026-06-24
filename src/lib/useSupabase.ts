@@ -312,98 +312,106 @@ export interface PublicProduction {
   url?: string;
 }
 
-export function useStageProductionsPublic(category: string) {
+export function useStageProductionsPublic(
+  category: string,
+  options?: { viewMode?: "upcoming" | "past" }
+) {
+  const [viewMode, setViewMode] = useState<"upcoming" | "past">(options?.viewMode ?? "upcoming");
+  const [page, setPage] = useState(1);
   const [productions, setProductions] = useState<PublicProduction[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [totalPages, setTotalPages] = useState(1);
-  const fetchedPagesRef = useRef<Map<number, PublicProduction[]>>(new Map());
-  const pendingRef = useRef<Set<number>>(new Set());
+
+  const PAGE_SIZE = 20;
 
   useEffect(() => {
-    if (!category) {
-      setProductions([]);
-      setLoading(false);
-      return;
-    }
-
+    if (!category) { setProductions([]); setLoading(false); return; }
     let cancelled = false;
 
-    async function init() {
+    async function fetchPage() {
       setLoading(true);
-      fetchedPagesRef.current.clear();
-      pendingRef.current.clear();
 
-      const PAGE_SIZE = 100;
+      // Compute today's midnight UTC as Unix timestamp (seconds)
+      const now = new Date();
+      const todayUTC = Date.UTC(
+        now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()
+      ) / 1000;
+      const todayStr = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-${String(now.getUTCDate()).padStart(2, "0")}`;
+      const todayTimestamp = Math.floor(Date.UTC(
+        parseInt(todayStr.slice(0, 4)),
+        parseInt(todayStr.slice(5, 7)) - 1,
+        parseInt(todayStr.slice(8, 10))
+      ) / 1000);
 
-      const { count } = await supabase
+      // Count query (fast, head: true)
+      const countQ = supabase
         .from("stage_productions")
         .select("*", { count: "exact", head: true })
         .eq("category", category);
 
-      if (cancelled) return;
-      const total = count ?? 0;
-      setTotalPages(Math.max(1, Math.ceil(total / PAGE_SIZE)));
+      if (viewMode === "upcoming") {
+        countQ.gte("event_date", todayTimestamp);
+      } else {
+        countQ.lt("event_date", todayTimestamp);
+      }
 
-      // Fetch first page
-      const { data, error } = await supabase
+      const { count } = await countQ;
+      if (cancelled) return;
+      setTotalCount(count ?? 0);
+
+      // Data query
+      const start = (page - 1) * PAGE_SIZE;
+      const dataQ = supabase
         .from("stage_productions")
         .select("id, title, category, description, cover_image, status, event_date, url")
         .eq("category", category)
-        .order("event_date", { ascending: false })
-        .range(0, PAGE_SIZE - 1);
+        .order("event_date", { ascending: viewMode === "upcoming" })
+        .range(start, start + PAGE_SIZE - 1);
 
+      if (viewMode === "upcoming") {
+        dataQ.gte("event_date", todayTimestamp);
+      } else {
+        dataQ.lt("event_date", todayTimestamp);
+      }
+
+      const { data, error } = await dataQ;
       if (cancelled) return;
 
       if (!error && data) {
-        const         adapted: PublicProduction[] = data.map((row) => ({
+        setProductions(data.map((row) => ({
           _id: row.id, id: row.id, title: row.title, category: row.category,
           description: row.description, coverImage: row.cover_image,
           status: row.status, eventDate: row.event_date ?? undefined,
           city: (row as any).city ?? undefined, url: row.url,
-        }));
-        fetchedPagesRef.current.set(1, adapted);
-        setProductions(adapted);
+        })));
+      } else {
+        setProductions([]);
       }
 
       setLoading(false);
     }
 
-    init();
+    fetchPage();
+    return () => { cancelled = true; };
+  }, [category, viewMode, page]);
 
-    return () => {
-      cancelled = true;
-    };
-  }, [category]);
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
-  async function fetchPage(n: number) {
-    if (n < 1 || fetchedPagesRef.current.has(n) || pendingRef.current.has(n)) return;
-    pendingRef.current.add(n);
-    const PAGE_SIZE = 100;
-    const start = (n - 1) * PAGE_SIZE;
+  // Reset to page 1 when filters change
+  const updateViewMode = useCallback((vm: "upcoming" | "past") => {
+    setViewMode(vm);
+    setPage(1);
+  }, []);
 
-    const { data, error } = await supabase
-      .from("stage_productions")
-      .select("id, title, category, description, cover_image, status, event_date, url")
-      .eq("category", category)
-      .order("event_date", { ascending: false })
-      .range(start, start + PAGE_SIZE - 1);
+  const updatePage = useCallback((p: number) => {
+    setPage(Math.max(1, Math.min(p, totalPages)));
+  }, [totalPages]);
 
-    pendingRef.current.delete(n);
-
-    if (!error && data) {
-      const         adapted: PublicProduction[] = data.map((row) => ({
-          _id: row.id, id: row.id, title: row.title, category: row.category,
-          description: row.description, coverImage: row.cover_image,
-          status: row.status, eventDate: row.event_date ?? undefined,
-          city: (row as any).city ?? undefined, url: row.url,
-        }));
-      fetchedPagesRef.current.set(n, adapted);
-      const all = Array.from(fetchedPagesRef.current.values()).flat();
-      setProductions(all);
-    }
-  }
-
-  return { productions, loading, totalPages, fetchPage };
+  return {
+    productions, totalCount, totalPages, loading,
+    viewMode, updateViewMode,
+    page, updatePage,
+  };
 }
 
 /**
@@ -544,78 +552,44 @@ export function useStageProductionsForAdmin(initialFilters?: Partial<AdminProduc
 
 /**
  * Count stage productions per category (for homepage counts).
+ * Fires one count query per category concurrently — fast regardless of table size.
  */
 export function useStageProductionsCount() {
   const [counts, setCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
+  const ALL_CATEGORIES = [
+    "musical", "opera", "classical", "music",
+    "electronic", "pop-rock", "performance-art", "dance", "other",
+  ];
+
   useEffect(() => {
     let cancelled = false;
 
     async function fetchCounts() {
-      const BATCH = 1000;
+      setLoading(true);
 
-      try {
-        const { count } = await supabase
+      const countPromises = ALL_CATEGORIES.map((cat) =>
+        supabase
           .from("stage_productions")
-          .select("*", { count: "exact", head: true });
+          .select("*", { count: "exact", head: true })
+          .eq("category", cat)
+          .then(({ count }) => ({ cat, count: count ?? 0 }))
+      );
 
-        if (cancelled) return;
-        const total = count ?? 0;
-        const pageCount = Math.ceil(total / BATCH);
+      const results = await Promise.all(countPromises);
+      if (cancelled) return;
 
-        const pagePromises = Array.from({ length: pageCount }, (_, i) =>
-          supabase
-            .from("stage_productions")
-            .select("category")
-            .range(i * BATCH, (i + 1) * BATCH - 1)
-        );
-
-        const results = await Promise.all(pagePromises);
-        if (cancelled) return;
-
-        const tally: Record<string, number> = {};
-        for (const { data, error } of results) {
-          if (error) { setLoading(false); return; }
-          for (const row of data ?? []) {
-            tally[row.category] = (tally[row.category] ?? 0) + 1;
-          }
-        }
-        setCounts(tally);
-      } catch {
-        // Fallback to manual pagination
-        const all: any[] = [];
-        let page = 0;
-        while (true) {
-          const { data, error } = await supabase
-            .from("stage_productions")
-            .select("category")
-            .range(page * BATCH, (page + 1) * BATCH - 1);
-
-          if (cancelled) return;
-          if (error || !data?.length) break;
-          all.push(...data);
-          if (data.length < BATCH) break;
-          page++;
-          if (page > 50) break;
-        }
-
-        if (cancelled) return;
-        const tally: Record<string, number> = {};
-        for (const row of all) {
-          tally[row.category] = (tally[row.category] ?? 0) + 1;
-        }
-        setCounts(tally);
+      const tally: Record<string, number> = {};
+      for (const { cat, count } of results) {
+        tally[cat] = count;
       }
-
+      setCounts(tally);
       setLoading(false);
     }
 
     fetchCounts();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   return { counts, loading };
@@ -645,74 +619,113 @@ export interface StageProductionsEvent {
   event_time: string;
 }
 
-export function useStageProductionsEvents(category: string) {
+export function useStageProductionsEvents(
+  category: string,
+  options?: { tab?: "upcoming" | "past" | "archived"; page?: number }
+) {
+  const [tab, setTab] = useState<"upcoming" | "past" | "archived">(
+    options?.tab ?? "upcoming"
+  );
+  const [page, setPage] = useState(options?.page ?? 1);
   const [events, setEvents] = useState<StageProductionsEvent[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const PAGE_SIZE = 10;
 
   useEffect(() => {
     if (!category) { setEvents([]); setLoading(false); return; }
     let cancelled = false;
 
-    async function init() {
+    async function fetchPage() {
       setLoading(true);
       setError(null);
 
-      const BATCH = 1000;
-      const all: StageProductionsEvent[] = [];
-      let page = 0;
+      const todayUTC = Math.floor(Date.UTC(
+        new Date().getUTCFullYear(),
+        new Date().getUTCMonth(),
+        new Date().getUTCDate()
+      ) / 1000);
 
-      while (true) {
-        const { data, error: sbError } = await supabase
-          .from("stage_productions")
-          .select("id, title, url, event_date, event_time, status, cover_image")
-          .eq("category", category)
-          .order("event_date", { ascending: true })
-          .range(page * BATCH, (page + 1) * BATCH - 1);
+      // Count query
+      const countQ = supabase
+        .from("stage_productions")
+        .select("*", { count: "exact", head: true })
+        .eq("category", category);
 
-        if (cancelled) return;
-        if (sbError) { setError(sbError.message); setLoading(false); return; }
-        if (!data?.length) break;
-
-        const adapted: StageProductionsEvent[] = data.map((row) => {
-          const localDate = row.event_date
-            ? new Date(Number(row.event_date) * 1000).toISOString().split("T")[0]
-            : undefined;
-          return {
-            id: row.id,
-            name: row.title,
-            url: row.url || "",
-            dates: {
-              start: {
-                localDate,
-                localTime: row.event_time || undefined,
-              },
-              status: { code: row.status },
-            },
-            _embedded: { venues: [] },
-            images: row.cover_image ? [{ url: row.cover_image }] : [],
-            event_date: localDate ?? "",
-            event_time: row.event_time || "",
-          };
-        });
-
-        all.push(...adapted);
-        if (data.length < BATCH) break;
-        page++;
-        if (page > 50) break;
+      if (tab === "upcoming") countQ.gte("event_date", todayUTC);
+      else if (tab === "past") {
+        countQ.lt("event_date", todayUTC);
+        countQ.gte("event_date", todayUTC - 14 * 86400);
+      } else {
+        countQ.lt("event_date", todayUTC - 14 * 86400);
       }
 
-      if (!cancelled) {
-        setEvents(all);
-        setLoading(false);
+      const { count } = await countQ;
+      if (cancelled) return;
+      setTotalCount(count ?? 0);
+
+      // Data query
+      const start = (page - 1) * PAGE_SIZE;
+      const dataQ = supabase
+        .from("stage_productions")
+        .select("id, title, url, event_date, event_time, status, cover_image")
+        .eq("category", category)
+        .order("event_date", { ascending: tab === "upcoming" })
+        .range(start, start + PAGE_SIZE - 1);
+
+      if (tab === "upcoming") dataQ.gte("event_date", todayUTC);
+      else if (tab === "past") {
+        dataQ.lt("event_date", todayUTC);
+        dataQ.gte("event_date", todayUTC - 14 * 86400);
+      } else {
+        dataQ.lt("event_date", todayUTC - 14 * 86400);
       }
+
+      const { data, sbError } = await dataQ;
+      if (cancelled) return;
+      if (sbError) { setError(sbError.message); setLoading(false); return; }
+
+      const adapted: StageProductionsEvent[] = (data ?? []).map((row) => {
+        const localDate = row.event_date
+          ? new Date(Number(row.event_date) * 1000).toISOString().split("T")[0]
+          : undefined;
+        return {
+          id: row.id,
+          name: row.title,
+          url: row.url || "",
+          dates: {
+            start: { localDate, localTime: row.event_time || undefined },
+            status: { code: row.status },
+          },
+          _embedded: { venues: [] },
+          images: row.cover_image ? [{ url: row.cover_image }] : [],
+          event_date: localDate ?? "",
+          event_time: row.event_time || "",
+        };
+      });
+
+      setEvents(adapted);
+      setLoading(false);
     }
 
-    init();
+    fetchPage();
     return () => { cancelled = true; };
-  }, [category]);
+  }, [category, tab, page]);
 
-  return { events, loading, error };
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
+
+  const updateTab = useCallback((t: "upcoming" | "past" | "archived") => {
+    setTab(t);
+    setPage(1);
+  }, []);
+
+  const updatePage = useCallback((p: number) => {
+    setPage(Math.max(1, Math.min(p, totalPages)));
+  }, [totalPages]);
+
+  return { events, totalCount, totalPages, loading, error, tab, updateTab, page, updatePage };
 }
 
 // ── Admin CRUD helpers ───────────────────────────────────────────────────────
