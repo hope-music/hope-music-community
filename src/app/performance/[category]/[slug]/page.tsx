@@ -338,7 +338,7 @@ export default function PerformanceDetailPage() {
 
                   {/* Disclaimer */}
                   <div className="mt-4 px-4 py-3 bg-white/10 rounded-xl border border-white/20">
-                    <p className="text-xs text-white/70 leading-relaxed">
+                    <p className="text-xs text-white/70 leading-relaxed text-center">
                       Notice: This is a free informational guide only — we do not sell tickets. Schedules may not reflect real-time changes. For tickets and latest updates, visit{" "}
                       <a
                         href="https://www.ticketmaster.com"
