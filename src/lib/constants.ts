@@ -189,3 +189,45 @@ export const OTHERS_PLACEHOLDER_ITEMS = [
 
 export const CTA_COPY =
   "Fusing diverse musical genres with immersive audio and visuals, the innovative Shangri-La sits at the cutting edge of modern musical theater.";
+
+// ── City groups (shared between frontend and admin) ────────────────────────────
+export const GLOBAL_CITY_GROUPS = [
+  {
+    label: "North America",
+    cities: [
+      "Atlanta", "Boston", "Chicago", "Dallas", "Denver", "Detroit",
+      "Houston", "Las Vegas", "Los Angeles", "Mexico City", "Miami",
+      "Minneapolis", "Montreal", "Nashville", "New York", "Philadelphia",
+      "San Francisco", "Seattle", "Toronto", "Vancouver", "Washington",
+    ],
+  },
+  {
+    label: "Europe",
+    cities: [
+      "Amsterdam", "Athens", "Barcelona", "Berlin", "Brussels", "Budapest",
+      "Copenhagen", "Dublin", "Edinburgh", "Frankfurt", "Geneva",
+      "Istanbul", "Lisbon", "London", "Madrid", "Milan", "Munich",
+      "Paris", "Prague", "Rome", "Stockholm", "Vienna", "Warsaw", "Zurich",
+    ],
+  },
+  {
+    label: "Asia",
+    cities: [
+      "Bangkok", "Beijing", "Delhi", "Dubai", "Hong Kong", "Jakarta",
+      "Kuala Lumpur", "Manila", "Mumbai", "Osaka", "Seoul",
+      "Shanghai", "Singapore", "Taipei", "Tokyo",
+    ],
+  },
+  {
+    label: "Oceania",
+    cities: ["Brisbane", "Melbourne", "Sydney"],
+  },
+  {
+    label: "South America",
+    cities: ["Bogota", "Buenos Aires", "Rio de Janeiro", "Santiago", "Sao Paulo"],
+  },
+  {
+    label: "Africa",
+    cities: ["Cairo", "Cape Town", "Johannesburg"],
+  },
+] as const;

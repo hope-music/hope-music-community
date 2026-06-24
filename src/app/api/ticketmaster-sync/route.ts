@@ -105,8 +105,9 @@ function parseEvent(raw: any, category: string): Record<string, unknown> {
 
   // Content: embed key venue info
   const venue = raw._embedded?.venues?.[0];
+  const city = venue?.city?.name || null;
   const content = venue
-    ? `<p><strong>Venue:</strong> ${venue.name || "TBA"}${venue.city?.name ? `, ${venue.city.name}` : ""}</p>`
+    ? `<p><strong>Venue:</strong> ${venue.name || "TBA"}${city ? `, ${city}` : ""}</p>`
     : "";
 
   return {
@@ -124,6 +125,7 @@ function parseEvent(raw: any, category: string): Record<string, unknown> {
     is_featured: false,
     created_at: Date.now(),
     updated_at: null,
+    city,
   };
 }
 

@@ -66,6 +66,7 @@ export interface StageProduction {
   cover_image: string;
   url: string;
   category: string;
+  city: string | null;
   media_links: string[];
   status: "upcoming" | "past" | "draft";
   event_date: number | null;
@@ -354,11 +355,11 @@ export function useStageProductionsPublic(category: string) {
       if (cancelled) return;
 
       if (!error && data) {
-        const adapted: PublicProduction[] = data.map((row) => ({
+        const         adapted: PublicProduction[] = data.map((row) => ({
           _id: row.id, id: row.id, title: row.title, category: row.category,
           description: row.description, coverImage: row.cover_image,
           status: row.status, eventDate: row.event_date ?? undefined,
-          city: undefined, url: row.url,
+          city: (row as any).city ?? undefined, url: row.url,
         }));
         fetchedPagesRef.current.set(1, adapted);
         setProductions(adapted);
@@ -390,12 +391,12 @@ export function useStageProductionsPublic(category: string) {
     pendingRef.current.delete(n);
 
     if (!error && data) {
-      const adapted: PublicProduction[] = data.map((row) => ({
-        _id: row.id, id: row.id, title: row.title, category: row.category,
-        description: row.description, coverImage: row.cover_image,
-        status: row.status, eventDate: row.event_date ?? undefined,
-        city: undefined, url: row.url,
-      }));
+      const         adapted: PublicProduction[] = data.map((row) => ({
+          _id: row.id, id: row.id, title: row.title, category: row.category,
+          description: row.description, coverImage: row.cover_image,
+          status: row.status, eventDate: row.event_date ?? undefined,
+          city: (row as any).city ?? undefined, url: row.url,
+        }));
       fetchedPagesRef.current.set(n, adapted);
       const all = Array.from(fetchedPagesRef.current.values()).flat();
       setProductions(all);

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { PERFORMANCE_CATEGORY_OPTIONS } from "@/lib/constants";
+import { PERFORMANCE_CATEGORY_OPTIONS, GLOBAL_CITY_GROUPS } from "@/lib/constants";
 import { useStageProductions, adminStageProductions, useStageProductionsForAdmin, type StageProduction } from "@/lib/useSupabase";
 
 // ── Ticketmaster sync helpers ──────────────────────────────────────────────────
@@ -232,6 +232,8 @@ function formatDateForInput(timestamp?: number): string {
 export default function StageProductionsPage() {
   const [filterCategory, setFilterCategory] = useState<string>(PERFORMANCE_CATEGORY_OPTIONS[0]?.value ?? "musical");
   const [filterStatus, setFilterStatus] = useState<"all" | "upcoming" | "past" | "draft">("all");
+  const [filterCity, setFilterCity] = useState("");
+  const [filterCityCustom, setFilterCityCustom] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [movingId, setMovingId] = useState<string | null>(null);
@@ -245,6 +247,7 @@ export default function StageProductionsPage() {
   const [status, setStatus] = useState<"upcoming" | "past" | "draft">("draft");
   const [eventDate, setEventDate] = useState("");
   const [eventTime, setEventTime] = useState("");
+  const [itemCity, setItemCity] = useState("");
   const [url, setUrl] = useState("");
   const [coverImage, setCoverImage] = useState("");
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -275,6 +278,7 @@ export default function StageProductionsPage() {
   const filteredItems = (allProductions || []).filter((p) => {
     if (p.category !== filterCategory) return false;
     if (filterStatus !== "all" && p.status !== filterStatus) return false;
+    if (filterCity && p.city && !p.city.toLowerCase().includes(filterCity.toLowerCase())) return false;
     return true;
   });
 
@@ -313,6 +317,7 @@ export default function StageProductionsPage() {
     setStatus("draft");
     setEventDate("");
     setEventTime("");
+    setItemCity("");
     setUrl("");
     setCoverImage("");
     setCoverPreview(null);
@@ -330,6 +335,7 @@ export default function StageProductionsPage() {
     const dateVal = formatDateForInput(item.event_date);
     setEventDate(dateVal);
     setEventTime(dateVal && item.event_time ? item.event_time.slice(0, 5) : "");
+    setItemCity(item.city || "");
     setUrl(item.url || "");
     setCoverImage(item.cover_image || "");
     setCoverPreview(item.cover_image || null);
@@ -381,6 +387,7 @@ export default function StageProductionsPage() {
       url,
       category,
       status,
+      city: itemCity.trim() || null,
       event_date: eventDateMs,
       event_time: eventTime,
       media_links: [],
@@ -495,6 +502,42 @@ export default function StageProductionsPage() {
             <option value="past">Past</option>
           </select>
         </div>
+        <div>
+          <label className="mb-1 block text-xs text-gray-500">City</label>
+          <select
+            value={filterCity}
+            onChange={(e) => setFilterCity(e.target.value)}
+            className="rounded-md border border-gray-300 px-3 py-2 text-sm w-48"
+          >
+            <option value="">All cities</option>
+            {GLOBAL_CITY_GROUPS.map((group) => (
+              <optgroup key={group.label} label={group.label}>
+                {group.cities.map((city) => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </optgroup>
+            ))}
+            <optgroup label="Other">
+              <option value="__custom__">Other (type below)...</option>
+            </optgroup>
+          </select>
+          {filterCity === "__custom__" && (
+            <input
+              type="text"
+              value={filterCityCustom}
+              onChange={(e) => {
+                setFilterCityCustom(e.target.value);
+                setFilterCity(e.target.value);
+              }}
+              onBlur={() => {
+                if (filterCityCustom.trim()) setFilterCity(filterCityCustom.trim());
+              }}
+              placeholder="Type city name..."
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1 text-sm"
+              autoFocus
+            />
+          )}
+        </div>
       </div>
 
       {/* Message */}
@@ -545,6 +588,17 @@ export default function StageProductionsPage() {
                   <option value="upcoming">Upcoming</option>
                   <option value="past">Past</option>
                 </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">City</label>
+                <input
+                  list="city-suggestions"
+                  type="text"
+                  value={itemCity}
+                  onChange={(e) => setItemCity(e.target.value)}
+                  placeholder="e.g. New York"
+                  className="w-full rounded-md border border-gray-300 px-3 py-2"
+                />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium text-gray-700">Event Date</label>
