@@ -234,6 +234,7 @@ export default function StageProductionsPage() {
   const [filterStatus, setFilterStatus] = useState<"all" | "upcoming" | "past" | "draft">("all");
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [movingId, setMovingId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Form state
@@ -412,6 +413,19 @@ export default function StageProductionsPage() {
       setMessage({ type: "success", text: "Deleted" });
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Failed to delete" });
+    }
+  };
+
+  // Move item to a different category
+  const handleMove = async (id: string, newCategory: string) => {
+    try {
+      const { error } = await adminStageProductions.update(id, { category: newCategory });
+      if (error) throw new Error(error.message);
+      setMovingId(null);
+      refresh();
+      setMessage({ type: "success", text: "Moved successfully!" });
+    } catch (err: any) {
+      setMessage({ type: "error", text: err.message || "Failed to move" });
     }
   };
 
@@ -640,50 +654,107 @@ export default function StageProductionsPage() {
             </div>
           ) : (
             filteredItems.map((item) => (
-              <div key={item.id} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50">
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  {item.cover_image && (
-                    <img
-                      src={item.cover_image}
-                      alt=""
-                      className="h-10 w-16 rounded object-cover shrink-0"
-                    />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900 truncate">{item.title}</span>
-                      {getStatusBadge(item.status)}
+              <div key={item.id} className="px-4 py-3 hover:bg-gray-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    {item.cover_image && (
+                      <img
+                        src={item.cover_image}
+                        alt=""
+                        className="h-10 w-16 rounded object-cover shrink-0"
+                      />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900 truncate">{item.title}</span>
+                        {getStatusBadge(item.status)}
+                      </div>
+                      {item.event_date && (
+                        <span className="text-xs text-gray-400">{formatDate(item.event_date)}</span>
+                      )}
                     </div>
-                    {item.event_date && (
-                      <span className="text-xs text-gray-400">{formatDate(item.event_date)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 ml-4">
+                    {movingId === item.id ? (
+                      <>
+                        <select
+                          value={item.category}
+                          onChange={(e) => { /* preview update */ }}
+                          className="rounded border border-gray-300 bg-white px-2 py-1 text-xs"
+                        >
+                          {PERFORMANCE_CATEGORY_OPTIONS.map((cat) => (
+                            <option key={cat.value} value={cat.value}>{cat.label}</option>
+                          ))}
+                        </select>
+                        <select
+                          id={`move-cat-${item.id}`}
+                          defaultValue={item.category}
+                          className="rounded border border-purple-300 bg-white px-2 py-1 text-xs focus:border-purple-500 focus:outline-none"
+                        >
+                          {PERFORMANCE_CATEGORY_OPTIONS
+                            .filter((c) => c.value !== item.category)
+                            .map((cat) => (
+                              <option key={cat.value} value={cat.value}>{cat.label}</option>
+                            ))}
+                        </select>
+                        <button
+                          onClick={() => {
+                            const sel = document.getElementById(`move-cat-${item.id}`) as HTMLSelectElement;
+                            if (sel) handleMove(item.id, sel.value);
+                          }}
+                          className="px-3 py-1 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded"
+                        >
+                          Confirm
+                        </button>
+                        <button
+                          onClick={() => setMovingId(null)}
+                          className="px-3 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 rounded"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => toggleFeatured(item.id)}
+                          className={`px-3 py-1 text-xs font-medium rounded ${
+                            featuredIds.has(item.id)
+                              ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                              : "text-gray-400 hover:text-yellow-600 hover:bg-gray-100"
+                          }`}
+                          title={featuredIds.has(item.id) ? "Remove from Featured" : "Add to Featured"}
+                        >
+                          {featuredIds.has(item.id) ? "★" : "☆"}
+                        </button>
+                        <button
+                          onClick={() => setMovingId(item.id)}
+                          className="px-3 py-1 text-xs font-medium text-purple-600 hover:bg-purple-50 rounded"
+                          title="Move to different category"
+                        >
+                          Move
+                        </button>
+                        <button
+                          onClick={() => handleEdit(item)}
+                          className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded"
+                        >
+                          Delete
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2 ml-4">
-                  <button
-                    onClick={() => toggleFeatured(item.id)}
-                    className={`px-3 py-1 text-xs font-medium rounded ${
-                      featuredIds.has(item.id)
-                        ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                        : "text-gray-400 hover:text-yellow-600 hover:bg-gray-100"
-                    }`}
-                    title={featuredIds.has(item.id) ? "Remove from Featured" : "Add to Featured"}
-                  >
-                    {featuredIds.has(item.id) ? "★" : "☆"}
-                  </button>
-                  <button
-                    onClick={() => handleEdit(item)}
-                    className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id)}
-                    className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded"
-                  >
-                    Delete
-                  </button>
-                </div>
+                {movingId === item.id && (
+                  <p className="mt-1 text-xs text-gray-400 pl-[calc(4rem+1rem)]">
+                    Current: <strong>{PERFORMANCE_CATEGORY_OPTIONS.find(c => c.value === item.category)?.label ?? item.category}</strong>
+                    {" "}— select a target category above to relocate this item.
+                  </p>
+                )}
               </div>
             ))
           )}
