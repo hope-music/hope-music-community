@@ -178,7 +178,7 @@ export const ARTICAL_PLACEHOLDER_ITEMS = [
 
 export const OTHERS_PLACEHOLDER_ITEMS = [
   { id: "community-guidelines", title: "Community guidelines — keeping our forum respectful and helpful" },
-  { id: "event-calendar-community", title: "Community event calendar — upcoming meetups and online sessions" },
+  { id: "event-calendar-community", title: "Community event calendar — meetups and online sessions" },
   { id: "introduce-yourself-thread", title: "Introduce yourself to the Hope Music Community!" },
   { id: "resources-tutorials", title: "Resources and tutorials master list — curated community collection" },
   { id: "collaboration-opportunities", title: "Collaboration opportunities — find your next creative partner" },

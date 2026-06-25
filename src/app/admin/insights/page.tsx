@@ -17,7 +17,6 @@ interface Insight {
   authorName: string;
   isPublished: boolean;
   isFeatured: boolean;
-  status: "upcoming" | "past" | "draft";
   createdAt: number;
   updatedAt?: number;
 }

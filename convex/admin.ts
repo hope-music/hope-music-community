@@ -626,8 +626,6 @@ export const getPublicStageProductions = query({
   },
   handler: async (ctx, args) => {
     let productions = await ctx.db.query("stageProductions").collect();
-    // Only show upcoming/past, exclude drafts from public view
-    productions = productions.filter((p: any) => p.status === "upcoming" || p.status === "past");
     if (args.category) {
       productions = productions.filter((p: any) => p.category === args.category);
     }
@@ -643,7 +641,6 @@ export const getPublicStageProductions = query({
       coverImage: p.coverImage ?? "",
       url: p.url ?? "",
       category: p.category ?? "",
-      status: p.status ?? "upcoming",
       eventDate: p.eventDate,
       isFeatured: p.isFeatured ?? false,
     }));
@@ -657,10 +654,8 @@ export const getStageProductionsCount = query({
     const productions = await ctx.db.query("stageProductions").collect();
     const counts: Record<string, number> = {};
     productions.forEach((p: any) => {
-      if (p.status === "upcoming" || p.status === "past") {
-        const cat = p.category ?? "other";
-        counts[cat] = (counts[cat] ?? 0) + 1;
-      }
+      const cat = p.category ?? "other";
+      counts[cat] = (counts[cat] ?? 0) + 1;
     });
     return counts;
   },
@@ -671,7 +666,7 @@ export const getLatestStageProduction = query({
   args: { category: v.string() },
   handler: async (ctx, args) => {
     let productions = (await ctx.db.query("stageProductions").collect()).filter(
-      (p: any) => p.category === args.category && (p.status === "upcoming" || p.status === "past")
+      (p: any) => p.category === args.category
     );
     productions.sort((a: any, b: any) => (b.eventDate ?? 0) - (a.eventDate ?? 0));
     if (productions.length === 0) return null;
@@ -702,7 +697,6 @@ export const getStageProductionById = query({
       url: p.url ?? "",
       category: p.category ?? "",
       city: p.city ?? "",
-      status: p.status ?? "draft",
       eventDate: p.eventDate,
       isFeatured: p.isFeatured ?? false,
     };
@@ -713,19 +707,12 @@ export const getStageProductionById = query({
 export const getStageProductionsByCategory = query({
   args: {
     category: v.string(),
-    status: v.optional(v.string()),
     limit: v.optional(v.number()),
     offset: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     let productions = await ctx.db.query("stageProductions").collect();
-    productions = productions.filter((p: any) => {
-      if (p.category !== args.category) return false;
-      if (args.status === "upcoming" || args.status === "past") {
-        return p.status === args.status;
-      }
-      return p.status === "upcoming" || p.status === "past";
-    });
+    productions = productions.filter((p: any) => p.category === args.category);
     productions.sort((a: any, b: any) => (b.eventDate ?? 0) - (a.eventDate ?? 0));
     const total = productions.length;
     const offset = args.offset ?? 0;
@@ -740,7 +727,6 @@ export const getStageProductionsByCategory = query({
         url: p.url ?? "",
         category: p.category ?? "",
         city: p.city ?? "",
-        status: p.status ?? "draft",
         eventDate: p.eventDate,
       })),
       total,
@@ -752,8 +738,7 @@ export const getStageProductionsByCategory = query({
 export const getAllPublicStageProductions = query({
   args: {},
   handler: async (ctx) => {
-    let productions = await ctx.db.query("stageProductions").collect();
-    productions = productions.filter((p: any) => p.status === "upcoming" || p.status === "past");
+    const productions = await ctx.db.query("stageProductions").collect();
     return productions.map((p: any) => ({
       _id: p._id,
       title: p.title ?? "",
@@ -763,7 +748,6 @@ export const getAllPublicStageProductions = query({
       url: p.url ?? "",
       category: p.category ?? "",
       city: p.city ?? "",
-      status: p.status ?? "draft",
       eventDate: p.eventDate,
       isFeatured: p.isFeatured ?? false,
     }));
@@ -780,7 +764,6 @@ export const batchImportStageProductions = mutation({
       coverImage: v.string(),
       url: v.string(),
       category: v.string(),
-      status: v.union(v.literal("draft"), v.literal("upcoming"), v.literal("past")),
       eventDate: v.number(),
     })),
   },
@@ -814,7 +797,6 @@ export const listStageProductions = query({
   args: {
     callerEmail: v.optional(v.string()),
     category: v.optional(v.string()),
-    status: v.optional(v.union(v.literal("draft"), v.literal("upcoming"), v.literal("past"))),
     searchQuery: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
@@ -842,7 +824,6 @@ export const listStageProductions = query({
       url: p.url ?? "",
       category: p.category ?? "",
       mediaLinks: p.mediaLinks ?? [],
-      status: p.status ?? "draft",
       eventDate: p.eventDate,
       eventTime: p.eventTime ?? "",
       isFeatured: p.isFeatured ?? false,
@@ -862,7 +843,6 @@ export const createStageProduction = mutation({
     url: v.optional(v.string()),
     category: v.string(),
     mediaLinks: v.optional(v.array(v.string())),
-    status: v.optional(v.union(v.literal("draft"), v.literal("upcoming"), v.literal("past"))),
     eventDate: v.optional(v.number()),
     eventTime: v.optional(v.string()),
     isFeatured: v.optional(v.boolean()),
@@ -877,7 +857,6 @@ export const createStageProduction = mutation({
       url: args.url ?? "",
       category: args.category,
       mediaLinks: args.mediaLinks ?? [],
-      status: args.status ?? "draft",
       eventDate: args.eventDate,
       eventTime: args.eventTime ?? "",
       isFeatured: args.isFeatured ?? false,
@@ -899,7 +878,6 @@ export const updateStageProduction = mutation({
     url: v.optional(v.string()),
     category: v.optional(v.string()),
     mediaLinks: v.optional(v.array(v.string())),
-    status: v.optional(v.union(v.literal("draft"), v.literal("upcoming"), v.literal("past"))),
     eventDate: v.optional(v.number()),
     eventTime: v.optional(v.string()),
     isFeatured: v.optional(v.boolean()),
@@ -1203,7 +1181,6 @@ export const getPublishedInsights = query({
       content: item.content ?? "",
       excerpt: item.excerpt ?? "",
       category: item.category ?? "",
-      status: item.status ?? "upcoming",
       publishDate: item.publishDate ?? 0,
       eventDate: item.eventDate,
       authorName: item.authorName ?? "",
@@ -1225,7 +1202,6 @@ export const getInsightById = query({
       content: item.content ?? "",
       excerpt: item.excerpt ?? "",
       category: item.category ?? "",
-      status: item.status ?? "upcoming",
       publishDate: item.publishDate ?? 0,
       eventDate: item.eventDate,
       authorName: item.authorName ?? "",
@@ -1240,16 +1216,12 @@ export const listInsights = query({
   args: {
     callerEmail: v.optional(v.string()),
     category: v.optional(v.string()),
-    status: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.callerEmail);
     let items = await ctx.db.query("insights").collect();
     if (args.category) {
       items = items.filter((item: any) => item.category === args.category);
-    }
-    if (args.status) {
-      items = items.filter((item: any) => (item.status ?? "upcoming") === args.status);
     }
     return items
       .map((item: any) => ({
@@ -1259,7 +1231,6 @@ export const listInsights = query({
         content: item.content ?? "",
         excerpt: item.excerpt ?? "",
         category: item.category ?? "",
-        status: item.status ?? "upcoming",
         publishDate: item.publishDate ?? 0,
         eventDate: item.eventDate,
         authorName: item.authorName ?? "",
@@ -1286,7 +1257,6 @@ export const createInsight = mutation({
     authorName: v.optional(v.string()),
     isPublished: v.optional(v.boolean()),
     isFeatured: v.optional(v.boolean()),
-    status: v.optional(v.union(v.literal("upcoming"), v.literal("past"), v.literal("draft"))),
   },
   handler: async (ctx, args) => {
     const adminInfo = await requireAdmin(ctx, args.callerEmail);
@@ -1302,7 +1272,6 @@ export const createInsight = mutation({
       authorName: args.authorName ?? undefined,
       isPublished: args.isPublished ?? false,
       isFeatured: args.isFeatured ?? false,
-      status: args.status ?? "upcoming",
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -1325,7 +1294,6 @@ export const updateInsight = mutation({
     authorName: v.optional(v.string()),
     isPublished: v.optional(v.boolean()),
     isFeatured: v.optional(v.boolean()),
-    status: v.optional(v.union(v.literal("upcoming"), v.literal("past"), v.literal("draft"))),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.callerEmail);
@@ -1341,7 +1309,6 @@ export const updateInsight = mutation({
     if (args.authorName !== undefined) updates.authorName = args.authorName;
     if (args.isPublished !== undefined) updates.isPublished = args.isPublished;
     if (args.isFeatured !== undefined) updates.isFeatured = args.isFeatured;
-    if (args.status !== undefined) updates.status = args.status;
     await ctx.db.patch("insights", args.id, updates);
     return { success: true, message: "Insight updated" };
   },

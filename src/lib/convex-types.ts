@@ -31,7 +31,6 @@ export interface Insight {
   authorName?: string;
   isPublished?: boolean;
   isFeatured?: boolean;
-  status?: "upcoming" | "past" | "draft";
   createdAt?: number;
   updatedAt?: number;
 }
@@ -67,12 +66,11 @@ export interface AdminApi {
       isFeatured?: boolean;
     }) => Promise<{ success: boolean; message: string }>;
     deleteNewsArticle: (args: { callerEmail?: string; id: string }) => Promise<{ success: boolean; message: string }>;
-    listInsights: (args?: { callerEmail?: string; category?: string; status?: string }) => Promise<Insight[]>;
+    listInsights: (args?: { callerEmail?: string; category?: string }) => Promise<Insight[]>;
     createInsight: (args: {
       callerEmail?: string;
       title: string;
       category: string;
-      status?: "upcoming" | "past" | "draft";
       eventDate?: number;
       content: string;
       coverImage?: string;
@@ -88,7 +86,6 @@ export interface AdminApi {
       id: string;
       title?: string;
       category?: string;
-      status?: "upcoming" | "past" | "draft";
       eventDate?: number;
       content?: string;
       coverImage?: string;

@@ -6,7 +6,7 @@ import Image from "next/image";
 import { useParams } from "next/navigation";
 import { CommentSection } from "@/components/comments/CommentSection";
 import { PERFORMANCE_CATEGORY_OPTIONS } from "@/lib/constants";
-import { useStageProductionDetail } from "@/lib/useSupabase";
+import { useQuery, api } from "@/lib/convex";
 
 interface Production {
   _id: string;
@@ -15,7 +15,6 @@ interface Production {
   description: string;
   coverImage: string;
   content: string;
-  status: "upcoming" | "past" | "draft";
   eventDate?: number;
   city?: string;
   url?: string;
@@ -23,19 +22,19 @@ interface Production {
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
 
-type DisplayStatus = "upcoming" | "recent" | "archived";
+type DateLabel = "future" | "recent" | "archived";
 
-function getDisplayStatus(eventDate?: number): DisplayStatus {
-  if (!eventDate) return "upcoming";
+function getDateLabel(eventDate?: number): DateLabel {
+  if (!eventDate) return "future";
   const now = Date.now();
-  if (eventDate > now) return "upcoming";
+  if (eventDate > now) return "future";
   const elapsed = now - eventDate;
   if (elapsed <= TWO_WEEKS_MS) return "recent";
   return "archived";
 }
 
 function isVisible(eventDate?: number): boolean {
-  return getDisplayStatus(eventDate) !== "archived";
+  return getDateLabel(eventDate) !== "archived";
 }
 
 function canBookTickets(eventDate?: number): boolean {
@@ -50,15 +49,12 @@ export default function PerformanceDetailPage() {
 
   const [scrollProgress, setScrollProgress] = useState(0);
 
-  // Supabase query
-  const { item, loading } = useStageProductionDetail(slug);
+  // Fetch all productions and find the one matching the slug
+  const allProductions = useQuery(api.admin.getAllPublicStageProductions) as any[] | undefined;
+  const item = allProductions?.find((p) => p._id === slug) ?? null;
+  const loading = allProductions === undefined;
 
-  const relatedItems = []; // Supabase detail fetch doesn't include related items; skip for now
-
-  const categoryLabel = useMemo(() =>
-    PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.value === item?.category)?.label || item?.category || "",
-    [item?.category]
-  );
+  const relatedItems: any[] = []; // Supabase detail fetch doesn't include related items; skip for now
 
   // Track scroll progress
   useEffect(() => {
@@ -94,7 +90,7 @@ export default function PerformanceDetailPage() {
       " at " + d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
   };
 
-  const categoryLabel = useMemo(() => 
+  const categoryLabel = useMemo(() =>
     PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.value === item?.category)?.label || item?.category || "",
     [item?.category]
   );
@@ -111,7 +107,7 @@ export default function PerformanceDetailPage() {
   }
 
   // If item is found but archived, redirect to category page
-  if (item && getDisplayStatus(item.eventDate) === "archived") {
+  if (item && getDateLabel(item.eventDate) === "archived") {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
         <div className="w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-6">
@@ -315,7 +311,7 @@ export default function PerformanceDetailPage() {
                   </div>
 
                   {/* CTA Button */}
-                  {canBookTickets(item.eventDate) && item.status !== "draft" && (
+                  {canBookTickets(item.eventDate) && (
                     <a
                       href={item.url || "https://www.ticketmaster.com"}
                       target="_blank"
@@ -328,29 +324,6 @@ export default function PerformanceDetailPage() {
                       Book Tickets
                     </a>
                   )}
-
-                  {/* Draft Notice */}
-                  {item.status === "draft" && (
-                    <div className="mt-4 px-4 py-3 bg-white/20 rounded-xl text-center">
-                      <p className="text-xs text-white/60">This is a draft event</p>
-                    </div>
-                  )}
-
-                  {/* Disclaimer */}
-                  <div className="mt-4 px-4 py-3 bg-white/10 rounded-xl border border-white/20">
-                    <p className="text-xs text-white/70 leading-relaxed text-center">
-                      Notice: This is a free informational guide only — we do not sell tickets. Schedules may not reflect real-time changes. For tickets and latest updates, visit{" "}
-                      <a
-                        href="https://www.ticketmaster.com"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="underline hover:text-white"
-                      >
-                        Ticketmaster
-                      </a>
-                      .
-                    </p>
-                  </div>
 
                   {/* Share & Actions */}
                   <div className="flex items-center gap-2 mt-4">
@@ -367,12 +340,28 @@ export default function PerformanceDetailPage() {
                       Save
                     </button>
                   </div>
+                  </div>
+
+                  {/* Notice */}
+                  <div className="mt-4 px-4 py-3 bg-white/10 rounded-xl border border-white/20">
+                    <p className="text-xs text-white/70 leading-relaxed text-center">
+                      Notice: This is a free informational guide only — we do not sell tickets. Schedules may not reflect real-time changes. For tickets and latest updates, visit{" "}
+                      <a
+                        href="https://www.ticketmaster.com"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="underline hover:text-white"
+                      >
+                        Ticketmaster
+                      </a>
+                      .
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
       {/* Related Performances */}
       {relatedItems.length > 0 && (

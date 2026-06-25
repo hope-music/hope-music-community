@@ -134,7 +134,7 @@ const PLACEHOLDER_POSTS: Record<string, { id: string; title: string }[]> = {
   ],
   others: [
     { id: "ph-oth-1", title: "Community guidelines — keeping our forum respectful" },
-    { id: "ph-oth-2", title: "Community event calendar — upcoming meetups" },
+    { id: "ph-oth-2", title: "Community event calendar — meetups and sessions" },
     { id: "ph-oth-3", title: "Introduce yourself to the Hope Music Community!" },
     { id: "ph-oth-4", title: "Resources and tutorials master list" },
     { id: "ph-oth-5", title: "Collaboration opportunities" },

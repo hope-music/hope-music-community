@@ -99,7 +99,7 @@ const PLACEHOLDER_POSTS = [
   { id: "ph-art-10", title: "Music education trends and innovations", author: "EduExpert", replies: 38, views: 1560, category: "article", createdAt: Date.now() - 3600000 * 115 },
   // Others (10)
   { id: "ph-oth-1", title: "Community guidelines — keeping our forum respectful", author: "Admin", replies: 12, views: 890, category: "others", createdAt: Date.now() - 3600000 * 168 },
-  { id: "ph-oth-2", title: "Community event calendar — upcoming meetups", author: "EventLead", replies: 45, views: 1890, category: "others", createdAt: Date.now() - 3600000 * 72 },
+    { id: "ph-oth-2", title: "Community event calendar — meetups and sessions", author: "EventLead", replies: 45, views: 1890, category: "others", createdAt: Date.now() - 3600000 * 72 },
   { id: "ph-oth-3", title: "Introduce yourself to the Hope Music Community!", author: "NewMember", replies: 203, views: 6780, category: "others", createdAt: Date.now() - 3600000 * 24 },
   { id: "ph-oth-4", title: "Resources and tutorials master list", author: "Librarian", replies: 89, views: 3450, category: "others", createdAt: Date.now() - 3600000 * 48 },
   { id: "ph-oth-5", title: "Collaboration opportunities", author: "CollabHub", replies: 67, views: 2560, category: "others", createdAt: Date.now() - 3600000 * 36 },

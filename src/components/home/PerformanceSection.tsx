@@ -4,29 +4,29 @@ import Image from "next/image";
 import { CategoryBox } from "@/components/ui/CategoryBox";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
+import { useQuery, useMutation, api } from "@/lib/convex";
 import { PERFORMANCE_CATEGORIES, PERFORMANCE_CATEGORY_OPTIONS, CATEGORY_FALLBACK_IMAGES } from "@/lib/constants";
-import { useStageProductions, useStageProductionsCount } from "@/lib/useSupabase";
 
 interface CategoryData {
   title: string;
-  cover_image: string;
+  coverImage: string;
   url: string;
-  event_date: number | null;
+  eventDate: number | null;
 }
 
 function CategoryCard({ slug, label }: { slug: string; label: string }) {
-  const { productions } = useStageProductions(slug, 1);
-  const { counts } = useStageProductionsCount();
+  const latest = useQuery(api.admin.getLatestStageProduction, { category: slug });
+  const counts = useQuery(api.admin.getStageProductionsCount);
 
-  const item: CategoryData | null = productions[0] ?? null;
-  const total = counts[slug] ?? 0;
+  const item: CategoryData | null = latest ?? null;
+  const total = counts?.[slug] ?? 0;
 
   const fallbackImage = CATEGORY_FALLBACK_IMAGES[slug] || CATEGORY_FALLBACK_IMAGES["Other"];
-  const imageSrc = item?.cover_image?.startsWith("http") ? item.cover_image : fallbackImage;
+  const imageSrc = item?.coverImage?.startsWith("http") ? item.coverImage : fallbackImage;
   const clickHref = item?.url || `/performance/${slug}`;
 
-  const eventDateStr = item?.event_date
-    ? new Date(item.event_date).toISOString().split("T")[0]
+  const eventDateStr = item?.eventDate
+    ? new Date(item.eventDate).toISOString().split("T")[0]
     : "";
 
   return (
@@ -42,7 +42,7 @@ function CategoryCard({ slug, label }: { slug: string; label: string }) {
             {item?.title ?? label}
           </h3>
           <time className="text-left text-[10px] text-hmc-text-muted">
-            {item ? `Date: ${eventDateStr}` : "No upcoming events"}
+            {item ? `Date: ${eventDateStr}` : "No scheduled events"}
           </time>
           <div className="aspect-[4/3] w-full overflow-hidden bg-hmc-placeholder relative">
             <Image

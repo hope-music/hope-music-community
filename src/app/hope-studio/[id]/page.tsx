@@ -44,7 +44,7 @@ const DEFAULT_ITEMS: Record<string, ContentItem> = {
       
       <div style="margin-top: 2.5rem;">
         <h3 style="font-size: 1.25rem; font-weight: 600; color: #e85d04; margin-bottom: 1rem;">Musical Shows</h3>
-        <p style="margin-bottom: 1rem;"><strong>Shangri-La</strong>, an upcoming musical produced by Hope Studio, is set to be a landmark work in the genre. It features an immersive soundscape that seamlessly blends traditional orchestral music with modern electronic music, offering audiences a truly refreshing experience. Complementing the music, AI-powered VR visuals deliver a breathtaking feast for the eyes.</p>
+        <p style="margin-bottom: 1rem;"><strong>Shangri-La</strong>, a musical produced by Hope Studio, is set to be a landmark work in the genre. It features an immersive soundscape that seamlessly blends traditional orchestral music with modern electronic music, offering audiences a truly refreshing experience. Complementing the music, AI-powered VR visuals deliver a breathtaking feast for the eyes.</p>
       </div>
       
       <div style="margin-top: 2rem;">

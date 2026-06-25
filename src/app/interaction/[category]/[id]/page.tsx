@@ -366,6 +366,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
   }
 
   return (
+    <>
     <main className="min-h-screen bg-gray-100">
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="flex gap-6">
@@ -559,5 +560,6 @@ export default function InteractionDetailPage({ params }: PageProps) {
       </div>
     </main>
     <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(true)} initialMode="register" />
+    </>
   );
 }

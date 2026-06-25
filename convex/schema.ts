@@ -64,11 +64,6 @@ export default defineSchema(
       category: v.optional(v.string()),
       city: v.optional(v.string()),
       mediaLinks: v.optional(v.array(v.string())),
-      status: v.optional(v.union(
-        v.literal("draft"),
-        v.literal("upcoming"),
-        v.literal("past")
-      )),
       eventDate: v.optional(v.number()),
       eventTime: v.optional(v.string()),
       isFeatured: v.optional(v.boolean()),
@@ -114,11 +109,6 @@ export default defineSchema(
       authorName: v.optional(v.string()),
       category: v.string(),
       eventDate: v.optional(v.number()),
-      status: v.optional(v.union(
-        v.literal("upcoming"),
-        v.literal("past"),
-        v.literal("draft")
-      )),
       isPublished: v.optional(v.boolean()),
       isFeatured: v.optional(v.boolean()),
       createdAt: v.optional(v.number()),

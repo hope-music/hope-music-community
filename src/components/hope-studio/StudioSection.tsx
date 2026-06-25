@@ -19,7 +19,7 @@ export const DEFAULT_STUDIO_DATA: StudioData = {
   subtitle: "Music dream we create!",
   introText: "Hope Studio is an entertainment studio specializing in musical performance, innovative tourism entertainment, and multimedia production — founded by Jesse Liu.",
   musicalShowsTitle: "Musical Shows",
-  musicalShowsContent: `Shangri-La, an upcoming musical produced by Hope Studio, is set to be a landmark work in the genre. It features an immersive soundscape that seamlessly blends traditional orchestral music with modern electronic music, offering audiences a truly refreshing experience. Complementing the music, AI-powered VR visuals deliver a breathtaking feast for the eyes.`,
+  musicalShowsContent: `Shangri-La, a musical produced by Hope Studio, is set to be a landmark work in the genre. It features an immersive soundscape that seamlessly blends traditional orchestral music with modern electronic music, offering audiences a truly refreshing experience. Complementing the music, AI-powered VR visuals deliver a breathtaking feast for the eyes.`,
   multimediaTitle: "Multimedia Production",
   multimediaContent: "Hope Studio pioneers innovative forms of tourism entertainment through immersive environments that integrate video, lighting, architecture, sound, and special effects to create remarkable visitor experiences.",
   image1: "/images/hope-studio/Hope Studio 1.png",
