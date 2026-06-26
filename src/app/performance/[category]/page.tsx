@@ -5,6 +5,7 @@ import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { PERFORMANCE_CATEGORY_OPTIONS, GLOBAL_CITY_GROUPS } from "@/lib/constants";
 import { useQuery, api } from "@/lib/convex";
+import { DateRangePicker } from "@/components/ui/DateRangePicker";
 
 interface Production {
   _id: string;
@@ -46,12 +47,9 @@ interface FilterGroup {
   options: FilterOption[];
 }
 
-type TimeFilter = "all" | "week" | "month";
 type CountryScope = "United States" | "International";
 
 const ITEMS_PER_PAGE = 20;
-const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
-const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
 function utcDateStr(ts: number): string {
   const d = new Date(ts);
@@ -65,33 +63,61 @@ function normalizeCity(city: string | undefined): string {
   return (city ?? "").trim().toLowerCase();
 }
 
-function matchesTime(eventDate: number | undefined, filter: TimeFilter): boolean {
+function matchesDateRange(eventDate: number | undefined, start: string, end: string): boolean {
   if (!eventDate) return false;
 
   const now = Date.now();
   const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-
   if (eventDate < thirtyDaysAgo) return false;
 
-  if (filter === "all") return true;
+  // If no date range is selected, show all
+  if (!start && !end) return true;
 
-  const maxMs = filter === "week" ? ONE_WEEK_MS : ONE_MONTH_MS;
-  return eventDate - now <= maxMs;
+  const eventDay = new Date(eventDate);
+  eventDay.setHours(0, 0, 0, 0);
+
+  if (start) {
+    const startDay = new Date(start);
+    startDay.setHours(0, 0, 0, 0);
+    if (eventDay < startDay) return false;
+  }
+
+  if (end) {
+    const endDay = new Date(end);
+    endDay.setHours(23, 59, 59, 999);
+    if (eventDay > endDay) return false;
+  }
+
+  return true;
 }
 
-function matchesTimeStr(eventDate: string | null, filter: TimeFilter): boolean {
+function matchesDateRangeStr(eventDate: string | null, start: string, end: string): boolean {
   if (!eventDate) return false;
 
   const eventTs = new Date(eventDate).getTime();
   const now = Date.now();
   const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-
   if (eventTs < thirtyDaysAgo) return false;
 
-  if (filter === "all") return true;
+  // If no date range is selected, show all
+  if (!start && !end) return true;
 
-  const maxMs = filter === "week" ? ONE_WEEK_MS : ONE_MONTH_MS;
-  return eventTs - now <= maxMs;
+  const eventDay = new Date(eventDate);
+  eventDay.setHours(0, 0, 0, 0);
+
+  if (start) {
+    const startDay = new Date(start);
+    startDay.setHours(0, 0, 0, 0);
+    if (eventDay < startDay) return false;
+  }
+
+  if (end) {
+    const endDay = new Date(end);
+    endDay.setHours(23, 59, 59, 999);
+    if (eventDay > endDay) return false;
+  }
+
+  return true;
 }
 
 function regionTabClass(active: boolean, region: CountryScope): string {
@@ -114,7 +140,7 @@ export default function PerformanceCategoryPage() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCity, setSelectedCity] = useState("all");
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
+  const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
   const [countryScope, setCountryScope] = useState<CountryScope>("United States");
   const [subRegion, setSubRegion] = useState<string>("all");
   const router = useRouter();
@@ -198,7 +224,7 @@ export default function PerformanceCategoryPage() {
   useEffect(() => {
     setCurrentPage(1);
     setSelectedCity("all");
-    setTimeFilter("all");
+    setDateRange({ start: "", end: "" });
     setCountryScope("United States");
   }, [category]);
 
@@ -242,7 +268,7 @@ export default function PerformanceCategoryPage() {
   const filteredItems = useMemo(() => {
     const result = allProductions.filter((item) => {
       const cityOk = normActive === "all" || normalizeCity(item.city) === normActive;
-      const timeOk = matchesTime(item.eventDate, timeFilter);
+      const timeOk = matchesDateRange(item.eventDate, dateRange.start, dateRange.end);
       const regionOk = !isOpera || countryScope === "all" ||
         (countryScope === "United States" && item.countryScope === "United States") ||
         (countryScope === "International" && item.countryScope === "International");
@@ -254,11 +280,11 @@ export default function PerformanceCategoryPage() {
       const dateB = b.eventDate ? utcDateStr(b.eventDate) : "9999-99-99";
       return dateA.localeCompare(dateB);
     });
-  }, [allProductions, normActive, timeFilter, countryScope, isOpera]);
+  }, [allProductions, normActive, dateRange, countryScope, isOpera]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [selectedCity, timeFilter, countryScope]);
+  }, [selectedCity, dateRange, countryScope]);
 
   const formatDt = (ts: number) => {
     const d = new Date(ts);
@@ -422,7 +448,7 @@ export default function PerformanceCategoryPage() {
                   router.push(`/performance/${e.target.value}`);
                 }
               }}
-              className="h-10 border border-gray-300 bg-white py-2 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer clip-tab"
+              className="h-10 border border-gray-300 bg-white py-2 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer"
             >
               <option value="opera">Opera</option>
               <option value="musical">Musical</option>
@@ -446,7 +472,7 @@ export default function PerformanceCategoryPage() {
             <select
               value={selectedCity}
               onChange={(e) => setSelectedCity(e.target.value)}
-              className="h-10 border border-gray-300 bg-white py-2 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer clip-tab"
+              className="h-10 border border-gray-300 bg-white py-2 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer"
             >
               <option value="all">All cities</option>
               {cityOptionGroups.map((g) => (
@@ -478,28 +504,35 @@ export default function PerformanceCategoryPage() {
             />
           )}
 
-          {/* Time dropdown - clip-tab style */}
-          <div className="relative">
-            <select
-              value={timeFilter}
-              onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
-              className="h-10 border border-gray-300 bg-white py-2 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer clip-tab"
-            >
-              <option value="all">All Dates</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-            </select>
-            <div className="pointer-events-none absolute inset-y-0 right-0 right-3 flex items-center">
-              <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </svg>
-            </div>
-          </div>
+          {/* Date range picker */}
+          <DateRangePicker
+            startDate={dateRange.start}
+            endDate={dateRange.end}
+            onStartDateChange={(date) => setDateRange((prev) => ({ ...prev, start: date }))}
+            onEndDateChange={(date) => setDateRange((prev) => ({ ...prev, end: date }))}
+          />
 
-          {/* This Weekend pill */}
+          {/* This Weekend quick button */}
           <button
-            onClick={() => setTimeFilter(timeFilter === "week" ? "all" : "week")}
-            className={"h-10 rounded-full px-5 py-2 text-sm font-medium transition-colors flex items-center gap-2 " + (timeFilter === "week" ? "bg-hmc-orange text-white border border-hmc-orange" : "bg-white text-gray-700 border border-gray-300 hover:border-gray-400")}
+            onClick={() => {
+              const today = new Date();
+              const day = today.getDay();
+              const diffToSaturday = day === 6 ? 0 : day === 0 ? -1 : 6 - day;
+              const saturday = new Date(today);
+              saturday.setDate(today.getDate() + diffToSaturday);
+              saturday.setHours(0, 0, 0, 0);
+              const sunday = new Date(saturday);
+              sunday.setDate(saturday.getDate() + 1);
+              sunday.setHours(23, 59, 59, 999);
+              const satStr = saturday.toISOString().split("T")[0];
+              const sunStr = sunday.toISOString().split("T")[0];
+              if (dateRange.start === satStr && dateRange.end === sunStr) {
+                setDateRange({ start: "", end: "" });
+              } else {
+                setDateRange({ start: satStr, end: sunStr });
+              }
+            }}
+            className={"h-10 rounded-full px-5 py-2 text-sm font-medium transition-colors flex items-center gap-2 border " + (dateRange.start && dateRange.end ? "bg-hmc-orange text-white border-hmc-orange" : "bg-white text-gray-700 border-gray-300 hover:border-gray-400")}
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
