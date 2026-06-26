@@ -427,7 +427,7 @@ export default function PerformanceCategoryPage() {
 
       {/* Filters */}
       <div className="mx-auto max-w-6xl px-4 pb-4">
-        <div className="rounded-2xl border border-hmc-orange/15 bg-[#FFF7F3] p-4 shadow-sm">
+        <div className="rounded-2xl border border-hmc-orange/15 p-4 shadow-sm">
           {/* Region tabs */}
           <div className="mb-4 flex items-center gap-2">
             {(["United States", "International"] as CountryScope[]).map((scope) => (

@@ -4,8 +4,9 @@ import Image from "next/image";
 import { CategoryBox } from "@/components/ui/CategoryBox";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { useQuery, useMutation, api } from "@/lib/convex";
+import { useQuery, api } from "@/lib/convex";
 import { PERFORMANCE_CATEGORIES, PERFORMANCE_CATEGORY_OPTIONS, CATEGORY_FALLBACK_IMAGES } from "@/lib/constants";
+import { useEffect, useState } from "react";
 
 interface CategoryData {
   title: string;
@@ -14,16 +15,86 @@ interface CategoryData {
   eventDate: number | null;
 }
 
+interface OperaEvent {
+  ticketmaster_id: string;
+  title: string;
+  event_date: string | null;
+  image_url: string | null;
+  venue: string | null;
+  city: string | null;
+  ticket_url: string | null;
+}
+
 function CategoryCard({ slug, label }: { slug: string; label: string }) {
-  const latest = useQuery(api.admin.getLatestStageProduction, { category: slug });
+  const isOpera = slug === "opera";
+
+  const convexLatest = useQuery(
+    isOpera ? "dummy" : api.admin.getLatestStageProduction,
+    isOpera ? {} : { category: slug }
+  ) as CategoryData | null | undefined;
+
   const counts = useQuery(api.admin.getStageProductionsCount);
 
-  const item: CategoryData | null = latest ?? null;
-  const total = counts?.[slug] ?? 0;
+  const [operaLatest, setOperaLatest] = useState<OperaEvent | null>(null);
+  const [operaLoading, setOperaLoading] = useState(isOpera);
+
+  useEffect(() => {
+    if (!isOpera) return;
+
+    async function fetchOperaLatest() {
+      setOperaLoading(true);
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+          setOperaLatest(null);
+          return;
+        }
+
+        const { createClient } = await import("@supabase/supabase-js");
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const { data, error } = await supabase
+          .from("opera_events")
+          .select("*")
+          .order("event_date", { ascending: true })
+          .limit(1);
+
+        if (error) {
+          console.error("Failed to fetch opera latest:", error);
+          setOperaLatest(null);
+        } else {
+          setOperaLatest(data && data.length > 0 ? data[0] : null);
+        }
+      } catch (err) {
+        console.error("Failed to fetch opera latest:", err);
+        setOperaLatest(null);
+      } finally {
+        setOperaLoading(false);
+      }
+    }
+
+    fetchOperaLatest();
+  }, [isOpera]);
+
+  const item: CategoryData | null = isOpera
+    ? operaLatest
+      ? {
+          title: operaLatest.title,
+          coverImage: operaLatest.image_url || "",
+          url: operaLatest.ticket_url || "/opera",
+          eventDate: operaLatest.event_date ? new Date(operaLatest.event_date).getTime() : null,
+        }
+      : null
+    : convexLatest ?? null;
+
+  const loading = isOpera ? operaLoading : convexLatest === undefined;
+  const total = isOpera ? (operaLatest ? "?" : 0) : (counts?.[slug] ?? 0);
 
   const fallbackImage = CATEGORY_FALLBACK_IMAGES[slug] || CATEGORY_FALLBACK_IMAGES["Other"];
   const imageSrc = item?.coverImage?.startsWith("http") ? item.coverImage : fallbackImage;
-  const clickHref = item?.url || `/performance/${slug}`;
+  const clickHref = item?.url || (isOpera ? "/opera" : `/performance/${slug}`);
 
   const eventDateStr = item?.eventDate
     ? new Date(item.eventDate).toISOString().split("T")[0]
@@ -39,31 +110,37 @@ function CategoryCard({ slug, label }: { slug: string; label: string }) {
           className="flex flex-1 cursor-pointer flex-col gap-2 border border-hmc-placeholder-border border-b-0 bg-white p-2 transition-opacity duration-200 hover:opacity-80"
         >
           <h3 className="line-clamp-3 text-left text-xs font-semibold leading-snug text-hmc-text min-h-[2.5rem]">
-            {item?.title ?? label}
+            {loading ? "Loading..." : (item?.title ?? label)}
           </h3>
           <time className="text-left text-[10px] text-hmc-text-muted">
-            {item ? `Date: ${eventDateStr}` : "No scheduled events"}
+            {loading ? "" : (item ? `Date: ${eventDateStr}` : "No scheduled events")}
           </time>
           <div className="aspect-[4/3] w-full overflow-hidden bg-hmc-placeholder relative">
-            <Image
-              src={imageSrc}
-              alt={item?.title ?? "Performance thumbnail"}
-              width={500}
-              height={375}
-              className="h-full w-full object-cover"
-              unoptimized={true}
-            />
+            {loading ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-hmc-orange"></div>
+              </div>
+            ) : (
+              <Image
+                src={imageSrc}
+                alt={item?.title ?? "Performance thumbnail"}
+                width={500}
+                height={375}
+                className="h-full w-full object-cover"
+                unoptimized={true}
+              />
+            )}
           </div>
         </a>
 
         <div className="flex w-full justify-center border border-hmc-placeholder-border bg-white">
           <a
-            href={`/performance/${slug}`}
+            href={isOpera ? "/opera" : `/performance/${slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-1 rounded bg-hmc-orange px-3 py-1.5 text-center text-xs font-medium text-white hover:bg-hmc-orange/90 transition-colors"
           >
-            View More {total > 0 && `(${total})`}
+            {loading ? "Loading..." : `View More ${total > 0 ? `(${total})` : ""}`}
           </a>
         </div>
       </article>
