@@ -269,11 +269,12 @@ export default function OperaPage() {
   );
 
   const HEADER = (
-    <div className="border-b border-t border-hmc-orange">
+    <div className="border-t-2 border-hmc-orange">
       <div className="mx-auto max-w-6xl px-4 py-6 text-center">
         <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">OPERA</h1>
       </div>
-      <div className="mx-auto max-w-6xl px-4 pb-4 text-center">
+      <div className="border-b-2 border-hmc-orange" />
+      <div className="mx-auto max-w-6xl px-4 pt-4 text-center">
         <p className="text-xs text-gray-400">
           Notice: This is a free informational guide only — we do not sell tickets. Schedules may not reflect real-time changes. For tickets and latest updates, visit Ticketmaster.
         </p>
@@ -317,11 +318,6 @@ export default function OperaPage() {
   return (
     <main className="min-h-screen bg-white">
       {HEADER}
-      <div className="mx-auto max-w-6xl px-4 py-2 text-center">
-        <p className="text-xs text-gray-400">
-          Notice: This is a free informational guide only — we do not sell tickets. Schedules may not reflect real-time changes. For tickets and latest updates, visit Ticketmaster.
-        </p>
-      </div>
 
       {/* Filters */}
       <div className="mx-auto max-w-6xl px-4 pb-4">
