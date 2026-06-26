@@ -116,7 +116,7 @@ export function MainNav() {
 
 const PERFORMANCE_ITEMS = [
   { label: "Musical", slug: "musical" },
-  { label: "Opera", slug: "opera" },
+  { label: "Opera", slug: "opera", href: "/opera" },
   { label: "Classical", slug: "classical" },
   { label: "Music", slug: "music" },
   { label: "Electronic", slug: "electronic" },
@@ -178,7 +178,7 @@ function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolea
         {PERFORMANCE_ITEMS.map((item) => (
           <Link
             key={item.slug || "featured"}
-            href={item.isFeatured ? "/performance" : `/performance/${item.slug}`}
+            href={item.href || (item.isFeatured ? "/performance" : `/performance/${item.slug}`)}
             target="_blank"
             rel="noopener noreferrer"
             className={`flex items-center px-5 py-3 text-[13px] font-medium transition-colors duration-150 ${

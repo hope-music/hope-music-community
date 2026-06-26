@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 interface OperaEvent {
   _id: string;
@@ -44,11 +45,11 @@ function matchesTime(eventDate: string | null, filter: TimeFilter): boolean {
 }
 
 function regionTabClass(active: boolean): string {
-  const base = "rounded-full px-5 py-2 text-sm font-medium transition-colors border";
+  const base = "px-5 py-2 text-sm font-medium transition-colors border bg-white clip-tab";
   if (active) {
-    return base + " border-hmc-orange text-hmc-orange bg-white";
+    return base + " border-hmc-orange text-hmc-orange";
   }
-  return base + " border-gray-300 text-gray-700 bg-white hover:border-gray-400";
+  return base + " border-gray-300 text-gray-700 hover:border-gray-400";
 }
 
 export default function OperaPage() {
@@ -59,6 +60,7 @@ export default function OperaPage() {
   const [allEvents, setAllEvents] = useState<OperaEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     async function fetchEvents() {
@@ -257,12 +259,22 @@ export default function OperaPage() {
     <div className="border-b border-t border-hmc-orange">
       <div className="mx-auto max-w-6xl px-4 py-6 text-center">
         <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">OPERA</h1>
-        <p className="mt-1 text-sm text-gray-500">
-          {allEvents ? `${allEvents.length} events worldwide` : "Loading..."}
+      </div>
+      <div className="mx-auto max-w-6xl px-4 pb-4 text-center">
+        <p className="text-xs text-gray-400">
+          Notice: This is a free informational guide only — we do not sell tickets. Schedules may not reflect real-time changes. For tickets and latest updates, visit Ticketmaster.
         </p>
+      </div>
+      <div className="mx-auto max-w-6xl px-4 pb-4">
+        <div className="border-l-4 border-hmc-orange pl-3">
+          <span className="text-sm font-semibold text-gray-700">Opera Events</span>
+          <span className="ml-2 text-sm text-gray-500">{allEvents ? allEvents.length : 0}</span>
+        </div>
       </div>
     </div>
   );
+
+  const [subRegion, setSubRegion] = useState<string>("all");
 
   if (loading) {
     return (
@@ -292,82 +304,116 @@ export default function OperaPage() {
   return (
     <main className="min-h-screen bg-white">
       {HEADER}
+      <div className="mx-auto max-w-6xl px-4 py-2 text-center">
+        <p className="text-xs text-gray-400">
+          Notice: This is a free informational guide only — we do not sell tickets. Schedules may not reflect real-time changes. For tickets and latest updates, visit Ticketmaster.
+        </p>
+      </div>
 
       {/* Filters */}
       <div className="mx-auto max-w-6xl px-4 pb-4">
-        <div className="rounded-2xl border border-hmc-orange/15 p-4 shadow-sm">
+        {/* All filters in one row */}
+        <div className="flex flex-wrap items-center gap-2">
           {/* Region tabs */}
-          <div className="mb-4 flex items-center gap-2">
-            {(["all", "US", "international"] as CountryScope[]).map((scope) => (
-              <button
-                key={scope}
-                onClick={() => setCountryScope(scope)}
-                className={regionTabClass(countryScope === scope)}
-              >
-                {scope === "all" ? "All Regions" : scope === "US" ? "United States" : "International"}
-              </button>
-            ))}
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
-            {/* Country dropdown */}
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-4 left-3.5 flex items-center">
-                <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <select
-                value={selectedCountry}
-                onChange={(e) => setSelectedCountry(e.target.value)}
-                className="h-10 rounded-full border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer"
-              >
-                <option value="all">All countries</option>
-                {availableCountries.map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 right-3 flex items-center">
-                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-
-            {/* Time dropdown */}
-            <div className="relative">
-              <div className="pointer-events-none absolute inset-y-0 left-4 left-3.5 flex items-center">
-                <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
-              <select
-                value={timeFilter}
-                onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
-                className="h-10 rounded-full border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer"
-              >
-                <option value="all">All Dates</option>
-                <option value="week">This Week</option>
-                <option value="month">This Month</option>
-              </select>
-              <div className="pointer-events-none absolute inset-y-0 right-0 right-3 flex items-center">
-                <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
-
-            {/* This Weekend pill */}
+          {(["all", "US", "international"] as CountryScope[]).map((scope) => (
             <button
-              onClick={() => setTimeFilter(timeFilter === "week" ? "all" : "week")}
-              className={"h-10 rounded-full px-5 py-2 text-sm font-medium transition-colors flex items-center gap-2 " + (timeFilter === "week" ? "bg-hmc-orange text-white border border-hmc-orange" : "bg-white text-gray-700 border border-gray-300 hover:border-gray-400")}
+              key={scope}
+              onClick={() => {
+                setCountryScope(scope);
+                setSubRegion("all");
+              }}
+              className={regionTabClass(countryScope === scope)}
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
-              </svg>
-              This Weekend
+              {scope === "all" ? "All Regions" : scope === "US" ? "United States" : "International"}
             </button>
+          ))}
+
+          {/* Category dropdown - right after International tab */}
+          <div className="relative">
+            <select
+              value={router.pathname.includes("opera") ? "opera" : router.pathname.includes("musical") ? "musical" : router.pathname.includes("classical") ? "classical" : router.pathname.includes("dance") ? "dance" : router.pathname.includes("music") ? "music" : router.pathname.includes("electronic") ? "electronic" : router.pathname.includes("pop-rock") ? "pop-rock" : router.pathname.includes("performance-art") ? "performance-art" : "other"}
+              onChange={(e) => {
+                if (e.target.value) {
+                  router.push(`/performance/${e.target.value}`);
+                }
+              }}
+              className="h-10 border border-gray-300 bg-white py-2 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer clip-tab"
+            >
+              <option value="opera">Opera</option>
+              <option value="musical">Musical</option>
+              <option value="classical">Classical</option>
+              <option value="music">Music</option>
+              <option value="electronic">Electronic</option>
+              <option value="pop-rock">Pop & Rock</option>
+              <option value="performance-art">Performance Art</option>
+              <option value="dance">Dance</option>
+              <option value="other">Other</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 right-3 flex items-center">
+              <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
           </div>
+          {/* Country dropdown with input support */}
+          <div className="relative">
+            <select
+              value={selectedCountry}
+              onChange={(e) => setSelectedCountry(e.target.value)}
+              className="h-10 border border-gray-300 bg-white py-2 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer clip-tab"
+            >
+              <option value="all">All countries</option>
+              {availableCountries.map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+              <option value="__custom__">+ Enter custom country...</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 right-3 flex items-center">
+              <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+          {/* Custom country input */}
+          {selectedCountry === "__custom__" && (
+            <input
+              type="text"
+              value=""
+              onChange={(e) => setSelectedCountry(e.target.value)}
+              placeholder="Type country name..."
+              className="h-10 w-36 border border-gray-300 bg-white py-2 pl-4 pr-4 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 clip-tab"
+              autoFocus
+            />
+          )}
+
+          {/* Time dropdown - clip-tab style */}
+          <div className="relative">
+            <select
+              value={timeFilter}
+              onChange={(e) => setTimeFilter(e.target.value as TimeFilter)}
+              className="h-10 border border-gray-300 bg-white py-2 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer clip-tab"
+            >
+              <option value="all">All Dates</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
+            <div className="pointer-events-none absolute inset-y-0 right-0 right-3 flex items-center">
+              <svg className="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </div>
+          </div>
+
+          {/* This Weekend pill */}
+          <button
+            onClick={() => setTimeFilter(timeFilter === "week" ? "all" : "week")}
+            className={"h-10 rounded-full px-5 py-2 text-sm font-medium transition-colors flex items-center gap-2 " + (timeFilter === "week" ? "bg-hmc-orange text-white border border-hmc-orange" : "bg-white text-gray-700 border border-gray-300 hover:border-gray-400")}
+          >
+            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+            </svg>
+            This Weekend
+          </button>
         </div>
       </div>
 

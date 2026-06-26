@@ -53,3 +53,11 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+.clip-tab {
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+
+.clip-tab-active {
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
