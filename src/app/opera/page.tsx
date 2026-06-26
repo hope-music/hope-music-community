@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { DateRangePicker } from "@/components/ui/DateRangePicker";
 
 interface OperaEvent {
@@ -65,6 +65,7 @@ function regionTabClass(active: boolean): string {
 }
 
 export default function OperaPage() {
+  const pathname = usePathname();
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCountry, setSelectedCountry] = useState("all");
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
@@ -343,7 +344,7 @@ export default function OperaPage() {
           {/* Category dropdown - right after International tab */}
           <div className="relative">
             <select
-              value={router.pathname.includes("opera") ? "opera" : router.pathname.includes("musical") ? "musical" : router.pathname.includes("classical") ? "classical" : router.pathname.includes("dance") ? "dance" : router.pathname.includes("music") ? "music" : router.pathname.includes("electronic") ? "electronic" : router.pathname.includes("pop-rock") ? "pop-rock" : router.pathname.includes("performance-art") ? "performance-art" : "other"}
+              value={pathname && pathname.includes("opera") ? "opera" : pathname && pathname.includes("musical") ? "musical" : pathname && pathname.includes("classical") ? "classical" : pathname && pathname.includes("dance") ? "dance" : pathname && pathname.includes("music") ? "music" : pathname && pathname.includes("electronic") ? "electronic" : pathname && pathname.includes("pop-rock") ? "pop-rock" : pathname && pathname.includes("performance-art") ? "performance-art" : "other"}
               onChange={(e) => {
                 if (e.target.value) {
                   router.push(`/performance/${e.target.value}`);
