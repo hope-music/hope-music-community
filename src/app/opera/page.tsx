@@ -57,11 +57,11 @@ function matchesDateRange(eventDate: string | null, start: string, end: string):
 }
 
 function regionTabClass(active: boolean): string {
-  const base = "px-5 py-2 text-sm font-medium transition-colors border bg-white clip-tab";
+  const base = "px-5 py-2 text-sm font-medium transition-colors rounded";
   if (active) {
-    return base + " border-hmc-orange text-hmc-orange";
+    return base + " bg-hmc-orange/10 text-hmc-orange";
   }
-  return base + " border-gray-300 text-gray-700 hover:border-gray-400";
+  return base + " bg-gray-100 text-gray-600 hover:bg-gray-200";
 }
 
 export default function OperaPage() {
@@ -328,7 +328,7 @@ export default function OperaPage() {
         {/* All filters in one row */}
         <div className="flex flex-wrap items-center gap-2">
           {/* Region tabs */}
-          {(["all", "US", "international"] as CountryScope[]).map((scope) => (
+          {(["US", "international"] as CountryScope[]).map((scope) => (
             <button
               key={scope}
               onClick={() => {
@@ -337,7 +337,7 @@ export default function OperaPage() {
               }}
               className={regionTabClass(countryScope === scope)}
             >
-              {scope === "all" ? "All Regions" : scope === "US" ? "United States" : "International"}
+              {scope === "US" ? "United States" : "International"}
             </button>
           ))}
 
@@ -350,7 +350,7 @@ export default function OperaPage() {
                   router.push(`/performance/${e.target.value}`);
                 }
               }}
-              className="h-10 border border-gray-300 bg-white py-2 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer clip-tab"
+              className="h-10 border border-gray-300 bg-white py-2 pl-4 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer rounded"
             >
               <option value="opera">Opera</option>
               <option value="musical">Musical</option>
@@ -394,7 +394,7 @@ export default function OperaPage() {
               value=""
               onChange={(e) => setSelectedCountry(e.target.value)}
               placeholder="Type country name..."
-              className="h-10 w-36 border border-gray-300 bg-white py-2 pl-4 pr-4 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 clip-tab"
+              className="h-10 w-36 border border-gray-300 bg-white py-2 pl-4 pr-4 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 rounded"
               autoFocus
             />
           )}

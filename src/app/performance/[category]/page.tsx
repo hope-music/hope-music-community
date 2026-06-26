@@ -120,16 +120,12 @@ function matchesDateRangeStr(eventDate: string | null, start: string, end: strin
   return true;
 }
 
-function regionTabClass(active: boolean, region: CountryScope): string {
-  const base = "px-5 py-2 text-sm font-medium transition-colors bg-white clip-tab";
-  if (region === "United States") {
-    return active
-      ? base + " text-hmc-orange"
-      : base + " text-gray-700";
+function regionTabClass(active: boolean): string {
+  const base = "px-5 py-2 text-sm font-medium transition-colors rounded";
+  if (active) {
+    return base + " bg-hmc-orange/10 text-hmc-orange";
   }
-  return active
-    ? base + " text-hmc-orange"
-    : base + " text-gray-700";
+  return base + " bg-gray-100 text-gray-600 hover:bg-gray-200";
 }
 
 export default function PerformanceCategoryPage() {
@@ -433,7 +429,7 @@ export default function PerformanceCategoryPage() {
                 setCountryScope(scope);
                 setSubRegion("all");
               }}
-              className={regionTabClass(countryScope === scope, scope)}
+              className={regionTabClass(countryScope === scope)}
             >
               {scope}
             </button>
@@ -499,7 +495,7 @@ export default function PerformanceCategoryPage() {
               value=""
               onChange={(e) => setSelectedCity(e.target.value)}
               placeholder="Type city name..."
-              className="h-10 w-32 border border-gray-300 bg-white py-2 pl-4 pr-4 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 clip-tab"
+              className="h-10 w-32 border border-gray-300 bg-white py-2 pl-4 pr-4 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 rounded"
               autoFocus
             />
           )}
