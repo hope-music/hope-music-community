@@ -1,194 +1,174 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { PERFORMANCE_CATEGORY_OPTIONS, GLOBAL_CITY_GROUPS } from "@/lib/constants";
-import { useQuery, useMutation, api } from "@/lib/convex";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { PERFORMANCE_CATEGORY_OPTIONS } from "@/lib/constants";
 
-// ── Helpers ────────────────────────────────────────────────────────────────────
-function formatDate(timestamp?: number): string {
-  if (!timestamp) return "";
-  return new Date(timestamp).toLocaleDateString();
+const CATEGORIES = [
+  { value: "opera", label: "Opera", icon: "🎭" },
+  { value: "musical", label: "Musical", icon: "🎬" },
+  { value: "classical", label: "Classical", icon: "🎻" },
+  { value: "music", label: "Music", icon: "🎵" },
+  { value: "dance", label: "Dance", icon: "💃" },
+  { value: "electronic", label: "Electronic", icon: "🎛️" },
+  { value: "pop-rock", label: "Pop & Rock", icon: "🎸" },
+  { value: "performance-art", label: "Performance Art", icon: "🎪" },
+  { value: "other", label: "Other", icon: "🌟" },
+];
+
+interface EventItem {
+  id: string;
+  ticketmaster_id: string;
+  title: string;
+  event_date: string | null;
+  event_time: string | null;
+  image_url: string | null;
+  venue: string | null;
+  city: string | null;
+  state: string | null;
+  country: string;
+  region: string;
+  price_min: number | null;
+  price_max: number | null;
+  currency: string;
+  ticket_url: string | null;
+  category: string;
 }
 
-function formatDateForInput(timestamp?: number): string {
-  if (!timestamp) return "";
-  const d = new Date(timestamp);
-  if (isNaN(d.getTime())) return "";
-  return d.toISOString().split("T")[0];
-}
+const PAGE_SIZE = 50;
 
-// ── Main Component ─────────────────────────────────────────────────────────────
-const PAGE_SIZE = 20;
+function formatDate(dateStr: string | null): string {
+  if (!dateStr) return "";
+  return new Date(dateStr).toLocaleDateString();
+}
 
 export default function StageProductionsPage() {
-  const adminEmail = typeof window !== "undefined" ? localStorage.getItem("user_email") || "" : "";
-  const convexList = useQuery(api.admin.listStageProductions, { callerEmail: adminEmail }) as any[] | undefined;
-  const loading = convexList === undefined;
-  const productions = convexList ?? [];
-  const totalCount = productions.length;
+  const [selectedCategory, setSelectedCategory] = useState("opera");
+  const [selectedRegion, setSelectedRegion] = useState<"US" | "international" | "all">("all");
+  const [events, setEvents] = useState<EventItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-  const [filters, setFilters] = useState({ category: "all", status: "all", city: "", page: 1 });
-  const updateFilter = (key: string, value: any) => {
-    setFilters((p) => ({ ...p, [key]: value, page: key === "page" ? (typeof value === "number" ? value : 1) : 1 }));
-  };
+  const fetchEvents = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-  const [filterCityCustom, setFilterCityCustom] = useState("");
-  const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [movingId, setMovingId] = useState<string | null>(null);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error("Supabase configuration missing");
+      }
 
-  // Form state
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [category, setCategory] = useState("musical");
-  const [eventDate, setEventDate] = useState("");
-  const [eventTime, setEventTime] = useState("");
-  const [itemCity, setItemCity] = useState("");
-  const [venueName, setVenueName] = useState("");
-  const [countryScope, setCountryScope] = useState<"United States" | "International">("United States");
-  const [url, setUrl] = useState("");
-  const [coverImage, setCoverImage] = useState("");
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const createProduction = useMutation(api.admin.createStageProduction);
-  const updateProduction = useMutation(api.admin.updateStageProduction);
-  const deleteProduction = useMutation(api.admin.deleteStageProduction);
+      const tableName = `${selectedCategory}_events`;
+      let query = supabase.from(tableName).select("*");
 
-  const [coverPreview, setCoverPreview] = useState<string | null>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
+      if (selectedRegion !== "all") {
+        query = query.eq("region", selectedRegion);
+      }
 
-  // Clear message after 5s
+      query = query.order("event_date", { ascending: true });
+
+      const { data, error: supabaseError } = await query;
+
+      if (supabaseError) throw supabaseError;
+      setEvents(data || []);
+      setCurrentPage(1);
+    } catch (err: any) {
+      console.error("Failed to fetch events:", err);
+      setError(err.message || "Failed to load events");
+      setEvents([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedCategory, selectedRegion]);
+
   useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => setMessage(null), 5000);
-      return () => clearTimeout(timer);
+    fetchEvents();
+  }, [fetchEvents]);
+
+  const filteredEvents = useMemo(() => {
+    if (!searchQuery.trim()) return events;
+    const q = searchQuery.toLowerCase();
+    return events.filter(
+      (e) =>
+        e.title?.toLowerCase().includes(q) ||
+        e.city?.toLowerCase().includes(q) ||
+        e.venue?.toLowerCase().includes(q) ||
+        e.country?.toLowerCase().includes(q)
+    );
+  }, [events, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredEvents.length / PAGE_SIZE));
+  const paginatedEvents = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredEvents.slice(start, start + PAGE_SIZE);
+  }, [filteredEvents, currentPage]);
+
+  const getCategoryCounts = async () => {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+    if (!supabaseUrl || !supabaseKey) return {};
+
+    const { createClient } = await import("@supabase/supabase-js");
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const counts: Record<string, number> = {};
+
+    for (const cat of CATEGORIES) {
+      const tableName = `${cat.value}_events`;
+      const { count } = await supabase.from(tableName).select("*", { count: "exact", head: true });
+      counts[cat.value] = count || 0;
     }
-  }, [message]);
-
-  // Handle cover image selection
-  const handleCoverSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type.startsWith("image/")) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const base64 = event.target?.result as string;
-        setCoverImage(base64);
-        setCoverPreview(base64);
-      };
-      reader.readAsDataURL(file);
-    }
-    if (coverInputRef.current) coverInputRef.current.value = "";
+    return counts;
   };
 
-  // Reset form for new item
-  const handleNew = () => {
-    setEditingId(null);
-    setTitle("");
-    setDescription("");
-    setCategory(filters.category || "musical");
-    setEventDate("");
-    setEventTime("");
-    setItemCity("");
-    setVenueName("");
-    setCountryScope("United States");
-    setUrl("");
-    setCoverImage("");
-    setCoverPreview(null);
-    setShowForm(true);
-  };
+  const [categoryCounts, setCategoryCounts] = useState<Record<string, number>>({});
 
-  // Load item data into form for editing
-  const handleEdit = (item: any) => {
-    setEditingId(item._id);
-    setTitle(item.title || "");
-    setDescription(item.description || "");
-    setCategory(item.category || filters.category);
-    const dateVal = formatDateForInput(item.eventDate);
-    setEventDate(dateVal);
-    setEventTime(dateVal && item.eventTime ? item.eventTime.slice(0, 5) : "");
-    setItemCity(item.city || "");
-    setVenueName("");
-    setUrl(item.url || "");
-    setCoverImage(item.coverImage || "");
-    setCoverPreview(item.coverImage || null);
-    setShowForm(true);
-  };
+  useEffect(() => {
+    getCategoryCounts().then(setCategoryCounts);
+  }, []);
 
-  // Save (create or update)
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim()) {
-      setMessage({ type: "error", text: "Title is required" });
+  const handleDelete = async (event: EventItem) => {
+    if (deleteConfirm !== event.ticketmaster_id) {
+      setDeleteConfirm(event.ticketmaster_id);
       return;
     }
 
-    const eventDateMs = eventDate
-      ? new Date(eventDate + "T" + (eventTime || "00:00:00")).getTime()
-      : null;
-
     try {
-      if (editingId) {
-        await updateProduction({
-          callerEmail: adminEmail,
-          id: editingId,
-          title: title.trim(),
-          description,
-          coverImage: coverImage || undefined,
-          url: url || undefined,
-          category,
-          eventDate: eventDateMs,
-          eventTime: eventTime || undefined,
-        });
-        setMessage({ type: "success", text: "Updated successfully!" });
-      } else {
-        await createProduction({
-          callerEmail: adminEmail,
-          title: title.trim(),
-          description,
-          coverImage: coverImage || undefined,
-          url: url || undefined,
-          category,
-          eventDate: eventDateMs,
-          eventTime: eventTime || undefined,
-        });
-        setMessage({ type: "success", text: "Created successfully!" });
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+      if (!supabaseUrl || !supabaseKey) {
+        throw new Error("Supabase configuration missing");
       }
-      setShowForm(false);
+
+      const { createClient } = await import("@supabase/supabase-js");
+      const supabase = createClient(supabaseUrl, supabaseKey);
+
+      const tableName = `${selectedCategory}_events`;
+      const { error: deleteError } = await supabase.from(tableName).delete().eq("ticketmaster_id", event.ticketmaster_id);
+
+      if (deleteError) throw deleteError;
+
+      setEvents((prev) => prev.filter((e) => e.ticketmaster_id !== event.ticketmaster_id));
+      setDeleteConfirm(null);
+
+      // Update count
+      setCategoryCounts((prev) => ({
+        ...prev,
+        [selectedCategory]: Math.max(0, (prev[selectedCategory] || 1) - 1),
+      }));
     } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "Failed to save" });
+      alert(`Failed to delete: ${err.message}`);
     }
   };
 
-  // Delete
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this item?")) return;
-    try {
-      await deleteProduction({ id, callerEmail: adminEmail });
-      setMessage({ type: "success", text: "Deleted" });
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "Failed to delete" });
-    }
-  };
-
-  // Move item to a different category
-  const handleMove = async (id: string, newCategory: string) => {
-    try {
-      await updateProduction({ id, category: newCategory, callerEmail: adminEmail });
-      setMovingId(null);
-      setMessage({ type: "success", text: "Moved successfully!" });
-    } catch (err: any) {
-      setMessage({ type: "error", text: err.message || "Failed to move" });
-    }
-  };
-
-  const getStatusBadge = (s: string) => {
-    return null;
-  };
-
-  const filteredProductions = productions.filter((item) => {
-    if (filters.category && item.category !== filters.category) return false;
-    return true;
-  });
+  const currentCatInfo = CATEGORIES.find((c) => c.value === selectedCategory);
 
   return (
     <div className="space-y-6">
@@ -197,344 +177,228 @@ export default function StageProductionsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Performance</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Manage performances ({totalCount} total)
+            Manage {currentCatInfo?.label || selectedCategory} events from Supabase
+            <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded">
+              {filteredEvents.length.toLocaleString()} events
+            </span>
           </p>
-          {loading && <span className="mt-2 block text-xs text-gray-400">Loading...</span>}
         </div>
         <button
-          onClick={handleNew}
-          className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+          onClick={fetchEvents}
+          disabled={loading}
+          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          + New Performance
+          {loading ? "Loading..." : "Refresh"}
         </button>
+      </div>
+
+      {/* Category Tabs */}
+      <div className="border-b border-gray-200">
+        <div className="flex gap-1 overflow-x-auto pb-2">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.value}
+              onClick={() => setSelectedCategory(cat.value)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                selectedCategory === cat.value
+                  ? "bg-blue-100 text-blue-700 border-b-2 border-blue-500"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              <span>{cat.icon}</span>
+              <span>{cat.label}</span>
+              {categoryCounts[cat.value] !== undefined && (
+                <span className="text-xs bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-full">
+                  {categoryCounts[cat.value].toLocaleString()}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4">
         <div>
-          <label className="mb-1 block text-xs text-gray-500">Category</label>
+          <label className="mb-1 block text-xs text-gray-500">Region</label>
           <select
-            value={filters.category}
-            onChange={(e) => updateFilter("category", e.target.value)}
+            value={selectedRegion}
+            onChange={(e) => setSelectedRegion(e.target.value as any)}
             className="rounded-md border border-gray-300 px-3 py-2 text-sm"
           >
-            <option value="all">All</option>
-            {PERFORMANCE_CATEGORY_OPTIONS.map((cat) => (
-              <option key={cat.value} value={cat.value}>
-                {cat.label}
-              </option>
-            ))}
+            <option value="all">All Regions</option>
+            <option value="US">United States</option>
+            <option value="international">International</option>
           </select>
         </div>
-        <div>
-          <label className="mb-1 block text-xs text-gray-500">City</label>
-          <select
-            value={filters.city}
-            onChange={(e) => updateFilter("city", e.target.value)}
-            className="rounded-md border border-gray-300 px-3 py-2 text-sm w-48"
-          >
-            <option value="">All cities</option>
-            {GLOBAL_CITY_GROUPS.map((group) => (
-              <optgroup key={group.label} label={group.label}>
-                {group.cities.map((city) => (
-                  <option key={city} value={city}>{city}</option>
-                ))}
-              </optgroup>
-            ))}
-            <optgroup label="Other">
-              <option value="__custom__">Other (type below)...</option>
-            </optgroup>
-          </select>
-          {filters.city === "__custom__" && (
-            <input
-              type="text"
-              value={filterCityCustom}
-              onChange={(e) => {
-                setFilterCityCustom(e.target.value);
-                updateFilter("city", e.target.value);
-              }}
-              onBlur={() => {
-                if (filterCityCustom.trim()) updateFilter("city", filterCityCustom.trim());
-              }}
-              placeholder="Type city name..."
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-1 text-sm"
-              autoFocus
-            />
-          )}
+        <div className="flex-1 min-w-[200px]">
+          <label className="mb-1 block text-xs text-gray-500">Search</label>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search title, city, venue..."
+            className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+          />
         </div>
         {/* Pagination */}
         <div className="ml-auto flex items-center gap-2">
           <span className="text-xs text-gray-500 whitespace-nowrap">
-            Page {filters.page} / {Math.max(1, Math.ceil(filteredProductions.length / PAGE_SIZE))}
+            Page {currentPage} / {totalPages}
           </span>
           <button
-            onClick={() => updateFilter("page", filters.page - 1)}
-            disabled={filters.page <= 1}
-            className="px-3 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+            disabled={currentPage <= 1}
+            className="px-3 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40"
           >
             Prev
           </button>
           <button
-            onClick={() => updateFilter("page", filters.page + 1)}
-            disabled={filters.page >= Math.ceil(filteredProductions.length / PAGE_SIZE)}
-            className="px-3 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+            disabled={currentPage >= totalPages}
+            className="px-3 py-1 text-xs rounded border border-gray-300 bg-white hover:bg-gray-50 disabled:opacity-40"
           >
             Next
           </button>
         </div>
       </div>
 
-      {/* Message */}
-      {message && (
-        <div className={`rounded-lg p-4 text-sm ${message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
-          {message.text}
-        </div>
+      {/* Error */}
+      {error && (
+        <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
       )}
 
-      {/* Form */}
-      {showForm && (
-        <div className="rounded-lg border border-gray-200 bg-white p-6">
-          <h2 className="mb-4 text-lg font-semibold">
-            {editingId ? "Edit" : "New"} Performance
-          </h2>
-          <form onSubmit={handleSave} className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Title</label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                  required
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Category</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                >
-                  {PERFORMANCE_CATEGORY_OPTIONS.map((cat) => (
-                    <option key={cat.value} value={cat.value}>{cat.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">City</label>
-                <input
-                  list="city-suggestions"
-                  type="text"
-                  value={itemCity}
-                  onChange={(e) => setItemCity(e.target.value)}
-                  placeholder="e.g. New York"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Venue</label>
-                <input
-                  type="text"
-                  value={venueName}
-                  onChange={(e) => setVenueName(e.target.value)}
-                  placeholder="e.g. Lincoln Center"
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Event Date</label>
-                <input
-                  type="date"
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Event Time</label>
-                <input
-                  type="time"
-                  value={eventTime}
-                  onChange={(e) => setEventTime(e.target.value)}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">Ticket URL</label>
-                <input
-                  type="url"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  placeholder="https://www.ticketmaster.com/..."
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-gray-700">Cover Image</label>
-                <input ref={coverInputRef} type="file" accept="image/*" onChange={handleCoverSelect} className="hidden" />
-                <button
-                  type="button"
-                  onClick={() => coverInputRef.current?.click()}
-                  className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm"
-                >
-                  Choose Cover Image
-                </button>
-                {coverPreview && (
-                  <div className="mt-2 flex items-center gap-4">
-                    <img src={coverPreview} alt="Preview" className="h-20 w-32 rounded-md object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => { setCoverImage(""); setCoverPreview(null); }}
-                      className="text-sm text-red-500 hover:text-red-700"
-                    >
-                      Remove
-                    </button>
-                  </div>
-                )}
-              </div>
-              <div className="md:col-span-2">
-                <label className="mb-1 block text-sm font-medium text-gray-700">Summary</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  rows={4}
-                  className="w-full rounded-md border border-gray-300 px-3 py-2"
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 border-t pt-4">
-              <button
-                type="button"
-                onClick={() => setShowForm(false)}
-                className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                className="rounded-md bg-blue-600 px-6 py-2 text-sm font-medium text-white hover:bg-blue-700"
-              >
-                {editingId ? "Update" : "Create"}
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
-
-      {/* Items List */}
+      {/* Events Table */}
       <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-        <div className="flex items-center justify-between px-4 py-3 bg-gray-50 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <span className="font-medium text-gray-900">
-              {PERFORMANCE_CATEGORY_OPTIONS.find(c => c.value === filters.category)?.label || filters.category}
-            </span>
-            <span className="text-sm text-gray-500">({totalCount})</span>
-          </div>
-        </div>
-
-        <div className="divide-y divide-gray-100">
-          {loading ? (
-            <div className="px-4 py-6 text-center text-gray-500 text-sm">Loading...</div>
-          ) : filteredProductions.length === 0 ? (
-            <div className="px-4 py-6 text-center text-gray-500 text-sm">
-              No performances in this category
-            </div>
-          ) : (
-            filteredProductions.map((item) => (
-              <div key={item._id} className="px-4 py-3 hover:bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    {item.coverImage && (
-                      <img
-                        src={item.coverImage}
-                        alt=""
-                        className="h-10 w-16 rounded object-cover shrink-0"
-                      />
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-gray-900 truncate">{item.title}</span>
-                      </div>
-                      {item.eventDate && (
-                        <span className="text-xs text-gray-400">{formatDate(item.eventDate)}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 ml-4">
-                    {movingId === item._id ? (
-                      <>
-                        <select
-                          value={item.category}
-                          onChange={(e) => { /* preview update */ }}
-                          className="rounded border border-gray-300 bg-white px-2 py-1 text-xs"
-                        >
-                          {PERFORMANCE_CATEGORY_OPTIONS.map((cat) => (
-                            <option key={cat.value} value={cat.value}>{cat.label}</option>
-                          ))}
-                        </select>
-                        <select
-                          id={`move-cat-${item._id}`}
-                          defaultValue={item.category}
-                          className="rounded border border-purple-300 bg-white px-2 py-1 text-xs focus:border-purple-500 focus:outline-none"
-                        >
-                          {PERFORMANCE_CATEGORY_OPTIONS
-                            .filter((c) => c.value !== item.category)
-                            .map((cat) => (
-                              <option key={cat.value} value={cat.value}>{cat.label}</option>
-                            ))}
-                        </select>
-                        <button
-                          onClick={() => {
-                            const sel = document.getElementById(`move-cat-${item._id}`) as HTMLSelectElement;
-                            if (sel) handleMove(item._id, sel.value);
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wide">
+                <th className="px-4 py-3 font-medium w-16">Image</th>
+                <th className="px-4 py-3 font-medium">Title</th>
+                <th className="px-4 py-3 font-medium">Date</th>
+                <th className="px-4 py-3 font-medium">Venue</th>
+                <th className="px-4 py-3 font-medium">City</th>
+                <th className="px-4 py-3 font-medium">Country</th>
+                <th className="px-4 py-3 font-medium">Region</th>
+                <th className="px-4 py-3 font-medium">Price</th>
+                <th className="px-4 py-3 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {loading ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                    Loading...
+                  </td>
+                </tr>
+              ) : paginatedEvents.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
+                    No events found
+                  </td>
+                </tr>
+              ) : (
+                paginatedEvents.map((event) => (
+                  <tr key={event.ticketmaster_id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2">
+                      {event.image_url ? (
+                        <img
+                          src={event.image_url}
+                          alt=""
+                          className="h-10 w-16 rounded object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
                           }}
-                          className="px-3 py-1 text-xs font-medium text-white bg-purple-600 hover:bg-purple-700 rounded"
+                        />
+                      ) : (
+                        <div className="h-10 w-16 rounded bg-gray-100 flex items-center justify-center text-xs text-gray-400">
+                          No img
+                        </div>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="font-medium text-gray-900 max-w-[200px] truncate">
+                        {event.title}
+                      </div>
+                      {event.ticket_url && (
+                        <a
+                          href={event.ticket_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs text-blue-600 hover:underline"
                         >
-                          Confirm
-                        </button>
-                        <button
-                          onClick={() => setMovingId(null)}
-                          className="px-3 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 rounded"
-                        >
-                          Cancel
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button
-                          onClick={() => setMovingId(item._id)}
-                          className="px-3 py-1 text-xs font-medium text-purple-600 hover:bg-purple-50 rounded"
-                          title="Move to different category"
-                        >
-                          Move
-                        </button>
-                        <button
-                          onClick={() => handleEdit(item)}
-                          className="px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(item._id)}
-                          className="px-3 py-1 text-xs font-medium text-red-600 hover:bg-red-50 rounded"
-                        >
-                          Delete
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-                {movingId === item._id && (
-                  <p className="mt-1 text-xs text-gray-400 pl-[calc(4rem+1rem)]">
-                    Current: <strong>{PERFORMANCE_CATEGORY_OPTIONS.find(c => c.value === item.category)?.label ?? item.category}</strong>
-                    {" "}— select a target category above to relocate this item.
-                  </p>
-                )}
-              </div>
-            ))
-          )}
+                          View Ticket →
+                        </a>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-gray-600 whitespace-nowrap">
+                      {formatDate(event.event_date)}
+                      {event.event_time && (
+                        <span className="text-xs text-gray-400 ml-1">{event.event_time.slice(0, 5)}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-gray-600 max-w-[150px] truncate">
+                      {event.venue || "—"}
+                    </td>
+                    <td className="px-4 py-2 text-gray-600">
+                      {event.city || "—"}
+                      {event.state && <span className="text-xs text-gray-400 ml-1">{event.state}</span>}
+                    </td>
+                    <td className="px-4 py-2 text-gray-600">{event.country}</td>
+                    <td className="px-4 py-2">
+                      <span
+                        className={`inline-flex px-2 py-0.5 text-xs rounded-full ${
+                          event.region === "US"
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-purple-100 text-purple-700"
+                        }`}
+                      >
+                        {event.region}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-gray-600">
+                      {event.price_min || event.price_max ? (
+                        <span className="text-xs">
+                          {event.currency} {event.price_min || "?"}
+                          {event.price_max && event.price_min && event.price_max !== event.price_min
+                            ? ` - ${event.price_max}`
+                            : ""}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-2 text-right">
+                      <button
+                        onClick={() => handleDelete(event)}
+                        className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                          deleteConfirm === event.ticketmaster_id
+                            ? "bg-red-600 text-white hover:bg-red-700"
+                            : "text-red-600 hover:bg-red-50"
+                        }`}
+                      >
+                        {deleteConfirm === event.ticketmaster_id ? "Confirm Delete" : "Delete"}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
+      </div>
+
+      {/* Info */}
+      <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+        <p className="text-sm text-gray-600">
+          <strong>Note:</strong> This page displays events from Supabase database.
+          Use the{" "}
+          <a href="/admin/sync" className="text-blue-600 hover:underline">
+            Sync Events
+          </a>{" "}
+          page to fetch new events from Ticketmaster.
+        </p>
       </div>
     </div>
   );
