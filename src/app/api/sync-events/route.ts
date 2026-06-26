@@ -13,14 +13,16 @@ const CATEGORIES = [
   { key: "other", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Variety" },
 ];
 
-const getSupabaseClient = () => {
+function getSupabaseClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) throw new Error("Supabase configuration missing");
   return createClient(url, key);
-};
+}
 
-const getTableName = (category: string) => `${category}_events`;
+function getTableName(category: string) {
+  return `${category}_events`;
+}
 
 async function fetchTicketmasterEvents(
   classificationName: string,
@@ -55,7 +57,7 @@ async function fetchTicketmasterEvents(
   return response.json();
 }
 
-function parseEvent(event: any, category: string, region: "US" | "international"): any {
+function parseEvent(event: any, region: "US" | "international"): any {
   const start = event.dates?.start;
   const priceRanges = event.priceRanges?.[0];
   const venue = event._embedded?.venues?.[0];
@@ -64,18 +66,21 @@ function parseEvent(event: any, category: string, region: "US" | "international"
     ticketmaster_id: event.id,
     title: event.name || "Unknown",
     event_date: start?.localDate || null,
-    event_time: start?.localTime || null,
-    image_url: event.images?.find((img: any) => img.width >= 300)?.url || event.images?.[0]?.url || null,
+    image_url:
+      event.images?.find((img: any) => img.width >= 300)?.url ||
+      event.images?.[0]?.url ||
+      null,
     venue: venue?.name || null,
     city: venue?.city?.name || null,
     state: venue?.state?.stateCode || venue?.state?.name || null,
     country: venue?.country?.countryCode || (region === "US" ? "US" : "Unknown"),
-    region: region,
+    region,
     price_min: priceRanges?.min || null,
     price_max: priceRanges?.max || null,
     currency: priceRanges?.currency || "USD",
     ticket_url: event.url || null,
-    category: category,
+    segment: event.classifications?.[0]?.segment?.name || null,
+    genre: event.classifications?.[0]?.genre?.name || event.classifications?.[0]?.subGenre?.name || null,
   };
 }
 
@@ -83,8 +88,7 @@ async function syncCategory(
   supabase: any,
   categoryKey: string,
   classificationName: string,
-  countryScope: "US" | "International",
-  onProgress?: (msg: string) => void
+  countryScope: "US" | "International"
 ) {
   const region = countryScope === "US" ? "US" : "international";
   const tableName = getTableName(categoryKey);
@@ -92,46 +96,28 @@ async function syncCategory(
   let totalErrors = 0;
   const maxPages = 10;
 
-  onProgress?.(`Starting ${categoryKey} (${countryScope})...`);
-
   for (let page = 0; page < maxPages; page++) {
-    try {
-      onProgress?.(`Fetching ${categoryKey} page ${page + 1}...`);
-      const data = await fetchTicketmasterEvents(classificationName, countryScope === "US" ? "US" : "INTL", page);
+    const tmData = await fetchTicketmasterEvents(classificationName, countryScope === "US" ? "US" : "INTL", page);
 
-      if (!data._embedded?.events?.length) {
-        onProgress?.(`No more events for ${categoryKey} (${countryScope})`);
-        break;
+    if (!tmData._embedded?.events?.length) break;
+
+    const events = tmData._embedded.events.map((e: any) => parseEvent(e, region));
+
+    for (const event of events) {
+      const { error } = await supabase
+        .from(tableName)
+        .upsert(event, { onConflict: "ticketmaster_id" });
+
+      if (error) {
+        console.error(`Error upserting ${event.ticketmaster_id}:`, error);
+        totalErrors++;
+      } else {
+        totalUpserted++;
       }
-
-      const events = data._embedded.events.map((e: any) => parseEvent(e, categoryKey, region));
-
-      for (const event of events) {
-        try {
-          const { error } = await supabase
-            .from(tableName)
-            .upsert(
-              { ...event, category: categoryKey },
-              { onConflict: "ticketmaster_id" }
-            );
-
-          if (error) {
-            console.error(`Error upserting ${event.ticketmaster_id}:`, error);
-            totalErrors++;
-          } else {
-            totalUpserted++;
-          }
-        } catch (err) {
-          totalErrors++;
-        }
-      }
-
-      const totalPages = data.page?.totalPages || 1;
-      if (page >= totalPages - 1) break;
-    } catch (err: any) {
-      onProgress?.(`Error on page ${page + 1}: ${err.message}`);
-      totalErrors++;
     }
+
+    const totalPages = tmData.page?.totalPages || 1;
+    if (page >= totalPages - 1) break;
   }
 
   return { upserted: totalUpserted, errors: totalErrors };
