@@ -3,22 +3,6 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { useParams } from "next/navigation";
-import { PERFORMANCE_CATEGORY_OPTIONS, GLOBAL_CITY_GROUPS } from "@/lib/constants";
-import { useQuery, api } from "@/lib/convex";
-
-interface Production {
-  _id: string;
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  coverImage: string;
-  eventDate?: number;
-  city?: string;
-  countryScope?: "United States" | "International";
-  url?: string;
-}
 
 interface OperaEvent {
   _id: string;
@@ -37,50 +21,14 @@ interface OperaEvent {
   ticket_url: string | null;
 }
 
-interface FilterOption {
-  value: string;
-  label: string;
-}
-
-interface FilterGroup {
-  label: string;
-  options: FilterOption[];
-}
-
 type TimeFilter = "all" | "week" | "month";
-type CountryScope = "United States" | "International";
+type CountryScope = "US" | "international" | "all";
 
 const ITEMS_PER_PAGE = 20;
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
 
-function utcDateStr(ts: number): string {
-  const d = new Date(ts);
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const day = String(d.getUTCDate()).padStart(2, "0");
-  return y + "-" + m + "-" + day;
-}
-
-function normalizeCity(city: string | undefined): string {
-  return (city ?? "").trim().toLowerCase();
-}
-
-function matchesTime(eventDate: number | undefined, filter: TimeFilter): boolean {
-  if (!eventDate) return false;
-
-  const now = Date.now();
-  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-
-  if (eventDate < thirtyDaysAgo) return false;
-
-  if (filter === "all") return true;
-
-  const maxMs = filter === "week" ? ONE_WEEK_MS : ONE_MONTH_MS;
-  return eventDate - now <= maxMs;
-}
-
-function matchesTimeStr(eventDate: string | null, filter: TimeFilter): boolean {
+function matchesTime(eventDate: string | null, filter: TimeFilter): boolean {
   if (!eventDate) return false;
 
   const eventTs = new Date(eventDate).getTime();
@@ -95,172 +43,88 @@ function matchesTimeStr(eventDate: string | null, filter: TimeFilter): boolean {
   return eventTs - now <= maxMs;
 }
 
-function regionTabClass(active: boolean, region: CountryScope): string {
+function regionTabClass(active: boolean): string {
   const base = "rounded-full px-5 py-2 text-sm font-medium transition-colors border";
-  if (region === "United States") {
-    return active
-      ? base + " border-hmc-orange text-hmc-orange bg-white"
-      : base + " border-gray-300 text-gray-700 bg-white hover:border-gray-400";
+  if (active) {
+    return base + " border-hmc-orange text-hmc-orange bg-white";
   }
-  return active
-    ? base + " border-hmc-orange text-hmc-orange bg-white"
-    : base + " border-gray-300 text-gray-700 bg-white hover:border-gray-400";
+  return base + " border-gray-300 text-gray-700 bg-white hover:border-gray-400";
 }
 
-export default function PerformanceCategoryPage() {
-  const params = useParams();
-  const category = (params.category as string) || "";
-  const categoryLabel = PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.value === category)?.label || category;
-  const isOpera = category === "opera";
-
+export default function OperaPage() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCity, setSelectedCity] = useState("all");
+  const [selectedCountry, setSelectedCountry] = useState("all");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("all");
-  const [countryScope, setCountryScope] = useState<CountryScope>("United States");
-
-  // Convex data for non-opera categories
-  const convexProductions = useQuery(api.admin.getStageProductionsByCategory, { category }) as
-    | { items: any[]; total: number }
-    | undefined;
-
-  // Supabase data for opera
-  const [operaEvents, setOperaEvents] = useState<OperaEvent[]>([]);
-  const [operaLoading, setOperaLoading] = useState(true);
-  const [operaError, setOperaError] = useState<string | null>(null);
+  const [countryScope, setCountryScope] = useState<CountryScope>("all");
+  const [allEvents, setAllEvents] = useState<OperaEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isOpera) return;
-
-    async function fetchOperaEvents() {
-      setOperaLoading(true);
-      setOperaError(null);
+    async function fetchEvents() {
+      setLoading(true);
+      setError(null);
       try {
         const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
         const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
+        
         if (!supabaseUrl || !supabaseKey) {
           throw new Error("Supabase environment variables not configured");
         }
-
+        
         const { createClient } = await import("@supabase/supabase-js");
         const supabase = createClient(supabaseUrl, supabaseKey);
-
+        
         const { data, error } = await supabase
           .from("opera_events")
           .select("*")
           .order("event_date", { ascending: true });
-
+        
         if (error) throw error;
-        setOperaEvents(data || []);
+        setAllEvents(data || []);
       } catch (err: any) {
         console.error("Failed to fetch opera events:", err);
-        setOperaError(err.message || "Failed to load events");
+        setError(err.message || "Failed to load events");
       } finally {
-        setOperaLoading(false);
+        setLoading(false);
       }
     }
-    fetchOperaEvents();
-  }, [isOpera]);
+    fetchEvents();
+  }, []);
 
-  // Loading state
-  const loading = isOpera ? operaLoading : convexProductions === undefined;
-
-  // Convert data to Production format
-  const allProductions: Production[] = useMemo(() => {
-    if (isOpera) {
-      return operaEvents.map((e) => ({
-        _id: e.ticketmaster_id || e._id,
-        id: e.ticketmaster_id || e._id,
-        title: e.title,
-        category: "opera",
-        description: e.venue || "",
-        coverImage: e.image_url || "",
-        eventDate: e.event_date ? new Date(e.event_date).getTime() : undefined,
-        city: e.city || "",
-        countryScope: e.region === "US" ? "United States" : "International" as CountryScope,
-        url: e.ticket_url || "",
-      }));
-    }
-    return (convexProductions?.items ?? []).map((p) => ({
-      _id: p._id,
-      id: p._id,
-      title: p.title,
-      category: p.category,
-      description: p.description,
-      coverImage: p.coverImage,
-      eventDate: p.eventDate ?? undefined,
-      city: p.city ?? "",
-      url: p.url ?? "",
-    }));
-  }, [isOpera, isOpera ? operaEvents : convexProductions]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    setSelectedCity("all");
-    setTimeFilter("all");
-    setCountryScope("United States");
-  }, [category]);
-
-  const cityOptionGroups = useMemo<FilterGroup[]>(() => {
-    const available = Array.from(
-      new Set(allProductions.map((p) => p.city?.trim()).filter((c): c is string => Boolean(c)))
-    ).sort((a, b) => a.localeCompare(b));
-
-    const byNorm = new Map(available.map((c) => [normalizeCity(c), c]));
-    const assigned = new Set<string>();
-
-    const groups: FilterGroup[] = GLOBAL_CITY_GROUPS.map((g) => {
-      const opts = g.cities
-        .map((c) => byNorm.get(normalizeCity(c)) ?? c)
-        .filter((c, i, arr) => {
-          const n = normalizeCity(c);
-          if (arr.findIndex((e) => normalizeCity(e) === n) !== i) return false;
-          if (assigned.has(n)) return false;
-          assigned.add(n);
-          return true;
-        })
-        .sort((a, b) => a.localeCompare(b))
-        .map((c) => ({ value: c, label: c }));
-
-      return { label: g.label, options: opts };
-    }).filter((g) => g.options.length > 0);
-
-    const others = available
-      .filter((c) => !assigned.has(normalizeCity(c)))
-      .map((c) => ({ value: c, label: c }));
-    if (others.length > 0) {
-      groups.push({ label: "Other cities in results", options: others });
-    }
-
-    return groups;
-  }, [allProductions]);
-
-  const normCity = selectedCity;
-  const normActive = normCity === "all" ? "all" : normalizeCity(normCity);
+  const availableCountries = useMemo(() => {
+    if (!allEvents) return [];
+    const countries = new Set<string>();
+    allEvents.forEach((e) => {
+      if (e.country) countries.add(e.country);
+    });
+    return Array.from(countries).sort();
+  }, [allEvents]);
 
   const filteredItems = useMemo(() => {
-    const result = allProductions.filter((item) => {
-      const cityOk = normActive === "all" || normalizeCity(item.city) === normActive;
-      const timeOk = matchesTime(item.eventDate, timeFilter);
-      const regionOk = !isOpera || countryScope === "all" ||
-        (countryScope === "United States" && item.countryScope === "United States") ||
-        (countryScope === "International" && item.countryScope === "International");
-      return cityOk && timeOk && regionOk;
+    if (!allEvents) return [];
+
+    return allEvents.filter((item) => {
+      // Region filter
+      if (countryScope !== "all") {
+        if (item.region !== countryScope) return false;
+      }
+
+      // Country filter
+      if (selectedCountry !== "all") {
+        if (item.country !== selectedCountry) return false;
+      }
+
+      // Time filter
+      if (!matchesTime(item.event_date, timeFilter)) return false;
+
+      return true;
     });
+  }, [allEvents, countryScope, selectedCountry, timeFilter]);
 
-    return result.sort((a, b) => {
-      const dateA = a.eventDate ? utcDateStr(a.eventDate) : "9999-99-99";
-      const dateB = b.eventDate ? utcDateStr(b.eventDate) : "9999-99-99";
-      return dateA.localeCompare(dateB);
-    });
-  }, [allProductions, normActive, timeFilter, countryScope, isOpera]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCity, timeFilter, countryScope]);
-
-  const formatDt = (ts: number) => {
-    const d = new Date(ts);
+  const formatDt = (dateStr: string | null) => {
+    if (!dateStr) return { date: "TBA", time: "" };
+    const d = new Date(dateStr);
     return {
       date: d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
       time: d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true }),
@@ -278,6 +142,10 @@ export default function PerformanceCategoryPage() {
   }, [filteredItems, currentPage]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCountry, timeFilter, countryScope]);
 
   const getPageNumbers = () => {
     if (totalPages <= 7) {
@@ -302,18 +170,18 @@ export default function PerformanceCategoryPage() {
     return pages;
   };
 
-  const renderCard = (item: Production, n: number) => (
+  const renderCard = (item: OperaEvent, n: number) => (
     <a
-      key={item._id}
-      href={item.url || "/performance/" + item.category + "/" + item._id}
-      target={item.url ? "_blank" : "_self"}
+      key={item.ticketmaster_id}
+      href={item.ticket_url || "#"}
+      target="_blank"
       rel="noopener noreferrer"
       className="group relative flex gap-4 rounded-2xl border border-gray-100 bg-white p-3 transition-all duration-300 hover:border-hmc-orange/40 hover:shadow-lg hover:shadow-hmc-orange/5"
     >
       <div className="relative h-24 w-32 flex-shrink-0 overflow-hidden rounded-xl bg-gray-100">
-        {item.coverImage ? (
+        {item.image_url ? (
           <Image
-            src={item.coverImage}
+            src={item.image_url}
             alt={item.title}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-110"
@@ -336,37 +204,51 @@ export default function PerformanceCategoryPage() {
           </span>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
-          {item.eventDate ? (
+          {item.event_date ? (
             <>
               <span className="inline-flex items-center gap-1 font-semibold text-hmc-orange">
                 <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                {formatDt(item.eventDate).date}
+                {formatDt(item.event_date).date}
               </span>
-              {formatDt(item.eventDate).time && (
+              {formatDt(item.event_date).time && (
                 <span className="inline-flex items-center gap-1">
                   <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  {formatDt(item.eventDate).time}
+                  {formatDt(item.event_date).time}
                 </span>
               )}
             </>
           ) : null}
           {item.city ? <span>{item.city}</span> : null}
+          {item.country ? (
+            <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px]">{item.country}</span>
+          ) : null}
         </div>
-        {item.url ? (
-          <button
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(item.url, "_blank", "noopener,noreferrer"); }}
-            className="mt-2 inline-flex w-fit items-center gap-1 rounded bg-hmc-orange px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-hmc-orange/90 cursor-pointer"
-          >
-            <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
-            </svg>
-            Buy Tickets
-          </button>
-        ) : null}
+        <div className="mt-2 flex items-center gap-2">
+          {item.price_min !== null && item.price_max !== null ? (
+            <span className="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+              ${item.price_min} - ${item.price_max} {item.currency}
+            </span>
+          ) : item.price_min !== null ? (
+            <span className="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+              From ${item.price_min} {item.currency}
+            </span>
+          ) : null}
+          {item.ticket_url ? (
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); window.open(item.ticket_url!, "_blank", "noopener,noreferrer"); }}
+              className="inline-flex w-fit items-center gap-1 rounded bg-hmc-orange px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-hmc-orange/90 cursor-pointer"
+            >
+              <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+              </svg>
+              Buy Tickets
+            </button>
+          ) : null}
+        </div>
       </div>
     </a>
   );
@@ -374,9 +256,9 @@ export default function PerformanceCategoryPage() {
   const HEADER = (
     <div className="border-b border-t border-hmc-orange">
       <div className="mx-auto max-w-6xl px-4 py-6 text-center">
-        <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">{categoryLabel}</h1>
+        <h1 className="text-2xl font-bold uppercase tracking-wider text-hmc-orange">OPERA</h1>
         <p className="mt-1 text-sm text-gray-500">
-          {loading ? "Loading..." : `${filteredItems.length} events worldwide`}
+          {allEvents ? `${allEvents.length} events worldwide` : "Loading..."}
         </p>
       </div>
     </div>
@@ -393,29 +275,15 @@ export default function PerformanceCategoryPage() {
     );
   }
 
-  if (operaError) {
+  if (error) {
     return (
       <main className="min-h-screen bg-white">
         {HEADER}
         <div className="mx-auto max-w-6xl px-4 py-20 text-center">
           <div className="rounded-xl border border-red-200 bg-red-50 p-6 text-red-700">
             <h2 className="mb-2 text-lg font-semibold">Failed to load Opera events</h2>
-            <p className="text-sm">{operaError}</p>
+            <p className="text-sm">{error}</p>
           </div>
-        </div>
-      </main>
-    );
-  }
-
-  if (filteredItems.length === 0) {
-    return (
-      <main className="min-h-screen bg-white">
-        {HEADER}
-        <div className="py-20 text-center text-gray-500">
-          <p>No matching performances found.</p>
-          <Link href="/performance" className="mt-4 inline-block text-hmc-orange hover:underline">
-            ← Back to Performance
-          </Link>
         </div>
       </main>
     );
@@ -430,19 +298,19 @@ export default function PerformanceCategoryPage() {
         <div className="rounded-2xl border border-hmc-orange/15 bg-[#FFF7F3] p-4 shadow-sm">
           {/* Region tabs */}
           <div className="mb-4 flex items-center gap-2">
-            {(["United States", "International"] as CountryScope[]).map((scope) => (
+            {(["all", "US", "international"] as CountryScope[]).map((scope) => (
               <button
                 key={scope}
                 onClick={() => setCountryScope(scope)}
-                className={regionTabClass(countryScope === scope, scope)}
+                className={regionTabClass(countryScope === scope)}
               >
-                {scope}
+                {scope === "all" ? "All Regions" : scope === "US" ? "United States" : "International"}
               </button>
             ))}
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {/* City dropdown */}
+            {/* Country dropdown */}
             <div className="relative">
               <div className="pointer-events-none absolute inset-y-0 left-4 left-3.5 flex items-center">
                 <svg className="h-4 w-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -450,17 +318,13 @@ export default function PerformanceCategoryPage() {
                 </svg>
               </div>
               <select
-                value={selectedCity}
-                onChange={(e) => setSelectedCity(e.target.value)}
+                value={selectedCountry}
+                onChange={(e) => setSelectedCountry(e.target.value)}
                 className="h-10 rounded-full border border-gray-300 bg-white py-2 pl-10 pr-10 text-sm text-gray-700 outline-none transition focus:border-hmc-orange focus:ring-2 focus:ring-hmc-orange/20 appearance-none cursor-pointer"
               >
-                <option value="all">All cities</option>
-                {cityOptionGroups.map((g) => (
-                  <optgroup key={g.label} label={g.label}>
-                    {g.options.map((o) => (
-                      <option key={o.value} value={o.value}>{o.label}</option>
-                    ))}
-                  </optgroup>
+                <option value="all">All countries</option>
+                {availableCountries.map((c) => (
+                  <option key={c} value={c}>{c}</option>
                 ))}
               </select>
               <div className="pointer-events-none absolute inset-y-0 right-0 right-3 flex items-center">
@@ -509,6 +373,9 @@ export default function PerformanceCategoryPage() {
 
       {/* Events grid */}
       <div className="mx-auto max-w-6xl px-4 pb-8">
+        <div className="mb-4 text-sm text-gray-500">
+          Showing {filteredItems.length} events
+        </div>
         <div className="relative">
           <div className="absolute bottom-0 left-1/2 top-0 hidden w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-hmc-orange/30 to-transparent lg:block"></div>
           <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:flex">
@@ -517,20 +384,36 @@ export default function PerformanceCategoryPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
-            <div className="space-y-3">
-              {leftColumnItems.map((item, idx) => {
-                const itemNumber = (currentPage - 1) * ITEMS_PER_PAGE + idx + 1;
-                return renderCard(item, itemNumber);
-              })}
+          {filteredItems.length === 0 ? (
+            <div className="py-20 text-center text-gray-500">
+              <p>No matching opera events found.</p>
+              <button
+                onClick={() => {
+                  setCountryScope("all");
+                  setSelectedCountry("all");
+                  setTimeFilter("all");
+                }}
+                className="mt-4 inline-block text-hmc-orange hover:underline"
+              >
+                ← Clear filters
+              </button>
             </div>
-            <div className="space-y-3">
-              {rightColumnItems.map((item, idx) => {
-                const itemNumber = (currentPage - 1) * ITEMS_PER_PAGE + leftColumnItems.length + idx + 1;
-                return renderCard(item, itemNumber);
-              })}
+          ) : (
+            <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:gap-12">
+              <div className="space-y-3">
+                {leftColumnItems.map((item, idx) => {
+                  const itemNumber = (currentPage - 1) * ITEMS_PER_PAGE + idx + 1;
+                  return renderCard(item, itemNumber);
+                })}
+              </div>
+              <div className="space-y-3">
+                {rightColumnItems.map((item, idx) => {
+                  const itemNumber = (currentPage - 1) * ITEMS_PER_PAGE + leftColumnItems.length + idx + 1;
+                  return renderCard(item, itemNumber);
+                })}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 
