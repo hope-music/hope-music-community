@@ -107,6 +107,14 @@ export default function OperaPage() {
     fetchEvents();
   }, []);
 
+  const regionCount = useMemo(() => {
+    if (!allEvents) return { US: 0, international: 0 };
+    return {
+      US: allEvents.filter((e) => e.region === "US").length,
+      international: allEvents.filter((e) => e.region === "international").length,
+    };
+  }, [allEvents]);
+
   const availableCountries = useMemo(() => {
     if (!allEvents) return [];
     const countries = new Set<string>();
@@ -157,6 +165,8 @@ export default function OperaPage() {
   }, [filteredItems, currentPage]);
 
   const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
+
+  const [subRegion, setSubRegion] = useState<string>("all");
 
   useEffect(() => {
     setCurrentPage(1);
@@ -282,13 +292,14 @@ export default function OperaPage() {
       <div className="mx-auto max-w-6xl px-4 pb-4">
         <div className="border-l-4 border-hmc-orange pl-3">
           <span className="text-sm font-semibold text-gray-700">Opera Events</span>
-          <span className="ml-2 text-sm text-gray-500">{allEvents ? allEvents.length : 0}</span>
+          <span className="ml-2 text-sm text-gray-500">
+            {allEvents ? allEvents.length : 0}
+            {countryScope === "US" ? ` (${regionCount.US} in United States)` : countryScope === "international" ? ` (${regionCount.international} in International)` : ""}
+          </span>
         </div>
       </div>
     </div>
   );
-
-  const [subRegion, setSubRegion] = useState<string>("all");
 
   if (loading) {
     return (
@@ -435,9 +446,6 @@ export default function OperaPage() {
 
       {/* Events grid */}
       <div className="mx-auto max-w-6xl px-4 pb-8">
-        <div className="mb-4 text-sm text-gray-500">
-          Showing {filteredItems.length} events
-        </div>
         <div className="relative">
           <div className="absolute bottom-0 left-1/2 top-0 hidden w-px -translate-x-1/2 bg-gradient-to-b from-transparent via-hmc-orange/30 to-transparent lg:block"></div>
           <div className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 lg:flex">
@@ -453,7 +461,8 @@ export default function OperaPage() {
                 onClick={() => {
                   setCountryScope("all");
                   setSelectedCountry("all");
-                  setTimeFilter("all");
+                  setSubRegion("all");
+                  setDateRange({ start: "", end: "" });
                 }}
                 className="mt-4 inline-block text-hmc-orange hover:underline"
               >
