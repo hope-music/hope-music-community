@@ -28,9 +28,10 @@ interface OperaEvent {
 function CategoryCard({ slug, label }: { slug: string; label: string }) {
   const isOpera = slug === "opera";
 
+  // Skip the Convex query for opera — it uses Supabase instead
   const convexLatest = useQuery(
-    isOpera ? "dummy" : api.admin.getLatestStageProduction,
-    isOpera ? {} : { category: slug }
+    isOpera ? api.admin.getLatestStageProduction : api.admin.getLatestStageProduction,
+    isOpera ? { category: "opera-skip" } : { category: slug }
   ) as CategoryData | null | undefined;
 
   const counts = useQuery(api.admin.getStageProductionsCount);
