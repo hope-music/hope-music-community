@@ -121,15 +121,15 @@ function matchesDateRangeStr(eventDate: string | null, start: string, end: strin
 }
 
 function regionTabClass(active: boolean, region: CountryScope): string {
-  const base = "px-5 py-2 text-sm font-medium transition-colors border bg-white clip-tab";
+  const base = "px-5 py-2 text-sm font-medium transition-colors bg-white clip-tab";
   if (region === "United States") {
     return active
-      ? base + " border-hmc-orange text-hmc-orange"
-      : base + " border-gray-300 text-gray-700 hover:border-gray-400";
+      ? base + " text-hmc-orange"
+      : base + " text-gray-700";
   }
   return active
-    ? base + " border-hmc-orange text-hmc-orange"
-    : base + " border-gray-300 text-gray-700 hover:border-gray-400";
+    ? base + " text-hmc-orange"
+    : base + " text-gray-700";
 }
 
 export default function PerformanceCategoryPage() {
