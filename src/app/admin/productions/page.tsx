@@ -4,8 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { PERFORMANCE_CATEGORY_OPTIONS } from "@/lib/constants";
 
 const CATEGORIES = [
-  { value: "opera", label: "Opera", icon: "🎭" },
   { value: "musical", label: "Musical", icon: "🎬" },
+  { value: "opera", label: "Opera", icon: "🎭" },
   { value: "classical", label: "Classical", icon: "🎻" },
   { value: "music", label: "Music", icon: "🎵" },
   { value: "dance", label: "Dance", icon: "💃" },
