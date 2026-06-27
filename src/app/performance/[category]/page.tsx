@@ -1,25 +1,11 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { PERFORMANCE_CATEGORY_OPTIONS, GLOBAL_CITY_GROUPS } from "@/lib/constants";
-import { useQuery, api } from "@/lib/convex";
+import { createClient } from "@supabase/supabase-js";
 import { DateRangePicker } from "@/components/ui/DateRangePicker";
-import { supabase } from "@/lib/supabase";
-
-interface Production {
-  _id: string;
-  id: string;
-  title: string;
-  category: string;
-  description: string;
-  coverImage: string;
-  eventDate?: number;
-  city?: string;
-  countryScope?: "United States" | "International";
-  url?: string;
-}
 
 interface OperaEvent {
   _id: string;
@@ -51,6 +37,7 @@ interface FilterGroup {
 type CountryScope = "United States" | "International";
 
 const ITEMS_PER_PAGE = 20;
+const DEFAULT_LOOKBACK_DAYS = 60;
 
 function utcDateStr(ts: number): string {
   const d = new Date(ts);
@@ -64,61 +51,92 @@ function normalizeCity(city: string | undefined): string {
   return (city ?? "").trim().toLowerCase();
 }
 
-function matchesDateRange(eventDate: number | undefined, start: string, end: string): boolean {
-  if (!eventDate) return false;
+function buildSupabaseQuery(
+  supabase: ReturnType<typeof createClient>,
+  tableName: string,
+  page: number,
+  selectedCity: string,
+  startDate: string,
+  endDate: string,
+  countryScope: CountryScope,
+  lookbackDays: number
+) {
+  const offset = (page - 1) * ITEMS_PER_PAGE;
+  let q = supabase
+    .from(tableName)
+    .select("*", { count: "exact" })
+    .gte("event_date", new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString())
+    .order("event_date", { ascending: true })
+    .range(offset, offset + ITEMS_PER_PAGE - 1);
 
-  const now = Date.now();
-  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-  if (eventDate < thirtyDaysAgo) return false;
-
-  // If no date range is selected, show all
-  if (!start && !end) return true;
-
-  const eventDay = new Date(eventDate);
-  eventDay.setHours(0, 0, 0, 0);
-
-  if (start) {
-    const startDay = new Date(start);
-    startDay.setHours(0, 0, 0, 0);
-    if (eventDay < startDay) return false;
+  if (selectedCity && selectedCity !== "all") {
+    q = q.ilike("city", selectedCity);
+  }
+  if (startDate) {
+    q = q.gte("event_date", startDate);
+  }
+  if (endDate) {
+    q = q.lte("event_date", endDate + "T23:59:59");
+  }
+  if (countryScope === "United States") {
+    q = q.eq("region", "US");
+  } else if (countryScope === "International") {
+    q = q.neq("region", "US");
   }
 
-  if (end) {
-    const endDay = new Date(end);
-    endDay.setHours(23, 59, 59, 999);
-    if (eventDay > endDay) return false;
-  }
-
-  return true;
+  return q;
 }
 
-function matchesDateRangeStr(eventDate: string | null, start: string, end: string): boolean {
-  if (!eventDate) return false;
+async function fetchEventPage(
+  tableName: string,
+  page: number,
+  selectedCity: string,
+  startDate: string,
+  endDate: string,
+  countryScope: CountryScope,
+  lookbackDays: number = DEFAULT_LOOKBACK_DAYS
+): Promise<{ items: OperaEvent[]; total: number }> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const eventTs = new Date(eventDate).getTime();
-  const now = Date.now();
-  const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-  if (eventTs < thirtyDaysAgo) return false;
+  const { data, error, count } = await buildSupabaseQuery(
+    supabase, tableName, page, selectedCity, startDate, endDate, countryScope, lookbackDays
+  ).throwOnError();
 
-  // If no date range is selected, show all
-  if (!start && !end) return true;
+  return { items: (data as OperaEvent[]) ?? [], total: count ?? 0 };
+}
 
-  const eventDay = new Date(eventDate);
-  eventDay.setHours(0, 0, 0, 0);
+async function fetchAvailableCities(
+  tableName: string,
+  countryScope: CountryScope,
+  lookbackDays: number = DEFAULT_LOOKBACK_DAYS
+): Promise<string[]> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
-  if (start) {
-    const startDay = new Date(start);
-    startDay.setHours(0, 0, 0, 0);
-    if (eventDay < startDay) return false;
+  let q = supabase
+    .from(tableName)
+    .select("city")
+    .not("city", "is", null)
+    .neq("city", "")
+    .gte("event_date", new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000).toISOString());
+
+  if (countryScope === "United States") {
+    q = q.eq("region", "US");
+  } else if (countryScope === "International") {
+    q = q.neq("region", "US");
   }
 
-  if (end) {
-    const endDay = new Date(end);
-    endDay.setHours(23, 59, 59, 999);
-    if (eventDay > endDay) return false;
-  }
+  const { data, error } = await q.throwOnError();
+  if (error || !data) return [];
 
-  return true;
+  const cities = data
+    .map((r: any) => r.city as string)
+    .filter((c): c is string => Boolean(c));
+
+  return Array.from(new Set(cities)).sort((a, b) => a.localeCompare(b));
 }
 
 function regionTabClass(active: boolean): string {
@@ -135,110 +153,71 @@ export default function PerformanceCategoryPage() {
   const categoryLabel = PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.value === category)?.label || category;
   const isOpera = category === "opera";
   const isMusical = category === "musical";
+  const isOperaMusical = isOpera || isMusical;
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCity, setSelectedCity] = useState("all");
   const [dateRange, setDateRange] = useState<{ start: string; end: string }>({ start: "", end: "" });
   const [countryScope, setCountryScope] = useState<CountryScope>("United States");
-  const [subRegion, setSubRegion] = useState<string>("all");
   const router = useRouter();
 
-  // Convex data for non-opera/non-musical categories
-  const convexProductions = useQuery(api.admin.getStageProductionsByCategory, { category }) as
-    | { items: any[]; total: number }
-    | undefined;
+  // Paginated event data for opera/musical
+  const [eventPage, setEventPage] = useState<{ items: OperaEvent[]; total: number }>({ items: [], total: 0 });
+  const [eventLoading, setEventLoading] = useState(false);
+  const [eventError, setEventError] = useState<string | null>(null);
 
-  // Supabase data for opera & musical
-  const [operaEvents, setOperaEvents] = useState<OperaEvent[]>([]);
-  const [operaLoading, setOperaLoading] = useState(true);
-  const [operaError, setOperaError] = useState<string | null>(null);
+  // Available cities for dropdown
+  const [availableCities, setAvailableCities] = useState<string[]>([]);
+
+  const tableName = isOpera ? "opera_events" : isMusical ? "musical_events" : "";
+
+  const loadEvents = useCallback(async () => {
+    if (!isOperaMusical || !tableName) return;
+    setEventLoading(true);
+    setEventError(null);
+    try {
+      const result = await fetchEventPage(
+        tableName, currentPage, selectedCity, dateRange.start, dateRange.end, countryScope
+      );
+      setEventPage(result);
+    } catch (err: any) {
+      console.error("Failed to fetch events:", err);
+      setEventError(err.message || "Failed to load events");
+    } finally {
+      setEventLoading(false);
+    }
+  }, [isOperaMusical, tableName, currentPage, selectedCity, dateRange.start, dateRange.end, countryScope]);
+
+  const loadCities = useCallback(async () => {
+    if (!isOperaMusical || !tableName) return;
+    try {
+      const cities = await fetchAvailableCities(tableName, countryScope);
+      setAvailableCities(cities);
+    } catch {
+      setAvailableCities([]);
+    }
+  }, [isOperaMusical, tableName, countryScope]);
 
   useEffect(() => {
-    if (!isOpera && !isMusical) return;
+    loadEvents();
+  }, [loadEvents]);
 
-    async function fetchAllEvents(tableName: string): Promise<OperaEvent[]> {
-      const PAGE_SIZE = 1000;
-      let page = 0;
-      let allData: OperaEvent[] = [];
-      let hasMore = true;
-
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from(tableName)
-          .select("*")
-          .order("event_date", { ascending: true })
-          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
-
-        if (error) throw error;
-        const chunk = data || [];
-        allData = allData.concat(chunk);
-        hasMore = chunk.length === PAGE_SIZE;
-        page++;
-      }
-
-      return allData;
-    }
-
-    async function fetchEvents() {
-      setOperaLoading(true);
-      setOperaError(null);
-      try {
-        const tableName = isOpera ? "opera_events" : "musical_events";
-        const data = await fetchAllEvents(tableName);
-        setOperaEvents(data);
-      } catch (err: any) {
-        console.error(`Failed to fetch ${category} events:`, err);
-        setOperaError(err.message || "Failed to load events");
-      } finally {
-        setOperaLoading(false);
-      }
-    }
-    fetchEvents();
-  }, [isOpera, isMusical, category]);
-
-  // Loading state
-  const loading = (isOpera || isMusical) ? operaLoading : convexProductions === undefined;
-
-  // Convert data to Production format
-  const allProductions: Production[] = useMemo(() => {
-    if (isOpera || isMusical) {
-      return operaEvents.map((e) => ({
-        _id: e.ticketmaster_id || e._id,
-        id: e.ticketmaster_id || e._id,
-        title: e.title,
-        category: category,
-        description: e.venue || "",
-        coverImage: e.image_url || "",
-        eventDate: e.event_date ? new Date(e.event_date).getTime() : undefined,
-        city: e.city || "",
-        countryScope: e.region === "US" ? "United States" : "International" as CountryScope,
-        url: e.ticket_url || "",
-      }));
-    }
-    return (convexProductions?.items ?? []).map((p) => ({
-      _id: p._id,
-      id: p._id,
-      title: p.title,
-      category: p.category,
-      description: p.description,
-      coverImage: p.coverImage,
-      eventDate: p.eventDate ?? undefined,
-      city: p.city ?? "",
-      url: p.url ?? "",
-    }));
-  }, [isOpera, isMusical, operaEvents, category, convexProductions]);
+  useEffect(() => {
+    loadCities();
+  }, [loadCities]);
 
   useEffect(() => {
     setCurrentPage(1);
     setSelectedCity("all");
     setDateRange({ start: "", end: "" });
     setCountryScope("United States");
+    setEventPage({ items: [], total: 0 });
   }, [category]);
 
+  const loading = isOperaMusical ? eventLoading : true;
+
   const cityOptionGroups = useMemo<FilterGroup[]>(() => {
-    const available = Array.from(
-      new Set(allProductions.map((p) => p.city?.trim()).filter((c): c is string => Boolean(c)))
-    ).sort((a, b) => a.localeCompare(b));
+    const available = availableCities;
 
     const byNorm = new Map(available.map((c) => [normalizeCity(c), c]));
     const assigned = new Set<string>();
@@ -267,30 +246,30 @@ export default function PerformanceCategoryPage() {
     }
 
     return groups;
-  }, [allProductions]);
+  }, [availableCities]);
 
   const normCity = selectedCity;
   const normActive = normCity === "all" ? "all" : normalizeCity(normCity);
 
   const filteredItems = useMemo(() => {
-    const result = allProductions.filter((item) => {
-      const cityOk = normActive === "all" || normalizeCity(item.city) === normActive;
-      const timeOk = matchesDateRange(item.eventDate, dateRange.start, dateRange.end);
-      const regionOk = !(isOpera || isMusical) || countryScope === "all" ||
-        (countryScope === "United States" && item.countryScope === "United States") ||
-        (countryScope === "International" && item.countryScope === "International");
-      return cityOk && timeOk && regionOk;
-    });
-
-    return result.sort((a, b) => {
-      const dateA = a.eventDate ? utcDateStr(a.eventDate) : "9999-99-99";
-      const dateB = b.eventDate ? utcDateStr(b.eventDate) : "9999-99-99";
-      return dateA.localeCompare(dateB);
-    });
-  }, [allProductions, normActive, dateRange, countryScope, isOpera]);
+    if (!isOperaMusical) return [];
+    return eventPage.items.map((e) => ({
+      _id: e.ticketmaster_id || e._id,
+      id: e.ticketmaster_id || e._id,
+      title: e.title,
+      category: category,
+      description: e.venue || "",
+      coverImage: e.image_url || "",
+      eventDate: e.event_date ? new Date(e.event_date).getTime() : undefined,
+      city: e.city || "",
+      countryScope: e.region === "US" ? "United States" : "International" as CountryScope,
+      url: e.ticket_url || "",
+    }));
+  }, [isOperaMusical, eventPage, category]);
 
   useEffect(() => {
     setCurrentPage(1);
+    setEventPage({ items: [], total: 0 });
   }, [selectedCity, dateRange, countryScope]);
 
   const formatDt = (ts: number) => {
@@ -302,16 +281,14 @@ export default function PerformanceCategoryPage() {
   };
 
   const { leftColumnItems, rightColumnItems } = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    const pageItems = filteredItems.slice(start, start + ITEMS_PER_PAGE);
-    const mid = Math.ceil(pageItems.length / 2);
+    const mid = Math.ceil(filteredItems.length / 2);
     return {
-      leftColumnItems: pageItems.slice(0, mid),
-      rightColumnItems: pageItems.slice(mid),
+      leftColumnItems: filteredItems.slice(0, mid),
+      rightColumnItems: filteredItems.slice(mid),
     };
-  }, [filteredItems, currentPage]);
+  }, [filteredItems]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredItems.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(1, Math.ceil(eventPage.total / ITEMS_PER_PAGE));
 
   const getPageNumbers = () => {
     if (totalPages <= 7) {
@@ -336,7 +313,7 @@ export default function PerformanceCategoryPage() {
     return pages;
   };
 
-  const renderCard = (item: Production, n: number) => (
+  const renderCard = (item: any, n: number) => (
     <a
       key={item._id}
       href={item.url || "/performance/" + item.category + "/" + item._id}
@@ -424,7 +401,7 @@ export default function PerformanceCategoryPage() {
       <div className="mx-auto max-w-6xl px-4 pb-4">
         <div className="border-l-4 border-hmc-orange pl-3">
           <span className="text-sm font-semibold text-gray-700">{categoryLabel} Events</span>
-          <span className="ml-2 text-sm text-gray-500">{loading ? "..." : filteredItems.length}</span>
+          <span className="ml-2 text-sm text-gray-500">{loading ? "..." : eventPage.total}</span>
         </div>
       </div>
 
@@ -438,7 +415,6 @@ export default function PerformanceCategoryPage() {
               key={scope}
               onClick={() => {
                 setCountryScope(scope);
-                setSubRegion("all");
               }}
               className={regionTabClass(countryScope === scope)}
             >
