@@ -3,11 +3,20 @@ import { createClient } from "@supabase/supabase-js";
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
 
-// Browser/client-side client (uses publishable key)
-export const supabase = createClient(supabaseUrl, supabasePublishableKey);
+let _supabase: ReturnType<typeof createClient> | null = null;
+let _supabaseAdmin: ReturnType<typeof createClient> | null = null;
 
-// Server-side client with service role key (for admin/migration use only — never expose to client)
-export function createSupabaseAdmin() {
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  return createClient(supabaseUrl, serviceRoleKey);
+export const supabase: ReturnType<typeof createClient> = (() => {
+  if (!_supabase) {
+    _supabase = createClient(supabaseUrl, supabasePublishableKey);
+  }
+  return _supabase;
+})();
+
+export function createSupabaseAdmin(): ReturnType<typeof createClient> {
+  if (!_supabaseAdmin) {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+    _supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
+  }
+  return _supabaseAdmin;
 }

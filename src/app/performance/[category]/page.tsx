@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { PERFORMANCE_CATEGORY_OPTIONS, GLOBAL_CITY_GROUPS } from "@/lib/constants";
 import { useQuery, api } from "@/lib/convex";
 import { DateRangePicker } from "@/components/ui/DateRangePicker";
+import { supabase } from "@/lib/supabase";
 
 interface Production {
   _id: string;
@@ -133,6 +134,7 @@ export default function PerformanceCategoryPage() {
   const category = (params.category as string) || "";
   const categoryLabel = PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.value === category)?.label || category;
   const isOpera = category === "opera";
+  const isMusical = category === "musical";
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCity, setSelectedCity] = useState("all");
@@ -141,61 +143,70 @@ export default function PerformanceCategoryPage() {
   const [subRegion, setSubRegion] = useState<string>("all");
   const router = useRouter();
 
-  // Convex data for non-opera categories
+  // Convex data for non-opera/non-musical categories
   const convexProductions = useQuery(api.admin.getStageProductionsByCategory, { category }) as
     | { items: any[]; total: number }
     | undefined;
 
-  // Supabase data for opera
+  // Supabase data for opera & musical
   const [operaEvents, setOperaEvents] = useState<OperaEvent[]>([]);
   const [operaLoading, setOperaLoading] = useState(true);
   const [operaError, setOperaError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!isOpera) return;
+    if (!isOpera && !isMusical) return;
 
-    async function fetchOperaEvents() {
+    async function fetchAllEvents(tableName: string): Promise<OperaEvent[]> {
+      const PAGE_SIZE = 1000;
+      let page = 0;
+      let allData: OperaEvent[] = [];
+      let hasMore = true;
+
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from(tableName)
+          .select("*")
+          .order("event_date", { ascending: true })
+          .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+        if (error) throw error;
+        const chunk = data || [];
+        allData = allData.concat(chunk);
+        hasMore = chunk.length === PAGE_SIZE;
+        page++;
+      }
+
+      return allData;
+    }
+
+    async function fetchEvents() {
       setOperaLoading(true);
       setOperaError(null);
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-
-        if (!supabaseUrl || !supabaseKey) {
-          throw new Error("Supabase environment variables not configured");
-        }
-
-        const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(supabaseUrl, supabaseKey);
-
-        const { data, error } = await supabase
-          .from("opera_events")
-          .select("*")
-          .order("event_date", { ascending: true });
-
-        if (error) throw error;
-        setOperaEvents(data || []);
+        const tableName = isOpera ? "opera_events" : "musical_events";
+        const data = await fetchAllEvents(tableName);
+        setOperaEvents(data);
       } catch (err: any) {
-        console.error("Failed to fetch opera events:", err);
+        console.error(`Failed to fetch ${category} events:`, err);
         setOperaError(err.message || "Failed to load events");
       } finally {
         setOperaLoading(false);
       }
     }
-    fetchOperaEvents();
-  }, [isOpera]);
+    fetchEvents();
+  }, [isOpera, isMusical, category]);
 
   // Loading state
-  const loading = isOpera ? operaLoading : convexProductions === undefined;
+  const loading = (isOpera || isMusical) ? operaLoading : convexProductions === undefined;
 
   // Convert data to Production format
   const allProductions: Production[] = useMemo(() => {
-    if (isOpera) {
+    if (isOpera || isMusical) {
       return operaEvents.map((e) => ({
         _id: e.ticketmaster_id || e._id,
         id: e.ticketmaster_id || e._id,
         title: e.title,
-        category: "opera",
+        category: category,
         description: e.venue || "",
         coverImage: e.image_url || "",
         eventDate: e.event_date ? new Date(e.event_date).getTime() : undefined,
@@ -215,7 +226,7 @@ export default function PerformanceCategoryPage() {
       city: p.city ?? "",
       url: p.url ?? "",
     }));
-  }, [isOpera, isOpera ? operaEvents : convexProductions]);
+  }, [isOpera, isMusical, operaEvents, category, convexProductions]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -265,7 +276,7 @@ export default function PerformanceCategoryPage() {
     const result = allProductions.filter((item) => {
       const cityOk = normActive === "all" || normalizeCity(item.city) === normActive;
       const timeOk = matchesDateRange(item.eventDate, dateRange.start, dateRange.end);
-      const regionOk = !isOpera || countryScope === "all" ||
+      const regionOk = !(isOpera || isMusical) || countryScope === "all" ||
         (countryScope === "United States" && item.countryScope === "United States") ||
         (countryScope === "International" && item.countryScope === "International");
       return cityOk && timeOk && regionOk;
@@ -421,8 +432,8 @@ export default function PerformanceCategoryPage() {
       <div className="mx-auto max-w-6xl px-4 pb-4">
         {/* All filters in one row */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* Region tabs */}
-          {(["United States", "International"] as CountryScope[]).map((scope) => (
+          {/* Region tabs — hidden for Musical (Broadway is US-only) */}
+          {category !== "musical" && (["United States", "International"] as CountryScope[]).map((scope) => (
             <button
               key={scope}
               onClick={() => {

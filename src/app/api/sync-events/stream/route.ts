@@ -3,7 +3,12 @@ import { NextRequest, NextResponse } from "next/server";
 
 const CATEGORIES = [
   { key: "opera", classificationName: "Opera" },
-  { key: "musical", classificationName: "Broadway" },
+  {
+    key: "musical",
+    segmentId: "KZFzniwnSyZfZ7v7na",
+    subGenreId: "KZazBEonSMnZfZ7vAve",
+    stateCode: "NY",
+  },
   { key: "classical", classificationName: "Classical" },
   { key: "music", classificationName: "Music" },
   { key: "dance", classificationName: "Dance" },
@@ -20,13 +25,6 @@ function getSupabaseClient() {
   return createClient(url, key);
 }
 
-async function ensureTable(supabase: any, tableName: string) {
-  const { error } = await supabase.from(tableName).select("id").limit(1);
-  if (error?.code === "42P01") {
-    console.warn(`[sync] Table ${tableName} does not exist. Create it in Supabase dashboard.`);
-  }
-}
-
 function emit(controller: ReadableStreamDefaultController, data: unknown) {
   const chunk = `data: ${JSON.stringify(data)}\n\n`;
   controller.enqueue(new TextEncoder().encode(chunk));
@@ -34,19 +32,29 @@ function emit(controller: ReadableStreamDefaultController, data: unknown) {
 
 async function fetchTicketmasterEvents(
   apiKey: string,
-  classificationName: string,
   countryCode: string,
+  stateCode: string | undefined,
+  segmentId: string | undefined,
+  subGenreId: string | undefined,
   page: number = 0
 ) {
   const params = new URLSearchParams({
     apikey: apiKey,
-    classificationName,
     size: "200",
     page: page.toString(),
     sort: "date,asc",
   });
 
-  if (countryCode === "US") {
+  if (segmentId) {
+    params.append("segmentId", segmentId);
+    if (subGenreId) {
+      params.append("subGenreId", subGenreId);
+    }
+  }
+
+  if (stateCode) {
+    params.append("stateCode", stateCode);
+  } else if (countryCode === "US") {
     params.append("countryCode", "US");
   } else {
     params.append("countryCode", "GB,AU,CA,DE,FR,IT,ES,NL,BE,AT,CH,JP,KR,MX,BR,AR");
@@ -63,10 +71,14 @@ async function fetchTicketmasterEvents(
   return response.json();
 }
 
-function parseEvent(event: any, region: "US" | "international") {
+function pickEventFields(event: any, region: "US" | "international") {
   const start = event.dates?.start;
   const priceRanges = event.priceRanges?.[0];
   const venue = event._embedded?.venues?.[0];
+  const venueCountry = venue?.country?.countryCode || null;
+  const resolvedRegion: "US" | "international" =
+    venueCountry === "US" ? "US" : "international";
+  const classification = event.classifications?.[0];
 
   return {
     ticketmaster_id: event.id,
@@ -79,23 +91,60 @@ function parseEvent(event: any, region: "US" | "international") {
     venue: venue?.name || null,
     city: venue?.city?.name || null,
     state: venue?.state?.stateCode || venue?.state?.name || null,
-    country: venue?.country?.countryCode || (region === "US" ? "US" : "Unknown"),
-    region,
+    country: venueCountry || (region === "US" ? "US" : "Unknown"),
+    region: resolvedRegion,
     price_min: priceRanges?.min || null,
     price_max: priceRanges?.max || null,
     currency: priceRanges?.currency || "USD",
     ticket_url: event.url || null,
-    segment: event.classifications?.[0]?.segment?.name || null,
-    genre: event.classifications?.[0]?.genre?.name || null,
+    segment: classification?.segment?.name || null,
+    genre: classification?.genre?.name || null,
+    sub_category: null,
   };
+}
+
+const FIELD_MAPS: Record<string, string[]> = {
+  musical: [
+    "ticketmaster_id",
+    "title",
+    "event_date",
+    "image_url",
+    "venue",
+    "city",
+    "state",
+    "country",
+    "region",
+    "price_min",
+    "price_max",
+    "currency",
+    "ticket_url",
+    "sub_category",
+  ],
+};
+
+function applyFieldMap(raw: Record<string, unknown>, categoryKey: string): Record<string, unknown> {
+  const fields = FIELD_MAPS[categoryKey];
+  if (!fields) return raw;
+  const result: Record<string, unknown> = { ticketmaster_id: raw.ticketmaster_id };
+  for (const f of fields) {
+    if (f !== "ticketmaster_id" && f in raw) {
+      result[f] = raw[f];
+    }
+  }
+  if (categoryKey === "musical") {
+    result.sub_category = "Broadway";
+  }
+  return result;
 }
 
 async function syncCategory(
   supabase: any,
   apiKey: string,
   categoryKey: string,
-  classificationName: string,
   countryScope: "US" | "International",
+  stateCode: string | undefined,
+  segmentId: string | undefined,
+  subGenreId: string | undefined,
   controller: ReadableStreamDefaultController
 ) {
   const region = countryScope === "US" ? "US" : "international";
@@ -111,13 +160,13 @@ async function syncCategory(
     message: `Starting ${categoryKey} (${countryScope})…`,
   });
 
-  await ensureTable(supabase, tableName);
-
   for (let page = 0; page < maxPages; page++) {
     const tmData = await fetchTicketmasterEvents(
       apiKey,
-      classificationName,
       countryScope === "US" ? "US" : "INTL",
+      stateCode,
+      segmentId,
+      subGenreId,
       page
     );
 
@@ -131,9 +180,10 @@ async function syncCategory(
       break;
     }
 
-    const events = tmData._embedded.events.map((e: any) =>
-      parseEvent(e, region)
+    const rawEvents = tmData._embedded.events.map((e: any) =>
+      pickEventFields(e, region)
     );
+    const events = rawEvents.map((e) => applyFieldMap(e, categoryKey));
 
     const { data: upsertData, error: bulkError } = await supabase
       .from(tableName)
@@ -146,7 +196,7 @@ async function syncCategory(
         type: "error",
         category: categoryKey,
         scope: countryScope,
-        message: `Upsert failed: ${bulkError.message}`,
+        message: `Bulk upsert failed: ${bulkError.message}`,
       });
       for (const event of events) {
         const { error } = await supabase
@@ -209,7 +259,7 @@ export async function POST(request: NextRequest) {
 
     const stream = new ReadableStream({
       start(controller) {
-        syncCategory(supabase, apiKey, category, catConfig.classificationName, countryScope, controller)
+        syncCategory(supabase, apiKey, category, countryScope, catConfig.stateCode, catConfig.segmentId, catConfig.subGenreId, controller)
           .then(() => controller.close())
           .catch((err: any) => {
             console.error("[sync] Category sync error:", err);
@@ -233,9 +283,12 @@ export async function POST(request: NextRequest) {
       async start(controller) {
         const results: any[] = [];
         for (const cat of CATEGORIES) {
-          for (const scope of ["US", "International"] as const) {
+          const scopes = cat.key === "musical"
+            ? (["US"] as const)
+            : (["US", "International"] as const);
+          for (const scope of scopes) {
             try {
-              const result = await syncCategory(supabase, apiKey, cat.key, cat.classificationName, scope, controller);
+              const result = await syncCategory(supabase, apiKey, cat.key, scope, cat.stateCode, cat.segmentId, cat.subGenreId, controller);
               results.push({ category: cat.key, scope, ...result });
             } catch (err: any) {
               console.error(`[sync] Error syncing ${cat.key} (${scope}):`, err);
