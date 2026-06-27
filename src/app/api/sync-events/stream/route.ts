@@ -1,21 +1,42 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
-const CATEGORIES = [
-  { key: "opera", classificationName: "Opera" },
-  {
-    key: "musical",
-    segmentId: "KZFzniwnSyZfZ7v7na",
-    subGenreId: "KZazBEonSMnZfZ7vAve",
-    stateCode: "NY",
-  },
-  { key: "classical", classificationName: "Classical" },
-  { key: "music", classificationName: "Music" },
-  { key: "dance", classificationName: "Dance" },
-  { key: "electronic", classificationName: "Dance/Electronic" },
-  { key: "pop-rock", classificationName: "Pop" },
-  { key: "performance-art", classificationName: "Performance Art" },
-  { key: "other", classificationName: "Variety" },
+const MUSIC_GENRE_IDS: Array<{ id: string; name: string }> = [
+  { id: "KnvZfZ7vAvv", name: "Alternative" },
+  { id: "KnvZfZ7vAvd", name: "Blues" },
+  { id: "KnvZfZ7vAv6", name: "Country" },
+  { id: "KnvZfZ7vAva", name: "Folk" },
+  { id: "KnvZfZ7vAv1", name: "Hip-Hop/Rap" },
+  { id: "KnvZfZ7vAvE", name: "Jazz" },
+  { id: "KnvZfZ7vAJ6", name: "Latin" },
+  { id: "KnvZfZ7vAvI", name: "Medieval/Renaissance" },
+  { id: "KnvZfZ7vAvt", name: "Metal" },
+  { id: "KnvZfZ7vAvn", name: "New Age" },
+  { id: "KnvZfZ7vAvl", name: "Other" },
+  { id: "KnvZfZ7vAev", name: "Pop" },
+  { id: "KnvZfZ7vAee", name: "R&B" },
+  { id: "KnvZfZ7vAed", name: "Reggae" },
+  { id: "KnvZfZ7vAe7", name: "Religious" },
+  { id: "KnvZfZ7vAeA", name: "Rock" },
+  { id: "KnvZfZ7vAve", name: "Ballads/Romantic" },
+  { id: "KnvZfZ7vAeF", name: "World" },
+];
+
+type SyncConfig =
+  | { mode: "classificationName"; classificationName: string }
+  | { mode: "broadway" }
+  | { mode: "genreIds"; genres: Array<{ id: string; name: string }> };
+
+const CATEGORIES: Array<{ key: string; config: SyncConfig; scopes: ("US" | "International")[] }> = [
+  { key: "opera",        config: { mode: "classificationName", classificationName: "Opera" },             scopes: ["US", "International"] },
+  { key: "musical",      config: { mode: "broadway" },                                                    scopes: ["US"] },
+  { key: "classical",    config: { mode: "classificationName", classificationName: "Classical" },         scopes: ["US", "International"] },
+  { key: "music",        config: { mode: "classificationName", classificationName: "Music" },             scopes: ["US", "International"] },
+  { key: "dance",        config: { mode: "classificationName", classificationName: "Dance" },             scopes: ["US", "International"] },
+  { key: "electronic",   config: { mode: "classificationName", classificationName: "Dance/Electronic" },  scopes: ["US", "International"] },
+  { key: "pop-rock",     config: { mode: "genreIds", genres: MUSIC_GENRE_IDS },                          scopes: ["US", "International"] },
+  { key: "performance-art", config: { mode: "classificationName", classificationName: "Performance Art" }, scopes: ["US", "International"] },
+  { key: "other",        config: { mode: "classificationName", classificationName: "Variety" },          scopes: ["US", "International"] },
 ];
 
 function getSupabaseClient() {
@@ -30,12 +51,39 @@ function emit(controller: ReadableStreamDefaultController, data: unknown) {
   controller.enqueue(new TextEncoder().encode(chunk));
 }
 
+async function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+async function fetchWithRetry<T>(
+  url: string,
+  retries = 2,
+  delayMs = 500
+): Promise<T> {
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    const response = await fetch(url);
+    if (response.ok) {
+      return response.json();
+    }
+    const body = await response.text().catch(() => "");
+    const detail = body ? `: ${body.slice(0, 200)}` : "";
+    if (response.status === 429 || response.status === 400) {
+      if (attempt < retries) {
+        const wait = delayMs * Math.pow(2, attempt);
+        await new Promise((r) => setTimeout(r, wait));
+        continue;
+      }
+    }
+    throw new Error(`Ticketmaster API error: ${response.status}${detail}`);
+  }
+  throw new Error(`Ticketmaster API error after retries`);
+}
+
 async function fetchTicketmasterEvents(
   apiKey: string,
   countryCode: string,
-  stateCode: string | undefined,
-  segmentId: string | undefined,
-  subGenreId: string | undefined,
+  classificationName: string | undefined,
+  genreId: string | undefined,
   page: number = 0
 ) {
   const params = new URLSearchParams({
@@ -45,30 +93,21 @@ async function fetchTicketmasterEvents(
     sort: "date,asc",
   });
 
-  if (segmentId) {
-    params.append("segmentId", segmentId);
-    if (subGenreId) {
-      params.append("subGenreId", subGenreId);
-    }
+  if (genreId) {
+    params.append("genreId", genreId);
+  } else if (classificationName) {
+    params.append("classificationName", classificationName);
   }
 
-  if (stateCode) {
-    params.append("stateCode", stateCode);
-  } else if (countryCode === "US") {
+  if (countryCode === "US") {
     params.append("countryCode", "US");
   } else {
     params.append("countryCode", "GB,AU,CA,DE,FR,IT,ES,NL,BE,AT,CH,JP,KR,MX,BR,AR");
   }
 
-  const response = await fetch(
-    `https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`
-  );
-
-  if (!response.ok) {
-    throw new Error(`Ticketmaster API error: ${response.status}`);
-  }
-
-  return response.json();
+  const url = `https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`;
+  await sleep(250); // rate-limit protection
+  return fetchWithRetry(url);
 }
 
 function pickEventFields(event: any, region: "US" | "international") {
@@ -120,9 +159,29 @@ const FIELD_MAPS: Record<string, string[]> = {
     "ticket_url",
     "sub_category",
   ],
+  "pop-rock": [
+    "ticketmaster_id",
+    "title",
+    "event_date",
+    "image_url",
+    "venue",
+    "city",
+    "state",
+    "country",
+    "region",
+    "price_min",
+    "price_max",
+    "currency",
+    "ticket_url",
+    "sub_category",
+  ],
 };
 
-function applyFieldMap(raw: Record<string, unknown>, categoryKey: string): Record<string, unknown> {
+function applyFieldMap(
+  raw: Record<string, unknown>,
+  categoryKey: string,
+  genreName?: string
+): Record<string, unknown> {
   const fields = FIELD_MAPS[categoryKey];
   if (!fields) return raw;
   const result: Record<string, unknown> = { ticketmaster_id: raw.ticketmaster_id };
@@ -133,6 +192,8 @@ function applyFieldMap(raw: Record<string, unknown>, categoryKey: string): Recor
   }
   if (categoryKey === "musical") {
     result.sub_category = "Broadway";
+  } else if (categoryKey === "pop-rock" && genreName) {
+    result.sub_category = genreName;
   }
   return result;
 }
@@ -142,16 +203,14 @@ async function syncCategory(
   apiKey: string,
   categoryKey: string,
   countryScope: "US" | "International",
-  stateCode: string | undefined,
-  segmentId: string | undefined,
-  subGenreId: string | undefined,
+  config: SyncConfig,
   controller: ReadableStreamDefaultController
 ) {
   const region = countryScope === "US" ? "US" : "international";
-  const tableName = `${categoryKey}_events`;
+  const tableName = `${categoryKey.replace(/-/g, "_")}_events`;
   let totalUpserted = 0;
   let totalErrors = 0;
-  const maxPages = 10;
+  const maxPages = 4;
 
   emit(controller, {
     type: "start",
@@ -160,72 +219,215 @@ async function syncCategory(
     message: `Starting ${categoryKey} (${countryScope})…`,
   });
 
-  for (let page = 0; page < maxPages; page++) {
-    const tmData = await fetchTicketmasterEvents(
-      apiKey,
-      countryScope === "US" ? "US" : "INTL",
-      stateCode,
-      segmentId,
-      subGenreId,
-      page
-    );
+  if (config.mode === "broadway") {
+    for (let page = 0; page < 4; page++) {
+      const params = new URLSearchParams({
+        apikey: apiKey,
+        size: "200",
+        page: page.toString(),
+        sort: "date,asc",
+        segmentId: "KZFzniwnSyZfZ7v7na",
+        subGenreId: "KZazBEonSMnZfZ7vAve",
+      });
+      if (countryScope === "US") {
+        params.append("stateCode", "NY");
+      } else {
+        params.append("countryCode", "GB,AU,CA,DE,FR,IT,ES,NL,BE,AT,CH,JP,KR,MX,BR,AR");
+      }
 
-    if (!tmData._embedded?.events?.length) {
+      await sleep(250);
+      const url = `https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`;
+      let tmData: any;
+      try {
+        tmData = await fetchWithRetry(url);
+      } catch {
+        break;
+      }
+
+      if (!tmData._embedded?.events?.length) break;
+
+      const rawEvents = tmData._embedded.events.map((e: any) =>
+        pickEventFields(e, region)
+      );
+      const events = rawEvents.map((e) => applyFieldMap(e, categoryKey));
+
+      const { data: upsertData, error: bulkError } = await supabase
+        .from(tableName)
+        .upsert(events, { onConflict: "ticketmaster_id" })
+        .select("id");
+
+      if (bulkError) {
+        for (const event of events) {
+          const { error } = await supabase
+            .from(tableName)
+            .upsert(event, { onConflict: "ticketmaster_id" });
+          if (error) totalErrors++;
+          else totalUpserted++;
+        }
+      } else {
+        totalUpserted += upsertData?.length ?? events.length;
+      }
+
+      emit(controller, {
+        type: "progress",
+        category: categoryKey,
+        scope: countryScope,
+        page: page + 1,
+        eventCount: events.length,
+        upserted: totalUpserted,
+        errors: totalErrors,
+        message: `Broadway page ${page + 1}: ${events.length} fetched`,
+      });
+
+      const totalPages = tmData.page?.totalPages || 1;
+      if (page >= totalPages - 1) break;
+    }
+  } else if (config.mode === "genreIds") {
+    for (const genre of config.genres) {
+      let genreUpserted = 0;
+      let genreErrors = 0;
+
       emit(controller, {
         type: "info",
         category: categoryKey,
         scope: countryScope,
-        message: `No events for ${categoryKey} (${countryScope})`,
+        message: `Fetching genre: ${genre.name}`,
       });
-      break;
-    }
 
-    const rawEvents = tmData._embedded.events.map((e: any) =>
-      pickEventFields(e, region)
-    );
-    const events = rawEvents.map((e) => applyFieldMap(e, categoryKey));
+      for (let page = 0; page < maxPages; page++) {
+        const tmData = await fetchTicketmasterEvents(
+          apiKey,
+          countryScope === "US" ? "US" : "INTL",
+          undefined,
+          genre.id,
+          page
+        );
 
-    const { data: upsertData, error: bulkError } = await supabase
-      .from(tableName)
-      .upsert(events, { onConflict: "ticketmaster_id" })
-      .select("id");
+        if (!tmData._embedded?.events?.length) break;
 
-    if (bulkError) {
-      console.error(`[sync] Bulk upsert error for ${tableName} page ${page + 1}:`, bulkError);
+        const rawEvents = tmData._embedded.events.map((e: any) =>
+          pickEventFields(e, region)
+        );
+        const events = rawEvents.map((e) =>
+          applyFieldMap(e, categoryKey, genre.name)
+        );
+
+        const { data: upsertData, error: bulkError } = await supabase
+          .from(tableName)
+          .upsert(events, { onConflict: "ticketmaster_id" })
+          .select("id");
+
+        if (bulkError) {
+          emit(controller, {
+            type: "error",
+            category: categoryKey,
+            scope: countryScope,
+            message: `Bulk upsert failed for ${genre.name} page ${page + 1}: ${bulkError.message}`,
+          });
+          for (const event of events) {
+            const { error } = await supabase
+              .from(tableName)
+              .upsert(event, { onConflict: "ticketmaster_id" });
+            if (error) genreErrors++;
+            else genreUpserted++;
+          }
+        } else {
+          genreUpserted += upsertData?.length ?? events.length;
+        }
+
+        totalUpserted += genreUpserted;
+        totalErrors += genreErrors;
+
+        emit(controller, {
+          type: "progress",
+          category: categoryKey,
+          scope: countryScope,
+          genre: genre.name,
+          page: page + 1,
+          eventCount: events.length,
+          upserted: genreUpserted,
+          errors: genreErrors,
+          message: `${genre.name} page ${page + 1}: ${events.length} fetched`,
+        });
+
+        const totalPages = tmData.page?.totalPages || 1;
+        if (page >= totalPages - 1) break;
+      }
+
       emit(controller, {
-        type: "error",
+        type: "info",
         category: categoryKey,
         scope: countryScope,
-        message: `Bulk upsert failed: ${bulkError.message}`,
+        message: `${genre.name}: ${genreUpserted} upserted, ${genreErrors} errors`,
       });
-      for (const event of events) {
-        const { error } = await supabase
-          .from(tableName)
-          .upsert(event, { onConflict: "ticketmaster_id" });
-        if (error) {
-          console.error(`[sync] Single upsert error for ${event.ticketmaster_id}:`, error);
-          totalErrors++;
-        } else {
-          totalUpserted++;
-        }
-      }
-    } else {
-      totalUpserted += upsertData?.length ?? events.length;
     }
+  } else {
+    for (let page = 0; page < maxPages; page++) {
+      const tmData = await fetchTicketmasterEvents(
+        apiKey,
+        countryScope === "US" ? "US" : "INTL",
+        config.classificationName,
+        undefined,
+        page
+      );
 
-    emit(controller, {
-      type: "progress",
-      category: categoryKey,
-      scope: countryScope,
-      page: page + 1,
-      eventCount: events.length,
-      upserted: totalUpserted,
-      errors: totalErrors,
-      message: `Page ${page + 1}: ${events.length} fetched → ${upsertData?.length ?? 0} upserted (${totalErrors} errors)`,
-    });
+      if (!tmData._embedded?.events?.length) {
+        emit(controller, {
+          type: "info",
+          category: categoryKey,
+          scope: countryScope,
+          message: `No events for ${categoryKey} (${countryScope})`,
+        });
+        break;
+      }
 
-    const totalPages = tmData.page?.totalPages || 1;
-    if (page >= totalPages - 1) break;
+      const rawEvents = tmData._embedded.events.map((e: any) =>
+        pickEventFields(e, region)
+      );
+      const events = rawEvents.map((e) => applyFieldMap(e, categoryKey));
+
+      const { data: upsertData, error: bulkError } = await supabase
+        .from(tableName)
+        .upsert(events, { onConflict: "ticketmaster_id" })
+        .select("id");
+
+      if (bulkError) {
+        console.error(`[sync] Bulk upsert error for ${tableName} page ${page + 1}:`, bulkError);
+        emit(controller, {
+          type: "error",
+          category: categoryKey,
+          scope: countryScope,
+          message: `Bulk upsert failed: ${bulkError.message}`,
+        });
+        for (const event of events) {
+          const { error } = await supabase
+            .from(tableName)
+            .upsert(event, { onConflict: "ticketmaster_id" });
+          if (error) {
+            console.error(`[sync] Single upsert error for ${event.ticketmaster_id}:`, error);
+            totalErrors++;
+          } else {
+            totalUpserted++;
+          }
+        }
+      } else {
+        totalUpserted += upsertData?.length ?? events.length;
+      }
+
+      emit(controller, {
+        type: "progress",
+        category: categoryKey,
+        scope: countryScope,
+        page: page + 1,
+        eventCount: events.length,
+        upserted: totalUpserted,
+        errors: totalErrors,
+        message: `Page ${page + 1}: ${events.length} fetched → ${upsertData?.length ?? 0} upserted (${totalErrors} errors)`,
+      });
+
+      const totalPages = tmData.page?.totalPages || 1;
+      if (page >= totalPages - 1) break;
+    }
   }
 
   emit(controller, {
@@ -252,14 +454,14 @@ export async function POST(request: NextRequest) {
   const supabase = getSupabaseClient();
 
   if (category && countryScope) {
-    const catConfig = CATEGORIES.find((c) => c.key === category);
-    if (!catConfig) {
+    const catEntry = CATEGORIES.find((c) => c.key === category);
+    if (!catEntry) {
       return NextResponse.json({ error: "Invalid category" }, { status: 400 });
     }
 
     const stream = new ReadableStream({
       start(controller) {
-        syncCategory(supabase, apiKey, category, countryScope, catConfig.stateCode, catConfig.segmentId, catConfig.subGenreId, controller)
+        syncCategory(supabase, apiKey, category, countryScope, catEntry.config, controller)
           .then(() => controller.close())
           .catch((err: any) => {
             console.error("[sync] Category sync error:", err);
@@ -282,18 +484,15 @@ export async function POST(request: NextRequest) {
     const stream = new ReadableStream({
       async start(controller) {
         const results: any[] = [];
-        for (const cat of CATEGORIES) {
-          const scopes = cat.key === "musical"
-            ? (["US"] as const)
-            : (["US", "International"] as const);
-          for (const scope of scopes) {
+        for (const catEntry of CATEGORIES) {
+          for (const scope of catEntry.scopes) {
             try {
-              const result = await syncCategory(supabase, apiKey, cat.key, scope, cat.stateCode, cat.segmentId, cat.subGenreId, controller);
-              results.push({ category: cat.key, scope, ...result });
+              const result = await syncCategory(supabase, apiKey, catEntry.key, scope, catEntry.config, controller);
+              results.push({ category: catEntry.key, scope, ...result });
             } catch (err: any) {
-              console.error(`[sync] Error syncing ${cat.key} (${scope}):`, err);
-              emit(controller, { type: "error", category: cat.key, scope, message: err.message });
-              results.push({ category: cat.key, scope, error: err.message });
+              console.error(`[sync] Error syncing ${catEntry.key} (${scope}):`, err);
+              emit(controller, { type: "error", category: catEntry.key, scope, message: err.message });
+              results.push({ category: catEntry.key, scope, error: err.message });
             }
           }
         }

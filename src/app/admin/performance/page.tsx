@@ -48,6 +48,10 @@ function fmt(dateStr: string | null): string {
   });
 }
 
+function categoryToTable(slug: string): string {
+  return `${slug.replace(/-/g, "_")}_events`;
+}
+
 function fmtPrice(e: EventRow): string {
   if (!e.price_min && !e.price_max) return "Free";
   const min = e.price_min ?? "?";
@@ -165,7 +169,7 @@ function FormModal({
 
       if (modal.mode === "edit") {
         const { error } = await supabase
-          .from(`${cat}_events`)
+          .from(categoryToTable(cat))
           .update(payload)
           .eq("ticketmaster_id", modal.row.ticketmaster_id);
         if (error) throw error;
@@ -173,7 +177,7 @@ function FormModal({
       } else {
         const id = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
         const { data, error } = await supabase
-          .from(`${cat}_events`)
+          .from(categoryToTable(cat))
           .insert({ ...payload, ticketmaster_id: id })
           .select()
           .single();
@@ -340,7 +344,7 @@ export default function PerformancePage() {
     setErr(null);
     setTableMissing(false);
     try {
-      const table = `${cat}_events`;
+      const table = categoryToTable(cat);
       const offset = (page - 1) * pageSize;
 
       let q = supabase.from(table).select("*", { count: "exact" });
@@ -387,7 +391,7 @@ export default function PerformancePage() {
       for (const c of CATEGORIES) {
         try {
           const { count, error } = await supabase
-            .from(`${c.value}_events`)
+            .from(categoryToTable(c.value))
             .select("*", { count: "exact", head: true });
           if (error && error.code === "42P01") {
             result[c.value] = -1;
@@ -414,7 +418,7 @@ export default function PerformancePage() {
     }
     try {
       const { error } = await supabase
-        .from(`${cat}_events`)
+        .from(categoryToTable(cat))
         .delete()
         .eq("ticketmaster_id", row.ticketmaster_id);
       if (error) throw error;

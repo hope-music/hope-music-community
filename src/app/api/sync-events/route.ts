@@ -21,7 +21,7 @@ function getSupabaseClient() {
 }
 
 function getTableName(category: string) {
-  return `${category}_events`;
+  return `${category.replace(/-/g, "_")}_events`;
 }
 
 async function fetchTicketmasterEvents(

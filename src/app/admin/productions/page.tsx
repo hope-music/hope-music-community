@@ -17,6 +17,10 @@ const CATEGORIES = [
 
 const PAGE_SIZES = [20, 50, 100, 200];
 
+function categoryToTable(slug: string): string {
+  return `${slug.replace(/-/g, "_")}_events`;
+}
+
 interface EventItem {
   id: string;
   ticketmaster_id: string;
@@ -134,7 +138,7 @@ export default function StageProductionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const tableName = `${selectedCategory}_events`;
+      const tableName = categoryToTable(selectedCategory);
       const from = (currentPage - 1) * pageSize;
 
       let query = supabase.from(tableName).select("*", { count: "exact" });
@@ -168,7 +172,7 @@ export default function StageProductionsPage() {
   const getCategoryCounts = async () => {
     const counts: Record<string, number> = {};
     for (const cat of CATEGORIES) {
-      const tableName = `${cat.value}_events`;
+      const tableName = categoryToTable(cat.value);
       const { count } = await supabase.from(tableName).select("*", { count: "exact", head: true });
       counts[cat.value] = count || 0;
     }
@@ -218,8 +222,8 @@ export default function StageProductionsPage() {
     }
 
     try {
-      const tableName = `${selectedCategory}_events`;
-      const { error: deleteError } = await createSupabaseAdmin().from(tableName).delete().eq("ticketmaster_id", event.ticketmaster_id);
+const tableName = categoryToTable(selectedCategory);
+    const { error: deleteError } = await createSupabaseAdmin().from(tableName).delete().eq("ticketmaster_id", event.ticketmaster_id);
       if (deleteError) throw deleteError;
 
       setEvents((prev) => prev.filter((e) => e.ticketmaster_id !== event.ticketmaster_id));
@@ -259,7 +263,7 @@ export default function StageProductionsPage() {
     setEditLoading(true);
     try {
       const adminClient = createSupabaseAdmin();
-      const tableName = `${selectedCategory}_events`;
+      const tableName = categoryToTable(selectedCategory);
 
       const updateData: Record<string, any> = {
         title: editForm.title,
@@ -303,8 +307,8 @@ export default function StageProductionsPage() {
     setMoveLoading(true);
     try {
       const adminClient = createSupabaseAdmin();
-      const sourceTable = `${selectedCategory}_events`;
-      const targetTable = `${moveTargetCategory}_events`;
+      const sourceTable = categoryToTable(selectedCategory);
+      const targetTable = categoryToTable(moveTargetCategory);
 
       for (const event of movingEvents) {
         const { error: deleteError } = await adminClient.from(sourceTable).delete().eq("ticketmaster_id", event.ticketmaster_id);
@@ -343,7 +347,7 @@ export default function StageProductionsPage() {
 
     try {
       const adminClient = createSupabaseAdmin();
-      const tableName = `${selectedCategory}_events`;
+      const tableName = categoryToTable(selectedCategory);
 
       for (const id of selectedIds) {
         const { error } = await adminClient.from(tableName).delete().eq("ticketmaster_id", id);
@@ -374,7 +378,7 @@ export default function StageProductionsPage() {
     setAddLoading(true);
     try {
       const adminClient = createSupabaseAdmin();
-      const tableName = `${selectedCategory}_events`;
+      const tableName = categoryToTable(selectedCategory);
 
       const insertData = {
         ticketmaster_id: `manual_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`,

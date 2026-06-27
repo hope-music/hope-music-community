@@ -151,9 +151,6 @@ export default function PerformanceCategoryPage() {
   const params = useParams();
   const category = (params.category as string) || "";
   const categoryLabel = PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.value === category)?.label || category;
-  const isOpera = category === "opera";
-  const isMusical = category === "musical";
-  const isOperaMusical = isOpera || isMusical;
 
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedCity, setSelectedCity] = useState("all");
@@ -169,10 +166,10 @@ export default function PerformanceCategoryPage() {
   // Available cities for dropdown
   const [availableCities, setAvailableCities] = useState<string[]>([]);
 
-  const tableName = isOpera ? "opera_events" : isMusical ? "musical_events" : "";
+  const tableName = `${category.replace(/-/g, "_")}_events`;
 
   const loadEvents = useCallback(async () => {
-    if (!isOperaMusical || !tableName) return;
+    if (!tableName) return;
     setEventLoading(true);
     setEventError(null);
     try {
@@ -186,17 +183,17 @@ export default function PerformanceCategoryPage() {
     } finally {
       setEventLoading(false);
     }
-  }, [isOperaMusical, tableName, currentPage, selectedCity, dateRange.start, dateRange.end, countryScope]);
+  }, [tableName, currentPage, selectedCity, dateRange.start, dateRange.end, countryScope]);
 
   const loadCities = useCallback(async () => {
-    if (!isOperaMusical || !tableName) return;
+    if (!tableName) return;
     try {
       const cities = await fetchAvailableCities(tableName, countryScope);
       setAvailableCities(cities);
     } catch {
       setAvailableCities([]);
     }
-  }, [isOperaMusical, tableName, countryScope]);
+  }, [tableName, countryScope]);
 
   useEffect(() => {
     loadEvents();
@@ -214,7 +211,7 @@ export default function PerformanceCategoryPage() {
     setEventPage({ items: [], total: 0 });
   }, [category]);
 
-  const loading = isOperaMusical ? eventLoading : true;
+  const loading = eventLoading;
 
   const cityOptionGroups = useMemo<FilterGroup[]>(() => {
     const available = availableCities;
@@ -252,7 +249,7 @@ export default function PerformanceCategoryPage() {
   const normActive = normCity === "all" ? "all" : normalizeCity(normCity);
 
   const filteredItems = useMemo(() => {
-    if (!isOperaMusical) return [];
+    if (!tableName) return [];
     return eventPage.items.map((e) => ({
       _id: e.ticketmaster_id || e._id,
       id: e.ticketmaster_id || e._id,
@@ -265,7 +262,7 @@ export default function PerformanceCategoryPage() {
       countryScope: e.region === "US" ? "United States" : "International" as CountryScope,
       url: e.ticket_url || "",
     }));
-  }, [isOperaMusical, eventPage, category]);
+  }, [tableName, eventPage, category]);
 
   useEffect(() => {
     setCurrentPage(1);

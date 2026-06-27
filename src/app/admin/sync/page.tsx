@@ -48,7 +48,7 @@ export default function SyncPage() {
   const fetchCounts = useCallback(async () => {
     const counts: Record<string, CategoryCount> = {};
     for (const cat of CATEGORIES) {
-      const tableName = `${cat.value}_events`;
+      const tableName = `${cat.value.replace(/-/g, "_")}_events`;
       const { count: usCount } = await supabase
         .from(tableName)
         .select("*", { count: "exact", head: true })

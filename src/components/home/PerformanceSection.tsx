@@ -4,7 +4,6 @@ import Image from "next/image";
 import { CategoryBox } from "@/components/ui/CategoryBox";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
-import { useQuery, api } from "@/lib/convex";
 import { PERFORMANCE_CATEGORIES, PERFORMANCE_CATEGORY_OPTIONS, CATEGORY_FALLBACK_IMAGES } from "@/lib/constants";
 import { useEffect, useState } from "react";
 
@@ -208,19 +207,53 @@ function OperaCard({ label }: { label: string }) {
 }
 
 function CategoryCard({ slug, label }: { slug: string; label: string }) {
-  const isOpera = slug === "opera";
-  const isMusical = slug === "musical";
+  const [item, setItem] = useState<CategoryData | null>(null);
+  const [total, setTotal] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
 
-  const convexLatest = useQuery(
-    isOpera || isMusical ? api.admin.getLatestStageProduction : api.admin.getLatestStageProduction,
-    isOpera || isMusical ? { category: "opera-skip" } : { category: slug }
-  ) as CategoryData | null | undefined;
+  useEffect(() => {
+    async function load() {
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+        if (!supabaseUrl || !supabaseKey) return;
 
-  const counts = useQuery(api.admin.getStageProductionsCount);
+        const { createClient } = await import("@supabase/supabase-js");
+        const supabase = createClient(supabaseUrl, supabaseKey);
+        const tableName = `${slug.replace(/-/g, "_")}_events`;
+        const now = new Date();
+        const ninetyDaysLater = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
 
-  const item: CategoryData | null = isOpera || isMusical ? null : (convexLatest ?? null);
-  const loading = convexLatest === undefined;
-  const total = counts?.[slug] ?? 0;
+        const { data } = await supabase
+          .from(tableName)
+          .select("*")
+          .gte("event_date", now.toISOString())
+          .lte("event_date", ninetyDaysLater)
+          .order("event_date", { ascending: true })
+          .limit(1);
+
+        if (data && data.length > 0) {
+          const row = data[0] as EventRow;
+          setItem({
+            title: row.title,
+            coverImage: row.image_url || "",
+            url: row.ticket_url || `/performance/${slug}`,
+            eventDate: row.event_date ? new Date(row.event_date).getTime() : null,
+          });
+        }
+
+        const { count } = await supabase
+          .from(tableName)
+          .select("ticketmaster_id", { count: "exact", head: true })
+          .gte("event_date", now.toISOString())
+          .lte("event_date", ninetyDaysLater);
+        setTotal(count ?? 0);
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [slug]);
 
   const fallbackImage = CATEGORY_FALLBACK_IMAGES[label] || CATEGORY_FALLBACK_IMAGES["Other"];
   const imageSrc = item?.coverImage?.startsWith("http") ? item.coverImage : fallbackImage;
