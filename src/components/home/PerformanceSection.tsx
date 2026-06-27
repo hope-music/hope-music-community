@@ -27,17 +27,20 @@ interface OperaEvent {
 
 function CategoryCard({ slug, label }: { slug: string; label: string }) {
   const isOpera = slug === "opera";
+  const isMusical = slug === "musical";
 
-  // Skip the Convex query for opera — it uses Supabase instead
+  // Skip the Convex query for opera & musical — they use Supabase instead
   const convexLatest = useQuery(
-    isOpera ? api.admin.getLatestStageProduction : api.admin.getLatestStageProduction,
-    isOpera ? { category: "opera-skip" } : { category: slug }
+    isOpera || isMusical ? api.admin.getLatestStageProduction : api.admin.getLatestStageProduction,
+    isOpera || isMusical ? { category: "opera-skip" } : { category: slug }
   ) as CategoryData | null | undefined;
 
   const counts = useQuery(api.admin.getStageProductionsCount);
 
   const [operaLatest, setOperaLatest] = useState<OperaEvent | null>(null);
   const [operaLoading, setOperaLoading] = useState(isOpera);
+  const [musicalLatest, setMusicalLatest] = useState<OperaEvent | null>(null);
+  const [musicalLoading, setMusicalLoading] = useState(isMusical);
 
   useEffect(() => {
     if (!isOpera) return;
@@ -79,19 +82,61 @@ function CategoryCard({ slug, label }: { slug: string; label: string }) {
     fetchOperaLatest();
   }, [isOpera]);
 
-  const item: CategoryData | null = isOpera
-    ? operaLatest
+  useEffect(() => {
+    if (!isMusical) return;
+
+    async function fetchMusicalLatest() {
+      setMusicalLoading(true);
+      try {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+
+        if (!supabaseUrl || !supabaseKey) {
+          setMusicalLatest(null);
+          return;
+        }
+
+        const { createClient } = await import("@supabase/supabase-js");
+        const supabase = createClient(supabaseUrl, supabaseKey);
+
+        const { data, error } = await supabase
+          .from("musical_events")
+          .select("*")
+          .order("event_date", { ascending: true })
+          .limit(1);
+
+        if (error) {
+          console.error("Failed to fetch musical latest:", error);
+          setMusicalLatest(null);
+        } else {
+          setMusicalLatest(data && data.length > 0 ? data[0] : null);
+        }
+      } catch (err) {
+        console.error("Failed to fetch musical latest:", err);
+        setMusicalLatest(null);
+      } finally {
+        setMusicalLoading(false);
+      }
+    }
+
+    fetchMusicalLatest();
+  }, [isMusical]);
+
+  const supabaseItem = isOpera ? operaLatest : isMusical ? musicalLatest : null;
+
+  const item: CategoryData | null = isOpera || isMusical
+    ? supabaseItem
       ? {
-          title: operaLatest.title,
-          coverImage: operaLatest.image_url || "",
-          url: operaLatest.ticket_url || "/opera",
-          eventDate: operaLatest.event_date ? new Date(operaLatest.event_date).getTime() : null,
+          title: supabaseItem.title,
+          coverImage: supabaseItem.image_url || "",
+          url: supabaseItem.ticket_url || (isOpera ? "/opera" : "/performance/musical"),
+          eventDate: supabaseItem.event_date ? new Date(supabaseItem.event_date).getTime() : null,
         }
       : null
     : convexLatest ?? null;
 
-  const loading = isOpera ? operaLoading : convexLatest === undefined;
-  const total = isOpera ? (operaLatest ? "?" : 0) : (counts?.[slug] ?? 0);
+  const loading = (isOpera ? operaLoading : isMusical ? musicalLoading : convexLatest === undefined);
+  const total = isOpera || isMusical ? (supabaseItem ? "?" : 0) : (counts?.[slug] ?? 0);
 
   const fallbackImage = CATEGORY_FALLBACK_IMAGES[slug] || CATEGORY_FALLBACK_IMAGES["Other"];
   const imageSrc = item?.coverImage?.startsWith("http") ? item.coverImage : fallbackImage;
