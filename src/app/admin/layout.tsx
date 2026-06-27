@@ -5,8 +5,8 @@ import { useRouter, usePathname } from "next/navigation";
 import Link from "next/link";
 
 const BASE_NAV_ITEMS = [
-  { label: "Sync Events", href: "/admin/sync" },
-  { label: "Performance", href: "/admin/productions" },
+  { label: "Performance", href: "/admin/performance" },
+  { label: "Sync", href: "/admin/sync" },
   { label: "Interaction", href: "/admin/interaction" },
   { label: "Hope Studio", href: "/admin/hope-studio" },
   { label: "Insights", href: "/admin/insights" },

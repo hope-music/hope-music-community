@@ -47,9 +47,7 @@ export default function AdminCooperationPage() {
     } catch (e) {
     }
     setIsLoading(false);
-  };
-
-  const handleDelete = (id: number, type: "cooperation" | "business") => {
+  };const handleDelete = (id: number, type: "cooperation" | "business") => {
     if (!confirm("Delete this submission?")) return;
 
     const key = type === "cooperation" ? "cooperation_submissions" : "business_cooperation_submissions";
@@ -118,8 +116,7 @@ export default function AdminCooperationPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Cooperation Submissions</h1>
           <p className="mt-1 text-sm text-gray-500">Manage cooperation submissions</p>
-        </div>
-      </div>
+        </div></div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4">

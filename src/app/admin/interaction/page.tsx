@@ -198,16 +198,13 @@ export default function AdminInteractionPage() {
   } | null>(null);
   const [violationLoading, setViolationLoading] = useState(false);
 
-  // Load data
-  useEffect(() => {
+  const loadData = () => {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem(INTERACTION_STORAGE_KEY);
       if (stored) {
         try {
           const data = parseInteractionItems<Interaction>(stored);
           const normalizedData = normalizeInteractionItems(data);
-
-          // If data is corrupted or too few, reset to default
           if (!normalizedData || normalizedData.length < 10) {
             const defaults = getDefaultPosts();
             setItems(defaults);
@@ -224,13 +221,16 @@ export default function AdminInteractionPage() {
       } else {
         const defaults = getDefaultPosts();
         setItems(defaults);
-          localStorage.setItem(INTERACTION_STORAGE_KEY, JSON.stringify(defaults));
+        localStorage.setItem(INTERACTION_STORAGE_KEY, JSON.stringify(defaults));
       }
       setIsInitialized(true);
     }
-  }, []);
+  };
 
-  // Show toast message
+  // Load data
+  useEffect(() => {
+    loadData();
+  }, []);// Show toast message
   useEffect(() => {
     if (message) {
       const t = setTimeout(() => setMessage(null), 5000);
@@ -662,7 +662,8 @@ export default function AdminInteractionPage() {
           <h1 className="text-2xl font-bold text-gray-900">Interaction</h1>
           <p className="mt-1 text-sm text-gray-500">Manage interaction posts</p>
         </div>
-        <button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">+ New Topic</button>
+        <div className="flex items-center gap-2"><button onClick={handleNew} className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700">+ New Topic</button>
+        </div>
       </div>
 
       {/* Tabs and Filters */}

@@ -283,9 +283,7 @@ export default function NewsAdminPage() {
       const t = setTimeout(() => setMessage(null), 5000);
       return () => clearTimeout(t);
     }
-  }, [message]);
-
-  const articles = allArticles || [];
+  }, [message]);const articles = allArticles || [];
 
   // Upload image to Convex storage and get actual URL
   const uploadImage = async (file: File): Promise<string> => {
@@ -466,12 +464,13 @@ export default function NewsAdminPage() {
           <h1 className="text-2xl font-bold text-gray-900">News</h1>
           <p className="mt-1 text-sm text-gray-500">Manage news articles ({articles.length} total)</p>
         </div>
-        <button
-          onClick={handleNewArticle}
-          className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-        >
-          + New Article
-        </button>
+        <div className="flex items-center gap-2"><button
+            onClick={handleNewArticle}
+            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+          >
+            + New Article
+          </button>
+        </div>
       </div>
 
       {/* Message */}

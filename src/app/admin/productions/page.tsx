@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase, createSupabaseAdmin } from "@/lib/supabase";
 
 const CATEGORIES = [
   { value: "musical", label: "Musical", icon: "🎬" },
@@ -57,15 +58,6 @@ interface EditFormData {
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "";
   return new Date(dateStr).toLocaleDateString();
-}
-
-function getSupabaseClient(serviceRole = false) {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = serviceRole
-    ? (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY)!
-    : process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
-  const { createClient } = require("@supabase/supabase-js");
-  return createClient(supabaseUrl, supabaseKey);
 }
 
 export default function StageProductionsPage() {
@@ -142,7 +134,6 @@ export default function StageProductionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const supabase = getSupabaseClient();
       const tableName = `${selectedCategory}_events`;
       const from = (currentPage - 1) * pageSize;
 
@@ -174,9 +165,7 @@ export default function StageProductionsPage() {
   useEffect(() => {
     fetchEvents();
   }, [fetchEvents]);
-
   const getCategoryCounts = async () => {
-    const supabase = getSupabaseClient();
     const counts: Record<string, number> = {};
     for (const cat of CATEGORIES) {
       const tableName = `${cat.value}_events`;
@@ -229,9 +218,8 @@ export default function StageProductionsPage() {
     }
 
     try {
-      const supabase = getSupabaseClient(true);
       const tableName = `${selectedCategory}_events`;
-      const { error: deleteError } = await supabase.from(tableName).delete().eq("ticketmaster_id", event.ticketmaster_id);
+      const { error: deleteError } = await createSupabaseAdmin().from(tableName).delete().eq("ticketmaster_id", event.ticketmaster_id);
       if (deleteError) throw deleteError;
 
       setEvents((prev) => prev.filter((e) => e.ticketmaster_id !== event.ticketmaster_id));
@@ -270,7 +258,7 @@ export default function StageProductionsPage() {
     if (!editingEvent) return;
     setEditLoading(true);
     try {
-      const supabase = getSupabaseClient(true);
+      const adminClient = createSupabaseAdmin();
       const tableName = `${selectedCategory}_events`;
 
       const updateData: Record<string, any> = {
@@ -290,7 +278,7 @@ export default function StageProductionsPage() {
         image_url: editForm.image_url || null,
       };
 
-      const { error: updateError } = await supabase
+      const { error: updateError } = await adminClient
         .from(tableName)
         .update(updateData)
         .eq("ticketmaster_id", editingEvent.ticketmaster_id);
@@ -314,12 +302,12 @@ export default function StageProductionsPage() {
     if (!moveTargetCategory || movingEvents.length === 0) return;
     setMoveLoading(true);
     try {
-      const supabase = getSupabaseClient(true);
+      const adminClient = createSupabaseAdmin();
       const sourceTable = `${selectedCategory}_events`;
       const targetTable = `${moveTargetCategory}_events`;
 
       for (const event of movingEvents) {
-        const { error: deleteError } = await supabase.from(sourceTable).delete().eq("ticketmaster_id", event.ticketmaster_id);
+        const { error: deleteError } = await adminClient.from(sourceTable).delete().eq("ticketmaster_id", event.ticketmaster_id);
         if (deleteError) throw deleteError;
 
         const insertData = {
@@ -329,7 +317,7 @@ export default function StageProductionsPage() {
         };
         delete (insertData as any).id;
 
-        const { error: insertError } = await supabase.from(targetTable).insert(insertData);
+        const { error: insertError } = await adminClient.from(targetTable).insert(insertData);
         if (insertError) throw insertError;
       }
 
@@ -354,11 +342,11 @@ export default function StageProductionsPage() {
     if (!confirm(`Delete ${selectedIds.size} selected events?`)) return;
 
     try {
-      const supabase = getSupabaseClient(true);
+      const adminClient = createSupabaseAdmin();
       const tableName = `${selectedCategory}_events`;
 
       for (const id of selectedIds) {
-        const { error } = await supabase.from(tableName).delete().eq("ticketmaster_id", id);
+        const { error } = await adminClient.from(tableName).delete().eq("ticketmaster_id", id);
         if (error) throw error;
       }
 
@@ -385,7 +373,7 @@ export default function StageProductionsPage() {
     }
     setAddLoading(true);
     try {
-      const supabase = getSupabaseClient(true);
+      const adminClient = createSupabaseAdmin();
       const tableName = `${selectedCategory}_events`;
 
       const insertData = {
@@ -408,7 +396,7 @@ export default function StageProductionsPage() {
         source: "manual",
       };
 
-      const { error: insertError } = await supabase.from(tableName).insert(insertData);
+      const { error: insertError } = await adminClient.from(tableName).insert(insertData);
       if (insertError) throw insertError;
 
       setShowAddModal(false);
@@ -440,12 +428,13 @@ export default function StageProductionsPage() {
             </span>
           </p>
         </div>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-        >
-          + Add Manual Event
-        </button>
+        <div className="flex items-center gap-2"><button
+            onClick={() => setShowAddModal(true)}
+            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+          >
+            + Add Manual Event
+          </button>
+        </div>
       </div>
 
       {/* Category Tabs */}
@@ -1085,11 +1074,7 @@ export default function StageProductionsPage() {
       <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
         <p className="text-sm text-gray-600">
           <strong>Note:</strong> This page displays events from Supabase database.
-          Use the{" "}
-          <a href="/admin/sync" className="text-blue-600 hover:underline">
-            Sync Events
-          </a>{" "}
-          page to fetch new events from Ticketmaster. Manual events are marked with ✋.
+          Use the Sync Events page to fetch new events from Ticketmaster. Manual events are marked with ✋.
         </p>
       </div>
     </div>

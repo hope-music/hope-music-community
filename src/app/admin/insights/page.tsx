@@ -284,9 +284,7 @@ export default function AdminInsightsPage() {
       const t = setTimeout(() => setMessage(null), 5000);
       return () => clearTimeout(t);
     }
-  }, [message]);
-
-  const insightsList = insights || [];
+  }, [message]);const insightsList = insights || [];
 
   // Upload image to Convex storage and get actual URL
   const uploadImage = async (file: File): Promise<string> => {
@@ -467,12 +465,13 @@ export default function AdminInsightsPage() {
           <h1 className="text-2xl font-bold text-gray-900">Insights</h1>
           <p className="mt-1 text-sm text-gray-500">Manage insights ({insightsList.length} total)</p>
         </div>
-        <button
-          onClick={handleNewInsight}
-          className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
-        >
-          + New Insight
-        </button>
+        <div className="flex items-center gap-2"><button
+            onClick={handleNewInsight}
+            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
+          >
+            + New Insight
+          </button>
+        </div>
       </div>
 
       {/* Message */}

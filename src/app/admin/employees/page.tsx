@@ -62,9 +62,7 @@ export default function EmployeesPage() {
   const createEmployeeFn = useMutation(api.admin.createEmployee);
   const toggleUserStatusFn = useMutation(api.admin.toggleUserStatus);
   const updateUserRoleFn = useMutation(api.admin.updateUserRole);
-  const deleteUserFn = useMutation(api.admin.deleteUser);
-
-  // Listen for messages
+  const deleteUserFn = useMutation(api.admin.deleteUser);// Listen for messages
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(null), 4000);
@@ -211,11 +209,11 @@ export default function EmployeesPage() {
               <span className="text-red-500"> | Disabled {disabledCount}</span>
             </p>
           </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
-          >
-            <span>+</span> New Employee
+          <div className="flex items-center gap-2"><button
+              onClick={() => setShowCreateModal(true)}
+              className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
+            >
+              <span>+</span> New Employee
           </button>
         </div>
 

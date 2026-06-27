@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
 
 const CATEGORIES = [
   { value: "musical", label: "Musical", icon: "🎬" },
@@ -33,12 +33,6 @@ interface CategoryCount {
   International: number;
 }
 
-function getSupabaseClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
-  return createClient(supabaseUrl, supabaseKey);
-}
-
 function getRowKey(category: string, scope: Region) {
   return `${category}-${scope}`;
 }
@@ -52,7 +46,6 @@ export default function SyncPage() {
   const [syncAllDone, setSyncAllDone] = useState(false);
 
   const fetchCounts = useCallback(async () => {
-    const supabase = getSupabaseClient();
     const counts: Record<string, CategoryCount> = {};
     for (const cat of CATEGORIES) {
       const tableName = `${cat.value}_events`;
@@ -181,7 +174,7 @@ export default function SyncPage() {
     // Mark all rows as running immediately
     const allProgress: Record<string, SyncProgress> = {};
     for (const cat of CATEGORIES) {
-      for (const scope of ["US", "International"] as Region[]) {
+      for (const scope of getScopes(cat.value)) {
         const key = getRowKey(cat.value, scope);
         allProgress[key] = {
           category: cat.value,
@@ -282,7 +275,7 @@ export default function SyncPage() {
         setSyncAllRunning(false);
         const allProgress: Record<string, SyncProgress> = {};
         for (const cat of CATEGORIES) {
-          for (const scope of ["US", "International"] as Region[]) {
+          for (const scope of getScopes(cat.value)) {
             const key = getRowKey(cat.value, scope);
             allProgress[key] = {
               category: cat.value,
@@ -298,6 +291,9 @@ export default function SyncPage() {
         setProgress(allProgress);
       });
   }
+
+  const getScopes = (categoryKey: string) =>
+    categoryKey === "musical" ? (["US"] as Region[]) : (["US", "International"] as Region[]);
 
   const totalRecords = Object.values(categoryCounts).reduce(
     (sum, c) => sum + c.US + c.International,
@@ -346,6 +342,7 @@ export default function SyncPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {CATEGORIES.map((cat) => {
+              const scopes = getScopes(cat.value);
               const usKey = getRowKey(cat.value, "US");
               const intlKey = getRowKey(cat.value, "International");
               const usProgress = progress[usKey];
@@ -406,9 +403,11 @@ export default function SyncPage() {
                     )}
                   </td>
 
-                  {/* Int'l Sync Cell */}
+                  {/* Int'l Sync Cell — hidden for Musical (Broadway is US-only) */}
                   <td className="px-4 py-3">
-                    {intlProgress?.status === "running" ? (
+                    {cat.value === "musical" ? (
+                      <span className="text-xs text-gray-300 italic">N/A</span>
+                    ) : intlProgress?.status === "running" ? (
                       <div className="space-y-1">
                         <div className="flex justify-between text-xs text-blue-600">
                           <span>{intlProgress.message}</span>

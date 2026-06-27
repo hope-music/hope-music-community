@@ -252,74 +252,56 @@ export default function AdminHopeStudioPage() {
   const [comments, setComments] = useState<Comment[]>([]);
   const [bannedUsers, setBannedUsers] = useState<BanEntry[]>([]);
 
-  useEffect(() => {
+  const loadData = () => {
     const stored = localStorage.getItem("hope_studio_content");
     if (stored) {
       setItems(JSON.parse(stored));
     }
 
-    // Load welcome data
     const welcomeStored = localStorage.getItem(WELCOME_STORAGE_KEY);
     if (welcomeStored) {
       try {
-        const parsed = JSON.parse(welcomeStored);
-        setWelcomeData({ ...DEFAULT_WELCOME_DATA, ...parsed });
-      } catch (e) {
-        // Silent fail
-      }
+        setWelcomeData({ ...DEFAULT_WELCOME_DATA, ...JSON.parse(welcomeStored) });
+      } catch (e) { /* silent */ }
     }
 
-    // Load studio data
     const studioStored = localStorage.getItem(STUDIO_STORAGE_KEY);
     if (studioStored) {
       try {
-        const parsed = JSON.parse(studioStored);
-        setStudioData({ ...DEFAULT_STUDIO_DATA, ...parsed });
-      } catch (e) {
-        // Silent fail
-      }
+        setStudioData({ ...DEFAULT_STUDIO_DATA, ...JSON.parse(studioStored) });
+      } catch (e) { /* silent */ }
     }
 
-    // Load Jesse Liu data
     const jesseLiuStored = localStorage.getItem(JESSE_LIU_STORAGE_KEY);
     if (jesseLiuStored) {
       try {
-        const parsed = JSON.parse(jesseLiuStored);
-        setJesseLiuData({ ...DEFAULT_JESSE_LIU_DATA, ...parsed });
-      } catch (e) {
-        // Silent fail
-      }
+        setJesseLiuData({ ...DEFAULT_JESSE_LIU_DATA, ...JSON.parse(jesseLiuStored) });
+      } catch (e) { /* silent */ }
     }
 
-    // Load Shangri-La data
     const shangriLaStored = localStorage.getItem(SHANGRI_LA_STORAGE_KEY);
     if (shangriLaStored) {
       try {
-        const parsed = JSON.parse(shangriLaStored);
-        setShangriLaData({ ...DEFAULT_SHANGRI_LA_DATA, ...parsed });
-      } catch (e) {
-        // Silent fail
-      }
+        setShangriLaData({ ...DEFAULT_SHANGRI_LA_DATA, ...JSON.parse(shangriLaStored) });
+      } catch (e) { /* silent */ }
     }
 
-    // Load Cooperation data
     const cooperationStored = localStorage.getItem(COOPERATION_STORAGE_KEY);
     if (cooperationStored) {
       try {
-        const parsed = JSON.parse(cooperationStored);
-        setCooperationData({ ...DEFAULT_COOPERATION_DATA, ...parsed });
-      } catch (e) {
-        // Silent fail
-      }
+        setCooperationData({ ...DEFAULT_COOPERATION_DATA, ...JSON.parse(cooperationStored) });
+      } catch (e) { /* silent */ }
     }
+  };
+
+  useEffect(() => {
+    loadData();
   }, []);
 
   const saveToStorage = (data: ContentItem[]) => {
     localStorage.setItem("hope_studio_content", JSON.stringify(data));
     setItems(data);
-  };
-
-  useEffect(() => { if (message) { const t = setTimeout(() => setMessage(null), 10000); return () => clearTimeout(t); } }, [message]);
+  };useEffect(() => { if (message) { const t = setTimeout(() => setMessage(null), 10000); return () => clearTimeout(t); } }, [message]);
 
   // Comment management functions
   const loadComments = (itemId: string) => {
@@ -337,8 +319,6 @@ export default function AdminHopeStudioPage() {
     } else {
       setBannedUsers([]);
     }
-  };
-
   const saveComments = (itemId: string, newComments: Comment[]) => {
     const stored = localStorage.getItem(COMMENTS_STORAGE_KEY);
     const allComments = stored ? JSON.parse(stored) : {};
@@ -709,8 +689,7 @@ export default function AdminHopeStudioPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Hope Studio</h1>
           <p className="mt-1 text-sm text-gray-500">Manage Hope Studio content</p>
-        </div>
-      </div>
+        </div></div>
 
       {/* Success/Error Toast */}
       {message && (
