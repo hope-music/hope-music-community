@@ -4,12 +4,15 @@ import { NextRequest, NextResponse } from "next/server";
 const CATEGORIES = [
   { key: "opera", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Opera" },
   { key: "musical", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Broadway" },
-  { key: "classical", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Classical" },
-  { key: "music", segmentId: "KZFzniwnSyZfZ7v7nE", classificationName: "Music" },
-  { key: "dance", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Dance" },
+  { key: "classical", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Classical", segmentName: "Arts & Theatre" },
+  { key: "concert", segmentId: "KZFzniwnSyZfZ7v7nE", classificationName: "Music" },
   { key: "electronic", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Dance/Electronic" },
-  { key: "pop-rock", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Pop" },
-  { key: "performance-art", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Performance Art" },
+  { key: "pop", segmentId: "KZFzniwnSyZfZ7v7nE", classificationName: "Pop" },
+  { key: "rock", segmentId: "KZFzniwnSyZfZ7v7nE", classificationName: "Rock" },
+  { key: "hip-hop-rap", segmentId: "KZFzniwnSyZfZ7v7nE", classificationName: "Hip-Hop/Rap" },
+  { key: "country", segmentId: "KZFzniwnSyZfZ7v7nE", classificationName: "Country" },
+  { key: "latin", segmentId: "KZFzniwnSyZfZ7v7nE", classificationName: "Latin" },
+  { key: "dance", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Dance" },
   { key: "other", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Variety" },
 ];
 
@@ -27,7 +30,8 @@ function getTableName(category: string) {
 async function fetchTicketmasterEvents(
   classificationName: string,
   countryCode: string,
-  page: number = 0
+  page: number = 0,
+  segmentName?: string
 ) {
   const apiKey = process.env.TICKETMASTER_API_KEY;
   if (!apiKey) throw new Error("TICKETMASTER_API_KEY not configured");
@@ -39,6 +43,10 @@ async function fetchTicketmasterEvents(
     page: page.toString(),
     sort: "date,asc",
   });
+
+  if (segmentName) {
+    params.append("segmentName", segmentName);
+  }
 
   if (countryCode === "US") {
     params.append("countryCode", "US");
@@ -88,7 +96,8 @@ async function syncCategory(
   supabase: any,
   categoryKey: string,
   classificationName: string,
-  countryScope: "US" | "International"
+  countryScope: "US" | "International",
+  segmentName?: string
 ) {
   const region = countryScope === "US" ? "US" : "international";
   const tableName = getTableName(categoryKey);
@@ -97,7 +106,7 @@ async function syncCategory(
   const maxPages = 10;
 
   for (let page = 0; page < maxPages; page++) {
-    const tmData = await fetchTicketmasterEvents(classificationName, countryScope === "US" ? "US" : "INTL", page);
+    const tmData = await fetchTicketmasterEvents(classificationName, countryScope === "US" ? "US" : "INTL", page, segmentName);
 
     if (!tmData._embedded?.events?.length) break;
 
@@ -134,7 +143,7 @@ export async function POST(request: NextRequest) {
         for (const scope of ["US", "International"] as const) {
           try {
             const supabase = getSupabaseClient();
-            const result = await syncCategory(supabase, cat.key, cat.classificationName, scope);
+            const result = await syncCategory(supabase, cat.key, cat.classificationName, scope, cat.segmentName);
             results.push({ category: cat.key, scope, ...result });
           } catch (err: any) {
             results.push({ category: cat.key, scope, error: err.message });
@@ -154,7 +163,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = getSupabaseClient();
-    const result = await syncCategory(supabase, category, catConfig.classificationName, countryScope);
+    const result = await syncCategory(supabase, category, catConfig.classificationName, countryScope, catConfig.segmentName);
 
     return NextResponse.json({ success: true, ...result });
   } catch (err: any) {

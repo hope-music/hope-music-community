@@ -5,6 +5,7 @@ import { CategoryBox } from "@/components/ui/CategoryBox";
 import { Container } from "@/components/ui/Container";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 import { PERFORMANCE_CATEGORIES, PERFORMANCE_CATEGORY_OPTIONS, CATEGORY_FALLBACK_IMAGES } from "@/lib/constants";
+import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 
 interface CategoryData {
@@ -31,12 +32,6 @@ function MusicalCard({ label }: { label: string }) {
   useEffect(() => {
     async function load() {
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-        if (!supabaseUrl || !supabaseKey) return;
-
-        const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(supabaseUrl, supabaseKey);
         const now = new Date();
         const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -122,12 +117,6 @@ function OperaCard({ label }: { label: string }) {
   useEffect(() => {
     async function load() {
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-        if (!supabaseUrl || !supabaseKey) return;
-
-        const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(supabaseUrl, supabaseKey);
         const now = new Date();
         const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -206,6 +195,91 @@ function OperaCard({ label }: { label: string }) {
   );
 }
 
+function ClassicalCard({ label }: { label: string }) {
+  const [item, setItem] = useState<CategoryData | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function load() {
+      try {
+        const now = new Date();
+        const thirtyDaysLater = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
+
+        const { data } = await supabase
+          .from("classical_events")
+          .select("*")
+          .gte("event_date", now.toISOString())
+          .lte("event_date", thirtyDaysLater)
+          .order("event_date", { ascending: true })
+          .limit(1);
+
+        if (data && data.length > 0) {
+          const row = data[0] as EventRow;
+          setItem({
+            title: row.title,
+            coverImage: row.image_url || "",
+            url: row.ticket_url || "/performance/classical",
+            eventDate: row.event_date ? new Date(row.event_date).getTime() : null,
+          });
+        }
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
+  const fallbackImage = CATEGORY_FALLBACK_IMAGES["Classical"] || CATEGORY_FALLBACK_IMAGES["Other"];
+  const imageSrc = item?.coverImage?.startsWith("http") ? item.coverImage : fallbackImage;
+  const eventDateStr = item?.eventDate ? new Date(item.eventDate).toISOString().split("T")[0] : "";
+
+  return (
+    <CategoryBox title={label}>
+      <article className="flex h-full flex-col">
+        <a
+          href={item?.url || "/performance/classical"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex flex-1 cursor-pointer flex-col gap-2 border border-hmc-placeholder-border border-b-0 bg-white p-2 transition-opacity duration-200 hover:opacity-80"
+        >
+          <h3 className="line-clamp-3 text-left text-xs font-semibold leading-snug text-hmc-text min-h-[2.5rem]">
+            {loading ? "Loading..." : (item?.title ?? label)}
+          </h3>
+          <time className="text-left text-[10px] text-hmc-text-muted">
+            {loading ? "" : (item ? `Date: ${eventDateStr}` : "No scheduled events")}
+          </time>
+          <div className="aspect-[4/3] w-full overflow-hidden bg-hmc-placeholder relative">
+            {loading ? (
+              <div className="flex h-full items-center justify-center">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-gray-300 border-t-hmc-orange"></div>
+              </div>
+            ) : (
+              <Image
+                src={imageSrc}
+                alt={item?.title ?? "Performance thumbnail"}
+                width={500}
+                height={375}
+                className="h-full w-full object-cover"
+                unoptimized={true}
+              />
+            )}
+          </div>
+        </a>
+        <div className="flex w-full justify-center border border-hmc-placeholder-border bg-white">
+          <a
+            href="/performance/classical"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 rounded bg-hmc-orange px-3 py-1.5 text-center text-xs font-medium text-white hover:bg-hmc-orange/90 transition-colors"
+          >
+            {loading ? "Loading..." : "View More"}
+          </a>
+        </div>
+      </article>
+    </CategoryBox>
+  );
+}
+
 function CategoryCard({ slug, label }: { slug: string; label: string }) {
   const [item, setItem] = useState<CategoryData | null>(null);
   const [total, setTotal] = useState<number>(0);
@@ -214,12 +288,6 @@ function CategoryCard({ slug, label }: { slug: string; label: string }) {
   useEffect(() => {
     async function load() {
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-        if (!supabaseUrl || !supabaseKey) return;
-
-        const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(supabaseUrl, supabaseKey);
         const tableName = `${slug.replace(/-/g, "_")}_events`;
         const now = new Date();
         const ninetyDaysLater = new Date(now.getTime() + 90 * 24 * 60 * 60 * 1000).toISOString();
@@ -314,9 +382,10 @@ export function PerformanceSection() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {PERFORMANCE_CATEGORIES.map((catLabel) => {
             const catOption = PERFORMANCE_CATEGORY_OPTIONS.find((c) => c.label === catLabel);
-            const catSlug = catOption?.value || catLabel.toLowerCase().replace(/\s*&\s*/g, "-");
+            const catSlug = catOption?.value || catLabel.toLowerCase().replace(/\s*&\s*/g, "-").replace(/\s*\/\s*/g, "-");
             if (catSlug === "musical") return <MusicalCard key={catSlug} label={catLabel} />;
             if (catSlug === "opera") return <OperaCard key={catSlug} label={catLabel} />;
+            if (catSlug === "classical") return <ClassicalCard key={catSlug} label={catLabel} />;
             return <CategoryCard key={catSlug} slug={catSlug} label={catLabel} />;
           })}
         </div>

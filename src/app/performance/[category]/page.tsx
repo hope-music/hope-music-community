@@ -4,7 +4,8 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { PERFORMANCE_CATEGORY_OPTIONS, GLOBAL_CITY_GROUPS } from "@/lib/constants";
-import { createClient } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { DateRangePicker } from "@/components/ui/DateRangePicker";
 
 interface OperaEvent {
@@ -52,7 +53,7 @@ function normalizeCity(city: string | undefined): string {
 }
 
 function buildSupabaseQuery(
-  supabase: ReturnType<typeof createClient>,
+  supabase: SupabaseClient,
   tableName: string,
   page: number,
   selectedCity: string,
@@ -96,10 +97,6 @@ async function fetchEventPage(
   countryScope: CountryScope,
   lookbackDays: number = DEFAULT_LOOKBACK_DAYS
 ): Promise<{ items: OperaEvent[]; total: number }> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
   const { data, error, count } = await buildSupabaseQuery(
     supabase, tableName, page, selectedCity, startDate, endDate, countryScope, lookbackDays
   ).throwOnError();
@@ -112,10 +109,6 @@ async function fetchAvailableCities(
   countryScope: CountryScope,
   lookbackDays: number = DEFAULT_LOOKBACK_DAYS
 ): Promise<string[]> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
-  const supabase = createClient(supabaseUrl, supabaseKey);
-
   let q = supabase
     .from(tableName)
     .select("city")
@@ -433,10 +426,13 @@ export default function PerformanceCategoryPage() {
               <option value="opera">Opera</option>
               <option value="musical">Musical</option>
               <option value="classical">Classical</option>
-              <option value="music">Music</option>
+              <option value="concert">Concert</option>
               <option value="electronic">Electronic</option>
-              <option value="pop-rock">Pop & Rock</option>
-              <option value="performance-art">Performance Art</option>
+              <option value="pop">Pop</option>
+              <option value="rock">Rock</option>
+              <option value="hip-hop-rap">Hip-Hop/Rap</option>
+              <option value="country">Country</option>
+              <option value="latin">Latin</option>
               <option value="dance">Dance</option>
               <option value="other">Other</option>
             </select>

@@ -27,6 +27,11 @@ const nextConfig: NextConfig = {
         hostname: "*.ticketweb.com",
       },
       {
+        // Ticketmaster Universe CDN - international events (UK, EU, etc.)
+        protocol: "https",
+        hostname: "*.universe.com",
+      },
+      {
         protocol: "http",
         hostname: "127.0.0.1",
         port: "3210",

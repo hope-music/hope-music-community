@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
 import { DateRangePicker } from "@/components/ui/DateRangePicker";
+import { supabase } from "@/lib/supabase";
 
 interface OperaEvent {
   _id: string;
@@ -80,16 +81,6 @@ export default function OperaPage() {
       setLoading(true);
       setError(null);
       try {
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-        const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-        
-        if (!supabaseUrl || !supabaseKey) {
-          throw new Error("Supabase environment variables not configured");
-        }
-        
-        const { createClient } = await import("@supabase/supabase-js");
-        const supabase = createClient(supabaseUrl, supabaseKey);
-        
         const { data, error } = await supabase
           .from("opera_events")
           .select("*")

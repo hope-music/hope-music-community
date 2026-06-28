@@ -2,40 +2,30 @@ import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 const MUSIC_GENRE_IDS: Array<{ id: string; name: string }> = [
-  { id: "KnvZfZ7vAvv", name: "Alternative" },
-  { id: "KnvZfZ7vAvd", name: "Blues" },
-  { id: "KnvZfZ7vAv6", name: "Country" },
-  { id: "KnvZfZ7vAva", name: "Folk" },
-  { id: "KnvZfZ7vAv1", name: "Hip-Hop/Rap" },
-  { id: "KnvZfZ7vAvE", name: "Jazz" },
-  { id: "KnvZfZ7vAJ6", name: "Latin" },
-  { id: "KnvZfZ7vAvI", name: "Medieval/Renaissance" },
-  { id: "KnvZfZ7vAvt", name: "Metal" },
-  { id: "KnvZfZ7vAvn", name: "New Age" },
-  { id: "KnvZfZ7vAvl", name: "Other" },
   { id: "KnvZfZ7vAev", name: "Pop" },
-  { id: "KnvZfZ7vAee", name: "R&B" },
-  { id: "KnvZfZ7vAed", name: "Reggae" },
-  { id: "KnvZfZ7vAe7", name: "Religious" },
   { id: "KnvZfZ7vAeA", name: "Rock" },
-  { id: "KnvZfZ7vAve", name: "Ballads/Romantic" },
-  { id: "KnvZfZ7vAeF", name: "World" },
+  { id: "KnvZfZ7vAv1", name: "Hip-Hop/Rap" },
+  { id: "KnvZfZ7vAv6", name: "Country" },
+  { id: "KnvZfZ7vAJ6", name: "Latin" },
 ];
 
 type SyncConfig =
-  | { mode: "classificationName"; classificationName: string }
+  | { mode: "classificationName"; classificationName: string; segmentName?: string }
   | { mode: "broadway" }
   | { mode: "genreIds"; genres: Array<{ id: string; name: string }> };
 
 const CATEGORIES: Array<{ key: string; config: SyncConfig; scopes: ("US" | "International")[] }> = [
   { key: "opera",        config: { mode: "classificationName", classificationName: "Opera" },             scopes: ["US", "International"] },
   { key: "musical",      config: { mode: "broadway" },                                                    scopes: ["US"] },
-  { key: "classical",    config: { mode: "classificationName", classificationName: "Classical" },         scopes: ["US", "International"] },
-  { key: "music",        config: { mode: "classificationName", classificationName: "Music" },             scopes: ["US", "International"] },
-  { key: "dance",        config: { mode: "classificationName", classificationName: "Dance" },             scopes: ["US", "International"] },
+  { key: "classical",    config: { mode: "classificationName", classificationName: "Classical", segmentName: "Arts & Theatre" }, scopes: ["US", "International"] },
+  { key: "concert",      config: { mode: "classificationName", classificationName: "Music" },             scopes: ["US", "International"] },
   { key: "electronic",   config: { mode: "classificationName", classificationName: "Dance/Electronic" },  scopes: ["US", "International"] },
-  { key: "pop-rock",     config: { mode: "genreIds", genres: MUSIC_GENRE_IDS },                          scopes: ["US", "International"] },
-  { key: "performance-art", config: { mode: "classificationName", classificationName: "Performance Art" }, scopes: ["US", "International"] },
+  { key: "pop",          config: { mode: "genreIds", genres: MUSIC_GENRE_IDS.filter(g => g.name === "Pop") },           scopes: ["US", "International"] },
+  { key: "rock",         config: { mode: "genreIds", genres: MUSIC_GENRE_IDS.filter(g => g.name === "Rock") },          scopes: ["US", "International"] },
+  { key: "hip-hop-rap",  config: { mode: "genreIds", genres: MUSIC_GENRE_IDS.filter(g => g.name === "Hip-Hop/Rap") },   scopes: ["US", "International"] },
+  { key: "country",      config: { mode: "genreIds", genres: MUSIC_GENRE_IDS.filter(g => g.name === "Country") },       scopes: ["US", "International"] },
+  { key: "latin",        config: { mode: "genreIds", genres: MUSIC_GENRE_IDS.filter(g => g.name === "Latin") },         scopes: ["US", "International"] },
+  { key: "dance",        config: { mode: "classificationName", classificationName: "Dance" },             scopes: ["US", "International"] },
   { key: "other",        config: { mode: "classificationName", classificationName: "Variety" },          scopes: ["US", "International"] },
 ];
 
@@ -84,7 +74,8 @@ async function fetchTicketmasterEvents(
   countryCode: string,
   classificationName: string | undefined,
   genreId: string | undefined,
-  page: number = 0
+  page: number = 0,
+  segmentName?: string
 ) {
   const params = new URLSearchParams({
     apikey: apiKey,
@@ -97,6 +88,10 @@ async function fetchTicketmasterEvents(
     params.append("genreId", genreId);
   } else if (classificationName) {
     params.append("classificationName", classificationName);
+  }
+
+  if (segmentName) {
+    params.append("segmentName", segmentName);
   }
 
   if (countryCode === "US") {
@@ -159,7 +154,7 @@ const FIELD_MAPS: Record<string, string[]> = {
     "ticket_url",
     "sub_category",
   ],
-  "pop-rock": [
+  pop: [
     "ticketmaster_id",
     "title",
     "event_date",
@@ -173,6 +168,145 @@ const FIELD_MAPS: Record<string, string[]> = {
     "price_max",
     "currency",
     "ticket_url",
+    "sub_category",
+  ],
+  rock: [
+    "ticketmaster_id",
+    "title",
+    "event_date",
+    "image_url",
+    "venue",
+    "city",
+    "state",
+    "country",
+    "region",
+    "price_min",
+    "price_max",
+    "currency",
+    "ticket_url",
+    "sub_category",
+  ],
+  "hip-hop-rap": [
+    "ticketmaster_id",
+    "title",
+    "event_date",
+    "image_url",
+    "venue",
+    "city",
+    "state",
+    "country",
+    "region",
+    "price_min",
+    "price_max",
+    "currency",
+    "ticket_url",
+    "sub_category",
+  ],
+  country: [
+    "ticketmaster_id",
+    "title",
+    "event_date",
+    "image_url",
+    "venue",
+    "city",
+    "state",
+    "country",
+    "region",
+    "price_min",
+    "price_max",
+    "currency",
+    "ticket_url",
+    "sub_category",
+  ],
+  latin: [
+    "ticketmaster_id",
+    "title",
+    "event_date",
+    "image_url",
+    "venue",
+    "city",
+    "state",
+    "country",
+    "region",
+    "price_min",
+    "price_max",
+    "currency",
+    "ticket_url",
+    "sub_category",
+  ],
+  // Legacy classification-based tables: only whitelist columns that exist.
+  // Without explicit entries, applyFieldMap returns the full raw payload
+  // and any column missing in the table schema will break the bulk upsert.
+  classical: [
+    "ticketmaster_id",
+    "title",
+    "event_date",
+    "image_url",
+    "venue",
+    "city",
+    "state",
+    "country",
+    "region",
+    "price_min",
+    "price_max",
+    "currency",
+    "ticket_url",
+    "segment",
+    "genre",
+    "sub_category",
+  ],
+  electronic: [
+    "ticketmaster_id",
+    "title",
+    "event_date",
+    "image_url",
+    "venue",
+    "city",
+    "state",
+    "country",
+    "region",
+    "price_min",
+    "price_max",
+    "currency",
+    "ticket_url",
+    "segment",
+    "genre",
+    "sub_category",
+  ],
+  dance: [
+    "ticketmaster_id",
+    "title",
+    "event_date",
+    "image_url",
+    "venue",
+    "city",
+    "state",
+    "country",
+    "region",
+    "price_min",
+    "price_max",
+    "currency",
+    "ticket_url",
+    "segment",
+    "genre",
+    "sub_category",
+  ],
+  other: [
+    "ticketmaster_id",
+    "title",
+    "event_date",
+    "image_url",
+    "venue",
+    "city",
+    "state",
+    "country",
+    "region",
+    "price_min",
+    "price_max",
+    "currency",
+    "ticket_url",
+    "segment",
+    "genre",
     "sub_category",
   ],
 };
@@ -192,7 +326,10 @@ function applyFieldMap(
   }
   if (categoryKey === "musical") {
     result.sub_category = "Broadway";
-  } else if (categoryKey === "pop-rock" && genreName) {
+  } else if (
+    ["pop", "rock", "hip-hop-rap", "country", "latin"].includes(categoryKey) &&
+    genreName
+  ) {
     result.sub_category = genreName;
   }
   return result;
@@ -368,7 +505,8 @@ async function syncCategory(
         countryScope === "US" ? "US" : "INTL",
         config.classificationName,
         undefined,
-        page
+        page,
+        config.segmentName
       );
 
       if (!tmData._embedded?.events?.length) {

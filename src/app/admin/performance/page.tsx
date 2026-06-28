@@ -7,11 +7,14 @@ const CATEGORIES = [
   { value: "opera", label: "Opera" },
   { value: "musical", label: "Musical" },
   { value: "classical", label: "Classical" },
-  { value: "music", label: "Music" },
-  { value: "dance", label: "Dance" },
+  { value: "concert", label: "Concert" },
   { value: "electronic", label: "Electronic" },
-  { value: "pop-rock", label: "Pop & Rock" },
-  { value: "performance-art", label: "Performance Art" },
+  { value: "pop", label: "Pop" },
+  { value: "rock", label: "Rock" },
+  { value: "hip-hop-rap", label: "Hip-Hop/Rap" },
+  { value: "country", label: "Country" },
+  { value: "latin", label: "Latin" },
+  { value: "dance", label: "Dance" },
   { value: "other", label: "Other" },
 ];
 
