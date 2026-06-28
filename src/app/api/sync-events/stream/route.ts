@@ -18,11 +18,13 @@ const MUSIC_SEGMENT_ID = "KZFzniwnSyZfZ7v7nJ";
 
 type SyncConfig =
   | { mode: "classificationName"; classificationName: string; segmentId?: string; segmentName?: string; genreId?: string }
-  | { mode: "broadway" }
+  | { mode: "broadway"; subGenreId: string }
   | { mode: "genreIds"; genres: Array<{ id: string; name: string }>; segmentId?: string };
 
 const CATEGORIES: Array<{ key: string; config: SyncConfig; scopes: ("US" | "International")[] }> = [
-  { key: "musical",      config: { mode: "broadway" },                                                    scopes: ["US", "International"] },
+  // Musical → Arts & Theatre → Theatre → subGenre "Musical" (Broadway)
+  // US only: Broadway is NY. International scope is intentionally excluded.
+  { key: "musical",      config: { mode: "broadway", subGenreId: "KZazBEonSMnZfZ7vAve" },                    scopes: ["US"] },
   // Opera → Arts & Theatre segment + Opera genre (KnvZfZ7v7lk)
   { key: "opera",        config: { mode: "classificationName", classificationName: "Opera", segmentId: ARTS_THEATRE_SEGMENT_ID, genreId: "KnvZfZ7v7lk" }, scopes: ["US", "International"] },
   // Classical → Arts & Theatre segment + Classical genre (KnvZfZ7v7nJ)
@@ -87,6 +89,7 @@ function isoAt(d: Date): string {
 function buildTmParams(apiKey: string, opts: {
   classificationName?: string;
   genreId?: string;
+  subGenreId?: string;
   segmentId?: string;
   segmentName?: string;
   stateCode?: string;
@@ -104,6 +107,7 @@ function buildTmParams(apiKey: string, opts: {
   });
   if (opts.genreId) p.append("genreId", opts.genreId);
   else if (opts.classificationName) p.append("classificationName", opts.classificationName);
+  if (opts.subGenreId) p.append("subGenreId", opts.subGenreId);
   if (opts.segmentId) p.append("segmentId", opts.segmentId);
   else if (opts.segmentName) p.append("segmentName", opts.segmentName);
   if (opts.stateCode) p.append("stateCode", opts.stateCode);
@@ -190,6 +194,7 @@ async function upsertBatch(supabase: any, tableName: string, events: any[]): Pro
 async function fetchTmPage(apiKey: string, countryScope: "US" | "International", opts: {
   classificationName?: string;
   genreId?: string;
+  subGenreId?: string;
   segmentId?: string;
   segmentName?: string;
   stateCode?: string;
@@ -219,6 +224,7 @@ async function fetchTmPage(apiKey: string, countryScope: "US" | "International",
 type FetchOpts = {
   classificationName?: string;
   genreId?: string;
+  subGenreId?: string;
   segmentId?: string;
   segmentName?: string;
   stateCode?: string;
@@ -399,11 +405,12 @@ async function syncCategory(
   let totalErrors = 0;
 
   if (config.mode === "broadway") {
-    // Broadway uses subGenreId (not classificationName/genreId), with no
-    // segment-name split. Pass it through the same self-adaptive window logic.
+    // Broadway: Arts & Theatre → Theatre → subGenre "Musical", NY only.
+    // Pass it through the same self-adaptive window logic.
     const baseOpts = {
-      segmentId: "KZFzniwnSyZfZ7v7na",
-      stateCode: countryScope === "US" ? "NY" : undefined,
+      segmentId: ARTS_THEATRE_SEGMENT_ID,
+      subGenreId: config.subGenreId,
+      stateCode: "NY",
     };
     const r = await fetchWindowRecursive(
       apiKey, countryScope, supabase, tableName, categoryKey, undefined, region, controller,
