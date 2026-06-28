@@ -366,7 +366,7 @@ function CategoryCard({ slug, label }: { slug: string; label: string }) {
             rel="noopener noreferrer"
             className="flex-1 rounded bg-hmc-orange px-3 py-1.5 text-center text-xs font-medium text-white hover:bg-hmc-orange/90 transition-colors"
           >
-            {loading ? "Loading..." : `View More ${total > 0 ? `(${total})` : ""}`}
+            {loading ? "Loading..." : (slug === "concert" ? "View More" : `View More ${total > 0 ? `(${total})` : ""}`)}
           </a>
         </div>
       </article>

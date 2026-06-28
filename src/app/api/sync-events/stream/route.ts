@@ -1,6 +1,9 @@
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
+// "Musical → Broadway" uses the dedicated Broadway mode above.
+
+// Music genres for genreId-based categories
 const MUSIC_GENRE_IDS: Array<{ id: string; name: string }> = [
   { id: "KnvZfZ7vAev", name: "Pop" },
   { id: "KnvZfZ7vAeA", name: "Rock" },
@@ -9,37 +12,21 @@ const MUSIC_GENRE_IDS: Array<{ id: string; name: string }> = [
   { id: "KnvZfZ7vAJ6", name: "Latin" },
 ];
 
-// "Concerts → Classical" on TM = Music segment (KZFzniwnSyZfZ7v7nJ) +
-// Classical genre (KnvZfZ7vAeJ). ≈303 US + 325 INTL = ~628 events.
-const CONCERT_CLASSICAL_GENRE = { id: "KnvZfZ7vAeJ", name: "Classical" };
-
-// "Arts, Theater & Comedy → Classical" on TM = Arts & Theatre segment
-// (KZFzniwnSyZfZ7v7na) + Classical genre (KnvZfZ7v7nJ). ≈343 US + 291 INTL
-// = ~634 events. This is a DIFFERENT set from Music → Classical: symphonic
-// concerts/piano recitals go under Music→Classical, while ballet, opera and
-// staged classical works go under Arts & Theatre→Classical.
-const CLASSICAL_GENRE = { id: "KnvZfZ7v7nJ", name: "Classical" };
-const ARTS_THEATRE_SEGMENT = "KZFzniwnSyZfZ7v7na";
-
 type SyncConfig =
-  | { mode: "classificationName"; classificationName: string; segmentName?: string }
+  | { mode: "classificationName"; classificationName: string; segmentId?: string; segmentName?: string }
   | { mode: "broadway" }
   | { mode: "genreIds"; genres: Array<{ id: string; name: string }>; segmentId?: string };
 
 const CATEGORIES: Array<{ key: string; config: SyncConfig; scopes: ("US" | "International")[] }> = [
-  { key: "opera",        config: { mode: "classificationName", classificationName: "Opera" },             scopes: ["US", "International"] },
+  // Musical → Arts, Theater & Comedy → Broadway (US only)
   { key: "musical",      config: { mode: "broadway" },                                                    scopes: ["US"] },
-  // Classical sub-section on TM = "Arts, Theater & Comedy → Classical"
-  // (Arts & Theatre segment + Classical genre). ≈343 US + 291 INTL = ~634 events.
-  // This is the focused subset visible on TM's Arts & Theatre nav, NOT the
-  // full Classical classification which spans both segments.
-  { key: "classical",    config: { mode: "genreIds", genres: [CLASSICAL_GENRE], segmentId: ARTS_THEATRE_SEGMENT }, scopes: ["US", "International"] },
-  // "Concerts → Classical" on TM = Music segment + Classical genre.
-  // segmentId pins to Music (KZFzniwnSyZfZ7v7nJ); genreId pins to Classical
-  // (KnvZfZ7vAeJ). ≈303 US + 325 INTL = ~628 events. The Music-segment
-  // Classical subset is disjoint from the Arts & Theatre→Classical subset
-  // (the `classical` category above) — no overlap.
-  { key: "concert",      config: { mode: "genreIds", genres: [CONCERT_CLASSICAL_GENRE], segmentId: "KZFzniwnSyZfZ7v7nJ" }, scopes: ["US", "International"] },
+  // Opera → Arts, Theater & Comedy → Opera (US + International)
+  { key: "opera",        config: { mode: "classificationName", classificationName: "Opera", segmentId: "KZFzniwnSyZfZ7v7na" }, scopes: ["US", "International"] },
+  // Classical → Arts, Theater & Comedy → Classical (US + International)
+  { key: "classical",    config: { mode: "classificationName", classificationName: "Classical", segmentId: "KZFzniwnSyZfZ7v7na" }, scopes: ["US", "International"] },
+  // Concert → Concerts → Classical (US + International)
+  // Concert uses genreId-mode (Classical under Music segment is a genre, not a classification).
+  { key: "concert", config: { mode: "genreIds", genres: [{ id: "KnvZfZ7vAeJ", name: "Classical" }] }, scopes: ["US", "International"] },
   { key: "electronic",   config: { mode: "classificationName", classificationName: "Dance/Electronic" },  scopes: ["US", "International"] },
   { key: "pop",          config: { mode: "genreIds", genres: MUSIC_GENRE_IDS.filter(g => g.name === "Pop") },           scopes: ["US", "International"] },
   { key: "rock",         config: { mode: "genreIds", genres: MUSIC_GENRE_IDS.filter(g => g.name === "Rock") },          scopes: ["US", "International"] },
@@ -512,6 +499,15 @@ async function syncCategory(
           config.mode === "genreIds" ? config.segmentId : undefined
         );
 
+        const totalElements = tmData.page?.totalElements ?? 0;
+        const totalPagesApi = tmData.page?.totalPages ?? 0;
+        emit(controller, {
+          type: "info",
+          category: categoryKey,
+          scope: countryScope,
+          message: `${genre.name} page ${page + 1}: API says totalElements=${totalElements}, totalPages=${totalPagesApi}, returned=${tmData._embedded?.events?.length ?? 0}`,
+        });
+
         if (!tmData._embedded?.events?.length) break;
 
         const rawEvents = tmData._embedded.events.map((e: any) =>
@@ -587,7 +583,8 @@ async function syncCategory(
         config.classificationName,
         undefined,
         page,
-        config.segmentName
+        config.segmentName,
+        config.segmentId
       );
 
       if (!tmData._embedded?.events?.length) {
