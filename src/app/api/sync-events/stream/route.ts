@@ -10,14 +10,16 @@ const MUSIC_GENRE_IDS: Array<{ id: string; name: string }> = [
 ];
 
 // "Concerts → Classical" on TM = Music segment (KZFzniwnSyZfZ7v7nJ) +
-// Classical genre (KnvZfZ7vAeJ). The focused subset that TM lists under
-// Concerts > Classical (≈303 US + 325 INTL = ~628 events), distinct from the
-// full classical category (which spans both Arts & Theatre + Music segments).
-//
-// Note: an event tagged Music+Classical will appear in BOTH concert_events and
-// classical_events. ticketmaster_id upsert keeps each table self-consistent;
-// the visual overlap is by design.
+// Classical genre (KnvZfZ7vAeJ). ≈303 US + 325 INTL = ~628 events.
 const CONCERT_CLASSICAL_GENRE = { id: "KnvZfZ7vAeJ", name: "Classical" };
+
+// "Arts, Theater & Comedy → Classical" on TM = Arts & Theatre segment
+// (KZFzniwnSyZfZ7v7na) + Classical genre (KnvZfZ7v7nJ). ≈343 US + 291 INTL
+// = ~634 events. This is a DIFFERENT set from Music → Classical: symphonic
+// concerts/piano recitals go under Music→Classical, while ballet, opera and
+// staged classical works go under Arts & Theatre→Classical.
+const CLASSICAL_GENRE = { id: "KnvZfZ7v7nJ", name: "Classical" };
+const ARTS_THEATRE_SEGMENT = "KZFzniwnSyZfZ7v7na";
 
 type SyncConfig =
   | { mode: "classificationName"; classificationName: string; segmentName?: string }
@@ -27,14 +29,16 @@ type SyncConfig =
 const CATEGORIES: Array<{ key: string; config: SyncConfig; scopes: ("US" | "International")[] }> = [
   { key: "opera",        config: { mode: "classificationName", classificationName: "Opera" },             scopes: ["US", "International"] },
   { key: "musical",      config: { mode: "broadway" },                                                    scopes: ["US"] },
-  // Classical events span BOTH "Arts & Theatre" and "Music" segments on TM.
-  // Adding a segmentName filter cuts the result roughly in half (e.g. 877 US
-  // events unfiltered vs 358 with Arts & Theatre only). Leave it unset.
-  { key: "classical",    config: { mode: "classificationName", classificationName: "Classical" },          scopes: ["US", "International"] },
+  // Classical sub-section on TM = "Arts, Theater & Comedy → Classical"
+  // (Arts & Theatre segment + Classical genre). ≈343 US + 291 INTL = ~634 events.
+  // This is the focused subset visible on TM's Arts & Theatre nav, NOT the
+  // full Classical classification which spans both segments.
+  { key: "classical",    config: { mode: "genreIds", genres: [CLASSICAL_GENRE], segmentId: ARTS_THEATRE_SEGMENT }, scopes: ["US", "International"] },
   // "Concerts → Classical" on TM = Music segment + Classical genre.
-  // segmentId pins to the Music segment (KZFzniwnSyZfZ7v7nJ); genreId pins to
-  // the Classical genre (KnvZfZ7vAeJ). Yields ~303 US + ~325 INTL = ~628 events,
-  // distinct from the full classical sweep (877 US).
+  // segmentId pins to Music (KZFzniwnSyZfZ7v7nJ); genreId pins to Classical
+  // (KnvZfZ7vAeJ). ≈303 US + 325 INTL = ~628 events. The Music-segment
+  // Classical subset is disjoint from the Arts & Theatre→Classical subset
+  // (the `classical` category above) — no overlap.
   { key: "concert",      config: { mode: "genreIds", genres: [CONCERT_CLASSICAL_GENRE], segmentId: "KZFzniwnSyZfZ7v7nJ" }, scopes: ["US", "International"] },
   { key: "electronic",   config: { mode: "classificationName", classificationName: "Dance/Electronic" },  scopes: ["US", "International"] },
   { key: "pop",          config: { mode: "genreIds", genres: MUSIC_GENRE_IDS.filter(g => g.name === "Pop") },           scopes: ["US", "International"] },
@@ -495,6 +499,12 @@ async function syncCategory(
           .upsert(events, { onConflict: "ticketmaster_id" })
           .select("id");
 
+        // Track this page's deltas (not the genre running total) so the
+        // grand total reflects exactly what we fetched, not a cumulative
+        // sum that doubles per page.
+        let pageUpserted = 0;
+        let pageErrors = 0;
+
         if (bulkError) {
           emit(controller, {
             type: "error",
@@ -506,15 +516,17 @@ async function syncCategory(
             const { error } = await supabase
               .from(tableName)
               .upsert(event, { onConflict: "ticketmaster_id" });
-            if (error) genreErrors++;
-            else genreUpserted++;
+            if (error) pageErrors++;
+            else pageUpserted++;
           }
         } else {
-          genreUpserted += upsertData?.length ?? events.length;
+          pageUpserted = upsertData?.length ?? events.length;
         }
 
-        totalUpserted += genreUpserted;
-        totalErrors += genreErrors;
+        genreUpserted += pageUpserted;
+        genreErrors += pageErrors;
+        totalUpserted += pageUpserted;
+        totalErrors += pageErrors;
 
         emit(controller, {
           type: "progress",
@@ -523,9 +535,9 @@ async function syncCategory(
           genre: genre.name,
           page: page + 1,
           eventCount: events.length,
-          upserted: genreUpserted,
-          errors: genreErrors,
-          message: `${genre.name} page ${page + 1}: ${events.length} fetched`,
+          upserted: pageUpserted,
+          errors: pageErrors,
+          message: `${genre.name} page ${page + 1}: ${events.length} fetched → ${pageUpserted} upserted`,
         });
 
         const totalPages = tmData.page?.totalPages || 1;
