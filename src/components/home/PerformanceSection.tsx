@@ -282,7 +282,6 @@ function ClassicalCard({ label }: { label: string }) {
 
 function CategoryCard({ slug, label }: { slug: string; label: string }) {
   const [item, setItem] = useState<CategoryData | null>(null);
-  const [total, setTotal] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -309,13 +308,6 @@ function CategoryCard({ slug, label }: { slug: string; label: string }) {
             eventDate: row.event_date ? new Date(row.event_date).getTime() : null,
           });
         }
-
-        const { count } = await supabase
-          .from(tableName)
-          .select("ticketmaster_id", { count: "exact", head: true })
-          .gte("event_date", now.toISOString())
-          .lte("event_date", ninetyDaysLater);
-        setTotal(count ?? 0);
       } finally {
         setLoading(false);
       }
@@ -366,7 +358,7 @@ function CategoryCard({ slug, label }: { slug: string; label: string }) {
             rel="noopener noreferrer"
             className="flex-1 rounded bg-hmc-orange px-3 py-1.5 text-center text-xs font-medium text-white hover:bg-hmc-orange/90 transition-colors"
           >
-            {loading ? "Loading..." : (slug === "concert" ? "View More" : `View More ${total > 0 ? `(${total})` : ""}`)}
+            View More
           </a>
         </div>
       </article>
