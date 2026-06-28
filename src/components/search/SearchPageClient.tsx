@@ -13,6 +13,7 @@ import {
   CATEGORY_FALLBACK_IMAGES,
   INTERACTION_CATEGORY_LABELS,
 } from "@/lib/constants";
+import { buildStaticSiteContent, type SiteHit } from "@/lib/site-content";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -86,7 +87,8 @@ type SearchHit =
   | InsightHit
   | StageProductionHit
   | HopeStudioHit
-  | InteractionHit;
+  | InteractionHit
+  | (SiteHit & { type: "site_section" | "placeholder_post" | "site_nav" });
 
 interface SearchPageClientProps {
   initialQuery: string;
@@ -261,6 +263,9 @@ const TYPE_LABELS: Record<SearchHit["type"], string> = {
   stage_production: "Stage Production",
   hope_studio: "Hope Studio",
   interaction: "Community",
+  site_section: "Site Pages",
+  placeholder_post: "Community Posts",
+  site_nav: "Site Navigation",
 };
 
 const TYPE_HREF: Record<SearchHit["type"], string> = {
@@ -485,6 +490,113 @@ function HopeStudioCard({ hit }: { hit: HopeStudioHit }) {
   );
 }
 
+function SiteSectionCard({ hit }: { hit: SiteHit & { type: "site_section" } }) {
+  const groupColor: Record<string, string> = {
+    "Hope Studio":         "bg-purple-100 text-purple-700",
+    "Hope Studio Team":    "bg-pink-100 text-pink-700",
+    "Hope Studio Works":   "bg-indigo-100 text-indigo-700",
+    "Community":           "bg-amber-100 text-amber-700",
+    "Home":                "bg-orange-100 text-orange-700",
+    "Site":                "bg-gray-200 text-gray-700",
+  };
+  const badgeClass = groupColor[hit.group ?? ""] ?? "bg-gray-100 text-gray-700";
+  return (
+    <li className="flex flex-col border border-hmc-placeholder-border bg-white">
+      <Link
+        href={hit.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex flex-1 cursor-pointer flex-col gap-2 p-2 transition-opacity hover:opacity-85"
+      >
+        {hit.group && (
+          <span className={`self-start rounded px-1.5 py-0.5 text-[10px] font-medium ${badgeClass}`}>
+            {hit.group}
+          </span>
+        )}
+        <h3 className="line-clamp-3 text-xs font-semibold leading-snug text-hmc-text min-h-[2.5rem]">
+          {hit.title}
+        </h3>
+        {hit.description && (
+          <p className="line-clamp-4 text-[10px] leading-snug text-hmc-text-muted">{hit.description}</p>
+        )}
+      </Link>
+      <div className="flex w-full justify-center border-t border-hmc-placeholder-border bg-white">
+        <Link
+          href={hit.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 bg-hmc-orange px-3 py-1.5 text-center text-xs font-medium text-white transition-colors hover:bg-hmc-orange/90"
+        >
+          Open
+        </Link>
+      </div>
+    </li>
+  );
+}
+
+function PlaceholderPostCard({ hit }: { hit: SiteHit & { type: "placeholder_post" } }) {
+  const categoryLabel = INTERACTION_CATEGORY_LABELS[hit.category ?? ""] ?? hit.category ?? "Other";
+  return (
+    <li className="flex flex-col border border-hmc-placeholder-border bg-white">
+      <Link
+        href={hit.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="flex flex-1 cursor-pointer flex-col gap-2 p-2 transition-opacity hover:opacity-85"
+      >
+        <span className="self-start rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-medium text-amber-700">
+          {categoryLabel}
+        </span>
+        <h3 className="line-clamp-3 text-xs font-semibold leading-snug text-hmc-text min-h-[2.5rem]">
+          {hit.title}
+        </h3>
+        {hit.description && (
+          <p className="line-clamp-4 text-[10px] leading-snug text-hmc-text-muted">{hit.description}</p>
+        )}
+      </Link>
+      <div className="flex w-full justify-center border-t border-hmc-placeholder-border bg-white">
+        <Link
+          href={hit.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-1 bg-hmc-orange px-3 py-1.5 text-center text-xs font-medium text-white transition-colors hover:bg-hmc-orange/90"
+        >
+          Open Discussion
+        </Link>
+      </div>
+    </li>
+  );
+}
+
+function SiteNavCard({ hit }: { hit: SiteHit & { type: "site_nav" } }) {
+  return (
+    <li className="flex flex-col border border-hmc-placeholder-border bg-white">
+      <Link
+        href={hit.url}
+        className="flex flex-1 cursor-pointer flex-col gap-2 p-2 transition-opacity hover:opacity-85"
+      >
+        <span className="self-start rounded bg-gray-200 px-1.5 py-0.5 text-[10px] font-medium text-gray-700">
+          Site
+        </span>
+        <h3 className="line-clamp-3 text-xs font-semibold leading-snug text-hmc-text min-h-[2.5rem]">
+          {hit.title}
+        </h3>
+        {hit.description && (
+          <p className="line-clamp-4 text-[10px] leading-snug text-hmc-text-muted">{hit.description}</p>
+        )}
+      </Link>
+      <div className="flex w-full justify-center border-t border-hmc-placeholder-border bg-white">
+        <Link
+          href={hit.url}
+          className="flex-1 bg-hmc-orange px-3 py-1.5 text-center text-xs font-medium text-white transition-colors hover:bg-hmc-orange/90"
+        >
+          Open
+        </Link>
+      </div>
+    </li>
+  );
+}
+
 function HitCard({ hit }: { hit: SearchHit }) {
   switch (hit.type) {
     case "event":          return <EventCard hit={hit} />;
@@ -493,6 +605,9 @@ function HitCard({ hit }: { hit: SearchHit }) {
     case "stage_production": return <StageProductionCard hit={hit} />;
     case "hope_studio":    return <HopeStudioCard hit={hit} />;
     case "interaction":    return <InteractionCard hit={hit} />;
+    case "site_section":   return <SiteSectionCard hit={hit} />;
+    case "placeholder_post": return <PlaceholderPostCard hit={hit} />;
+    case "site_nav":       return <SiteNavCard hit={hit} />;
   }
 }
 
@@ -540,7 +655,12 @@ export function SearchPageClient({ initialQuery }: SearchPageClientProps) {
 
         if (cancelled) return;
 
-        setHits([...events, ...news, ...insights, ...stageProductions, ...hopeStudio, ...interaction]);
+        // Static + localStorage site content (Hope Studio sections, placeholders, nav, etc.)
+        const siteContent = buildStaticSiteContent(q) as SearchHit[];
+
+        if (cancelled) return;
+
+        setHits([...events, ...news, ...insights, ...stageProductions, ...hopeStudio, ...interaction, ...siteContent]);
         setStatus("ready");
       } catch (e: any) {
         if (cancelled) return;
@@ -565,11 +685,14 @@ export function SearchPageClient({ initialQuery }: SearchPageClientProps) {
       stage_production: [],
       hope_studio: [],
       interaction: [],
+      site_section: [],
+      placeholder_post: [],
+      site_nav: [],
     };
     for (const h of hits) {
       map[h.type].push(h);
     }
-    return (["event", "news", "insight", "stage_production", "hope_studio", "interaction"] as SearchHit["type"][])
+    return (["event", "news", "insight", "stage_production", "hope_studio", "interaction", "site_section", "placeholder_post", "site_nav"] as SearchHit["type"][])
       .filter((t) => map[t].length > 0)
       .map((t) => ({ type: t, label: TYPE_LABELS[t], items: map[t] }));
   }, [hits]);
