@@ -9,10 +9,20 @@ const MUSIC_GENRE_IDS: Array<{ id: string; name: string }> = [
   { id: "KnvZfZ7vAJ6", name: "Latin" },
 ];
 
+// "Concerts → Classical" on TM = Music segment (KZFzniwnSyZfZ7v7nJ) +
+// Classical genre (KnvZfZ7vAeJ). The focused subset that TM lists under
+// Concerts > Classical (≈303 US + 325 INTL = ~628 events), distinct from the
+// full classical category (which spans both Arts & Theatre + Music segments).
+//
+// Note: an event tagged Music+Classical will appear in BOTH concert_events and
+// classical_events. ticketmaster_id upsert keeps each table self-consistent;
+// the visual overlap is by design.
+const CONCERT_CLASSICAL_GENRE = { id: "KnvZfZ7vAeJ", name: "Classical" };
+
 type SyncConfig =
   | { mode: "classificationName"; classificationName: string; segmentName?: string }
   | { mode: "broadway" }
-  | { mode: "genreIds"; genres: Array<{ id: string; name: string }> };
+  | { mode: "genreIds"; genres: Array<{ id: string; name: string }>; segmentId?: string };
 
 const CATEGORIES: Array<{ key: string; config: SyncConfig; scopes: ("US" | "International")[] }> = [
   { key: "opera",        config: { mode: "classificationName", classificationName: "Opera" },             scopes: ["US", "International"] },
@@ -21,7 +31,11 @@ const CATEGORIES: Array<{ key: string; config: SyncConfig; scopes: ("US" | "Inte
   // Adding a segmentName filter cuts the result roughly in half (e.g. 877 US
   // events unfiltered vs 358 with Arts & Theatre only). Leave it unset.
   { key: "classical",    config: { mode: "classificationName", classificationName: "Classical" },          scopes: ["US", "International"] },
-  { key: "concert",      config: { mode: "classificationName", classificationName: "Music" },             scopes: ["US", "International"] },
+  // "Concerts → Classical" on TM = Music segment + Classical genre.
+  // segmentId pins to the Music segment (KZFzniwnSyZfZ7v7nJ); genreId pins to
+  // the Classical genre (KnvZfZ7vAeJ). Yields ~303 US + ~325 INTL = ~628 events,
+  // distinct from the full classical sweep (877 US).
+  { key: "concert",      config: { mode: "genreIds", genres: [CONCERT_CLASSICAL_GENRE], segmentId: "KZFzniwnSyZfZ7v7nJ" }, scopes: ["US", "International"] },
   { key: "electronic",   config: { mode: "classificationName", classificationName: "Dance/Electronic" },  scopes: ["US", "International"] },
   { key: "pop",          config: { mode: "genreIds", genres: MUSIC_GENRE_IDS.filter(g => g.name === "Pop") },           scopes: ["US", "International"] },
   { key: "rock",         config: { mode: "genreIds", genres: MUSIC_GENRE_IDS.filter(g => g.name === "Rock") },          scopes: ["US", "International"] },
@@ -78,7 +92,8 @@ async function fetchTicketmasterEvents(
   classificationName: string | undefined,
   genreId: string | undefined,
   page: number = 0,
-  segmentName?: string
+  segmentName?: string,
+  segmentId?: string
 ) {
   const params = new URLSearchParams({
     apikey: apiKey,
@@ -93,7 +108,9 @@ async function fetchTicketmasterEvents(
     params.append("classificationName", classificationName);
   }
 
-  if (segmentName) {
+  if (segmentId) {
+    params.append("segmentId", segmentId);
+  } else if (segmentName) {
     params.append("segmentName", segmentName);
   }
 
@@ -141,6 +158,25 @@ function pickEventFields(event: any, region: "US" | "international") {
 }
 
 const FIELD_MAPS: Record<string, string[]> = {
+  // concert_events table has no sub_category column; whitelist explicitly to
+  // drop the always-null sub_category from pickEventFields before upsert.
+  concert: [
+    "ticketmaster_id",
+    "title",
+    "event_date",
+    "image_url",
+    "venue",
+    "city",
+    "state",
+    "country",
+    "region",
+    "price_min",
+    "price_max",
+    "currency",
+    "ticket_url",
+    "segment",
+    "genre",
+  ],
   musical: [
     "ticketmaster_id",
     "title",
@@ -440,7 +476,9 @@ async function syncCategory(
           countryScope === "US" ? "US" : "INTL",
           undefined,
           genre.id,
-          page
+          page,
+          undefined,
+          config.mode === "genreIds" ? config.segmentId : undefined
         );
 
         if (!tmData._embedded?.events?.length) break;
