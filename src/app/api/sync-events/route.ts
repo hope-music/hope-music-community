@@ -4,7 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 const CATEGORIES = [
   { key: "opera", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Opera" },
   { key: "musical", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Broadway" },
-  { key: "classical", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Classical", segmentName: "Arts & Theatre" },
+  // Classical events span both "Arts & Theatre" and "Music" segments on TM.
+  // Leave segmentName unset so both segments are fetched (≈877 US vs 358 with filter).
+  { key: "classical", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Classical" },
   { key: "concert", segmentId: "KZFzniwnSyZfZ7v7nE", classificationName: "Music" },
   { key: "electronic", segmentId: "KZFzniwnSyZfZ7v7nJ", classificationName: "Dance/Electronic" },
   { key: "pop", segmentId: "KZFzniwnSyZfZ7v7nE", classificationName: "Pop" },
@@ -103,9 +105,8 @@ async function syncCategory(
   const tableName = getTableName(categoryKey);
   let totalUpserted = 0;
   let totalErrors = 0;
-  const maxPages = 10;
 
-  for (let page = 0; page < maxPages; page++) {
+  for (let page = 0; ; page++) {
     const tmData = await fetchTicketmasterEvents(classificationName, countryScope === "US" ? "US" : "INTL", page, segmentName);
 
     if (!tmData._embedded?.events?.length) break;

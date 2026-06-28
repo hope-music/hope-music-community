@@ -17,7 +17,10 @@ type SyncConfig =
 const CATEGORIES: Array<{ key: string; config: SyncConfig; scopes: ("US" | "International")[] }> = [
   { key: "opera",        config: { mode: "classificationName", classificationName: "Opera" },             scopes: ["US", "International"] },
   { key: "musical",      config: { mode: "broadway" },                                                    scopes: ["US"] },
-  { key: "classical",    config: { mode: "classificationName", classificationName: "Classical", segmentName: "Arts & Theatre" }, scopes: ["US", "International"] },
+  // Classical events span BOTH "Arts & Theatre" and "Music" segments on TM.
+  // Adding a segmentName filter cuts the result roughly in half (e.g. 877 US
+  // events unfiltered vs 358 with Arts & Theatre only). Leave it unset.
+  { key: "classical",    config: { mode: "classificationName", classificationName: "Classical" },          scopes: ["US", "International"] },
   { key: "concert",      config: { mode: "classificationName", classificationName: "Music" },             scopes: ["US", "International"] },
   { key: "electronic",   config: { mode: "classificationName", classificationName: "Dance/Electronic" },  scopes: ["US", "International"] },
   { key: "pop",          config: { mode: "genreIds", genres: MUSIC_GENRE_IDS.filter(g => g.name === "Pop") },           scopes: ["US", "International"] },
@@ -347,7 +350,6 @@ async function syncCategory(
   const tableName = `${categoryKey.replace(/-/g, "_")}_events`;
   let totalUpserted = 0;
   let totalErrors = 0;
-  const maxPages = 4;
 
   emit(controller, {
     type: "start",
@@ -431,7 +433,8 @@ async function syncCategory(
         message: `Fetching genre: ${genre.name}`,
       });
 
-      for (let page = 0; page < maxPages; page++) {
+      let lastTotalPages = 1;
+      for (let page = 0; page < lastTotalPages; page++) {
         const tmData = await fetchTicketmasterEvents(
           apiKey,
           countryScope === "US" ? "US" : "INTL",
@@ -488,7 +491,7 @@ async function syncCategory(
         });
 
         const totalPages = tmData.page?.totalPages || 1;
-        if (page >= totalPages - 1) break;
+        lastTotalPages = totalPages;
       }
 
       emit(controller, {
@@ -499,7 +502,8 @@ async function syncCategory(
       });
     }
   } else {
-    for (let page = 0; page < maxPages; page++) {
+    let lastTotalPages = 1;
+    for (let page = 0; page < lastTotalPages; page++) {
       const tmData = await fetchTicketmasterEvents(
         apiKey,
         countryScope === "US" ? "US" : "INTL",
@@ -564,7 +568,7 @@ async function syncCategory(
       });
 
       const totalPages = tmData.page?.totalPages || 1;
-      if (page >= totalPages - 1) break;
+      lastTotalPages = totalPages;
     }
   }
 
