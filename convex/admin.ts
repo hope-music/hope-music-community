@@ -937,6 +937,28 @@ export const listHopeStudioServices = query({
   },
 });
 
+// Public (no admin gate) — used by global /search to index Hope Studio services.
+export const getPublicHopeStudioServices = query({
+  args: { category: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    let services = await ctx.db.query("hopeStudio").collect();
+    services = services.filter((s: any) => s.isActive !== false);
+    if (args.category) {
+      services = services.filter((s: any) => s.category === args.category);
+    }
+    return services.map((s: any) => ({
+      _id: s._id,
+      serviceName: s.serviceName ?? "",
+      description: s.description ?? "",
+      category: s.category ?? "",
+      availability: s.availability ?? "",
+      pricing: s.pricing ?? "",
+      imageLinks: s.imageLinks ?? [],
+      createdAt: s.createdAt ?? Date.now(),
+    }));
+  },
+});
+
 export const createHopeStudioService = mutation({
   args: {
     callerEmail: v.string(),

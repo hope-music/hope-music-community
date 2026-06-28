@@ -60,6 +60,17 @@ interface StageProductionHit {
   category?: string;
 }
 
+interface HopeStudioHit {
+  type: "hope_studio";
+  id: string;
+  serviceName: string;
+  description: string;
+  category: string;
+  imageLinks: string[];
+  pricing?: string;
+  availability?: string;
+}
+
 interface InteractionHit {
   type: "interaction";
   id: string;
@@ -69,7 +80,13 @@ interface InteractionHit {
   categoryLabel: string;
 }
 
-type SearchHit = EventHit | NewsHit | InsightHit | StageProductionHit | InteractionHit;
+type SearchHit =
+  | EventHit
+  | NewsHit
+  | InsightHit
+  | StageProductionHit
+  | HopeStudioHit
+  | InteractionHit;
 
 interface SearchPageClientProps {
   initialQuery: string;
@@ -195,6 +212,28 @@ function searchStageProductions(
     }));
 }
 
+function searchHopeStudio(
+  services: any[] | undefined,
+  query: string
+): HopeStudioHit[] {
+  const q = query.trim().toLowerCase();
+  if (!q || !services?.length) return [];
+  return services
+    .filter((s) =>
+      textMatch(s as Record<string, unknown>, ["serviceName", "description", "category", "availability"], q)
+    )
+    .map((s): HopeStudioHit => ({
+      type: "hope_studio",
+      id: s._id as string,
+      serviceName: s.serviceName ?? "",
+      description: s.description ?? "",
+      category: s.category ?? "recording",
+      imageLinks: Array.isArray(s.imageLinks) ? s.imageLinks : [],
+      pricing: s.pricing,
+      availability: s.availability,
+    }));
+}
+
 function searchInteraction(query: string): InteractionHit[] {
   const q = query.trim().toLowerCase();
   if (!q) return [];
@@ -220,6 +259,7 @@ const TYPE_LABELS: Record<SearchHit["type"], string> = {
   news: "News",
   insight: "Insight",
   stage_production: "Stage Production",
+  hope_studio: "Hope Studio",
   interaction: "Community",
 };
 
@@ -230,6 +270,7 @@ const TYPE_HREF: Record<SearchHit["type"], string> = {
   insight: (hit: SearchHit) =>
     hit.type === "insight" ? `/insights/${hit.category ?? "general"}` : "/insights",
   stage_production: "/performance/stage",
+  hope_studio: "/hope-studio",
   interaction: (hit: SearchHit) =>
     hit.type === "interaction" ? `/interaction/${hit.category}` : "/interaction",
 };
@@ -407,12 +448,50 @@ function InteractionCard({ hit }: { hit: InteractionHit }) {
   );
 }
 
+function HopeStudioCard({ hit }: { hit: HopeStudioHit }) {
+  const cover = hit.imageLinks.find((u) => u?.startsWith("http"));
+  const img = cover ?? "https://images.unsplash.com/photo-1598488035139-bdbb2231ce04?w=500";
+  return (
+    <li className="flex flex-col border border-hmc-placeholder-border bg-white">
+      <Link
+        href="/hope-studio"
+        className="flex flex-1 cursor-pointer flex-col gap-2 p-2 transition-opacity hover:opacity-85"
+      >
+        <span className="self-start rounded bg-purple-100 px-1.5 py-0.5 text-[10px] font-medium text-purple-700">
+          {hit.category || "studio"}
+        </span>
+        <h3 className="line-clamp-3 text-xs font-semibold leading-snug text-hmc-text min-h-[2.5rem]">
+          {hit.serviceName}
+        </h3>
+        {hit.description && (
+          <p className="line-clamp-3 text-[10px] text-hmc-text-muted">{hit.description}</p>
+        )}
+        {hit.pricing && (
+          <p className="text-[10px] font-medium text-hmc-text">{hit.pricing}</p>
+        )}
+        <div className="relative aspect-[4/3] w-full overflow-hidden bg-hmc-placeholder">
+          <Image src={img} alt={hit.serviceName} width={500} height={375} className="h-full w-full object-cover" unoptimized />
+        </div>
+      </Link>
+      <div className="flex w-full justify-center border-t border-hmc-placeholder-border bg-white">
+        <Link
+          href="/hope-studio"
+          className="flex-1 bg-hmc-orange px-3 py-1.5 text-center text-xs font-medium text-white transition-colors hover:bg-hmc-orange/90"
+        >
+          More at Hope Studio
+        </Link>
+      </div>
+    </li>
+  );
+}
+
 function HitCard({ hit }: { hit: SearchHit }) {
   switch (hit.type) {
     case "event":          return <EventCard hit={hit} />;
     case "news":           return <NewsCard hit={hit} />;
     case "insight":        return <InsightCard hit={hit} />;
     case "stage_production": return <StageProductionCard hit={hit} />;
+    case "hope_studio":    return <HopeStudioCard hit={hit} />;
     case "interaction":    return <InteractionCard hit={hit} />;
   }
 }
@@ -431,6 +510,7 @@ export function SearchPageClient({ initialQuery }: SearchPageClientProps) {
   const convexNews = useQuery(api.admin.getPublishedNews, {});
   const convexInsights = useQuery(api.admin.getPublishedInsights, {});
   const convexStageProductions = useQuery(api.admin.getAllPublicStageProductions);
+  const convexHopeStudio = useQuery(api.admin.getPublicHopeStudioServices, {});
 
   useEffect(() => {
     const q = submittedQuery.trim();
@@ -456,10 +536,11 @@ export function SearchPageClient({ initialQuery }: SearchPageClientProps) {
         const news = searchNews(convexNews as any[] | undefined, q);
         const insights = searchInsights(convexInsights as any[] | undefined, q);
         const stageProductions = searchStageProductions(convexStageProductions as any[] | undefined, q);
+        const hopeStudio = searchHopeStudio(convexHopeStudio as any[] | undefined, q);
 
         if (cancelled) return;
 
-        setHits([...events, ...news, ...insights, ...stageProductions, ...interaction]);
+        setHits([...events, ...news, ...insights, ...stageProductions, ...hopeStudio, ...interaction]);
         setStatus("ready");
       } catch (e: any) {
         if (cancelled) return;
@@ -473,7 +554,7 @@ export function SearchPageClient({ initialQuery }: SearchPageClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [submittedQuery, convexNews, convexInsights, convexStageProductions]);
+  }, [submittedQuery, convexNews, convexInsights, convexStageProductions, convexHopeStudio]);
 
   // Group hits by type for sectioned display
   const grouped = useMemo(() => {
@@ -482,12 +563,13 @@ export function SearchPageClient({ initialQuery }: SearchPageClientProps) {
       news: [],
       insight: [],
       stage_production: [],
+      hope_studio: [],
       interaction: [],
     };
     for (const h of hits) {
       map[h.type].push(h);
     }
-    return (["event", "news", "insight", "stage_production", "interaction"] as SearchHit["type"][])
+    return (["event", "news", "insight", "stage_production", "hope_studio", "interaction"] as SearchHit["type"][])
       .filter((t) => map[t].length > 0)
       .map((t) => ({ type: t, label: TYPE_LABELS[t], items: map[t] }));
   }, [hits]);
