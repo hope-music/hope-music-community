@@ -398,6 +398,33 @@ async function syncCategory(
     message: `Starting ${categoryKey} (${countryScope})…`,
   });
 
+  // Pre-sync purge: delete all existing rows for this (table, scope) so the
+  // upserted count equals exactly what Ticketmaster returned. This is the
+  // only way to verify the fetch logic by comparing the displayed number
+  // against TM's own website count. Scope-scoped via `region` so we never
+  // touch the other scope's data.
+  {
+    const { count: deletedCount, error: deleteError } = await supabase
+      .from(tableName)
+      .delete({ count: "exact" })
+      .eq("region", region);
+    if (deleteError) {
+      emit(controller, {
+        type: "error",
+        category: categoryKey,
+        scope: countryScope,
+        message: `Pre-sync purge failed: ${deleteError.message}`,
+      });
+    } else {
+      emit(controller, {
+        type: "info",
+        category: categoryKey,
+        scope: countryScope,
+        message: `Purged ${deletedCount ?? 0} existing rows for ${tableName} (region=${region})`,
+      });
+    }
+  }
+
   if (config.mode === "broadway") {
     for (let page = 0; page < 4; page++) {
       const params = new URLSearchParams({
