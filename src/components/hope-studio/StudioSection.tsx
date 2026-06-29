@@ -136,4 +136,3 @@ export function StudioSection() {
 }
 
 export { STUDIO_STORAGE_KEY };
-export type { StudioData };

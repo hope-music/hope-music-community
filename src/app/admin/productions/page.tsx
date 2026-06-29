@@ -285,10 +285,8 @@ const tableName = categoryToTable(selectedCategory);
         image_url: editForm.image_url || null,
       };
 
-      const { error: updateError } = await adminClient
-        .from(tableName)
-        .update(updateData)
-        .eq("ticketmaster_id", editingEvent.ticketmaster_id);
+      const upd: any = (adminClient.from(tableName) as any);
+      const { error: updateError } = await upd.update(updateData).eq("ticketmaster_id", editingEvent.ticketmaster_id);
 
       if (updateError) throw updateError;
 
@@ -324,7 +322,7 @@ const tableName = categoryToTable(selectedCategory);
         };
         delete (insertData as any).id;
 
-        const { error: insertError } = await adminClient.from(targetTable).insert(insertData);
+        const { error: insertError } = await (adminClient.from(targetTable).insert(insertData as any) as any);
         if (insertError) throw insertError;
       }
 
@@ -403,7 +401,7 @@ const tableName = categoryToTable(selectedCategory);
         source: "manual",
       };
 
-      const { error: insertError } = await adminClient.from(tableName).insert(insertData);
+      const { error: insertError } = await (adminClient.from(tableName).insert(insertData as any) as any);
       if (insertError) throw insertError;
 
       setShowAddModal(false);

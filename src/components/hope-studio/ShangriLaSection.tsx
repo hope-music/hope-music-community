@@ -208,4 +208,3 @@ export function ShangriLaSection() {
 }
 
 export { SHANGRI_LA_STORAGE_KEY };
-export type { ShangriLaData };

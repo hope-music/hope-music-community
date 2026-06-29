@@ -5,7 +5,6 @@ import Link from "next/link";
 import { AuthModal } from "@/components/auth/AuthModal";
 import {
   getInteractionCategoryLabel,
-  INTERACTION_CATEGORIES,
   INTERACTION_STORAGE_KEY,
   normalizeInteractionCategory,
   parseInteractionItems,
@@ -37,7 +36,7 @@ interface BanEntry {
   expiresAt: number | null;
 }
 
-const CATEGORIES = INTERACTION_CATEGORIES;
+import { INTERACTION_CATEGORY_OPTIONS } from "@/lib/constants";
 
 // Default comments
 const DEFAULT_COMMENTS: Comment[] = [
@@ -183,7 +182,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
       setCategory(normalizeInteractionCategory(resolved.category));
       setPostId(resolved.id);
       const normalizedCategory = normalizeInteractionCategory(resolved.category);
-      setCategoryLabel(CATEGORIES.find((c) => c.value === normalizedCategory)?.label || normalizedCategory);
+      setCategoryLabel(INTERACTION_CATEGORY_OPTIONS.find((c) => c.value === normalizedCategory)?.label || normalizedCategory);
     }
     loadParams();
   }, [params]);
@@ -381,7 +380,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
                   <span>💬</span>
                   <span>All Topics</span>
                 </Link>
-                {CATEGORIES.map((cat) => (
+                {INTERACTION_CATEGORY_OPTIONS.map((cat) => (
                   <Link
                     key={cat.value}
                     href={`/interaction/${cat.value}`}
@@ -389,7 +388,7 @@ export default function InteractionDetailPage({ params }: PageProps) {
                       category === cat.value ? "bg-hmc-orange/10 text-hmc-orange font-medium" : "text-gray-700 hover:bg-gray-50"
                     }`}
                   >
-                    <span>{cat.value === "software" ? "💻" : cat.value === "hardware" ? "🎛️" : cat.value === "music" ? "🎵" : cat.value === "production" ? "🎬" : cat.value === "article" ? "📝" : "💬"}</span>
+                    <span>💬</span>
                     <span>{cat.label}</span>
                   </Link>
                 ))}

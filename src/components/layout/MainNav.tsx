@@ -181,18 +181,11 @@ function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolea
         {PERFORMANCE_ITEMS.map((item) => (
           <Link
             key={item.slug || "featured"}
-            href={item.href || (item.isFeatured ? "/performance" : `/performance/${item.slug}`)}
+            href={item.href || `/performance/${item.slug}`}
             target="_blank"
             rel="noopener noreferrer"
-            className={`flex items-center px-5 py-3 text-[13px] font-medium transition-colors duration-150 ${
-              item.isFeatured
-                ? "text-yellow-300 hover:bg-yellow-500/20"
-                : "text-white hover:bg-white/20"
-            }`}
+            className="flex items-center px-5 py-3 text-[13px] font-medium text-white transition-colors duration-150 hover:bg-white/20"
           >
-            {item.isFeatured && (
-              <span className="mr-2 text-yellow-300">★</span>
-            )}
             {item.label}
           </Link>
         ))}

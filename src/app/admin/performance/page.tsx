@@ -171,19 +171,17 @@ function FormModal({
       };
 
       if (modal.mode === "edit") {
-        const { error } = await supabase
-          .from(categoryToTable(cat))
-          .update(payload)
-          .eq("ticketmaster_id", modal.row.ticketmaster_id);
+        const upd: any = (supabase.from(categoryToTable(cat)) as any);
+        const { error } = await upd.update(payload).eq("ticketmaster_id", modal.row.ticketmaster_id);
         if (error) throw error;
         onSaved({ ...modal.row, ...payload });
       } else {
         const id = `manual_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const { data, error } = await supabase
+        const { data, error } = await (supabase
           .from(categoryToTable(cat))
-          .insert({ ...payload, ticketmaster_id: id })
+          .insert({ ...payload, ticketmaster_id: id } as any)
           .select()
-          .single();
+          .single() as any);
         if (error) throw error;
         onSaved(data as EventRow);
       }
@@ -350,7 +348,7 @@ export default function PerformancePage() {
       const table = categoryToTable(cat);
       const offset = (page - 1) * pageSize;
 
-      let q = supabase.from(table).select("*", { count: "exact" });
+      let q = (supabase.from(table) as any).select("*", { count: "exact" });
 
       if (region !== "all") q = q.eq("region", region);
       if (search.trim()) {
@@ -393,9 +391,9 @@ export default function PerformancePage() {
       const result: Record<string, number> = {};
       for (const c of CATEGORIES) {
         try {
-          const { count, error } = await supabase
+          const { count, error } = await (supabase
             .from(categoryToTable(c.value))
-            .select("*", { count: "exact", head: true });
+            .select("*", { count: "exact", head: true }) as any);
           if (error && error.code === "42P01") {
             result[c.value] = -1;
           } else {

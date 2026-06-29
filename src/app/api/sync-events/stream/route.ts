@@ -19,7 +19,8 @@ const MUSIC_SEGMENT_ID = "KZFzniwnSyZfZ7v7nJ";
 type SyncConfig =
   | { mode: "classificationName"; classificationName: string; segmentId?: string; segmentName?: string; genreId?: string }
   | { mode: "broadway"; subGenreId: string }
-  | { mode: "genreIds"; genres: Array<{ id: string; name: string }>; segmentId?: string };
+  | { mode: "genreIds"; genres: Array<{ id: string; name: string }>; segmentId?: string }
+  | { mode: "skip" };
 
 const CATEGORIES: Array<{ key: string; config: SyncConfig; scopes: ("US" | "International")[] }> = [
   // Musical → Arts & Theatre → Theatre → subGenre "Musical" (Broadway)

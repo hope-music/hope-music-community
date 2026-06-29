@@ -215,6 +215,7 @@ export default function EmployeesPage() {
             >
               <span>+</span> New Employee
           </button>
+          </div>
         </div>
 
         {/* Message */}

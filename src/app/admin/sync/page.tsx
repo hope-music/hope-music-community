@@ -95,10 +95,11 @@ export default function SyncPage() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const reader = res.body?.getReader();
         if (!reader) throw new Error("No response body");
+        const streamReader: ReadableStreamDefaultReader<Uint8Array> = reader;
 
         const decoder = new TextDecoder();
         function read() {
-          reader.read().then(({ done, value }) => {
+          streamReader.read().then(({ done, value }) => {
             if (done) return;
             const text = decoder.decode(value);
             text.split("\n\n").forEach((block) => {
@@ -201,12 +202,13 @@ export default function SyncPage() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const reader = res.body?.getReader();
         if (!reader) throw new Error("No response body");
+        const streamReader: ReadableStreamDefaultReader<Uint8Array> = reader;
 
         const decoder = new TextDecoder();
         const results: any[] = [];
 
         function read() {
-          reader.read().then(({ done, value }) => {
+          streamReader.read().then(({ done, value }) => {
             if (done) return;
             const text = decoder.decode(value);
             text.split("\n\n").forEach((block) => {

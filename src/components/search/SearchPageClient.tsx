@@ -268,7 +268,7 @@ const TYPE_LABELS: Record<SearchHit["type"], string> = {
   site_nav: "Site Navigation",
 };
 
-const TYPE_HREF: Record<SearchHit["type"], string> = {
+const TYPE_HREF: Record<SearchHit["type"], string | ((hit: SearchHit) => string)> = {
   event: (hit: SearchHit) =>
     hit.type === "event" ? `/performance/${hit.category}` : "/performance",
   news: "/news",
@@ -278,6 +278,9 @@ const TYPE_HREF: Record<SearchHit["type"], string> = {
   hope_studio: "/hope-studio",
   interaction: (hit: SearchHit) =>
     hit.type === "interaction" ? `/interaction/${hit.category}` : "/interaction",
+  site_section: "",
+  placeholder_post: "/interaction",
+  site_nav: "",
 };
 
 // ─── Result card renderers ───────────────────────────────────────────────────

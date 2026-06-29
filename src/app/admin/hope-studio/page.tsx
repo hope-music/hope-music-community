@@ -660,7 +660,7 @@ export default function AdminHopeStudioPage() {
     // Also update the card image in hope_studio_content
     const stored = localStorage.getItem("hope_studio_content");
     if (stored) {
-      const items = JSON.parse(stored);
+      const items: Array<{ id: string; image?: string }> = JSON.parse(stored);
       const updated = items.map(item =>
         item.id === "works" ? { ...item, image: cooperationForm.image1 } : item
       );
@@ -1423,6 +1423,8 @@ export default function AdminHopeStudioPage() {
                 <button type="button" onClick={(e) => { e.preventDefault(); handleSave(); }} className="rounded-md bg-blue-600 px-6 py-2 text-white hover:bg-blue-700">Update</button>
               </div>
             </div>
+            )}
+          </div>
           )}
 
           {/* Comment Management Section */}
@@ -1527,11 +1529,9 @@ export default function AdminHopeStudioPage() {
               </div>
             )}
           </div>
-        </div>
-      )}
 
-      {/* Section Items */}
-      <div className="space-y-6">
+        {/* Section Items */}
+        <div className="space-y-6">
         {itemsByCategory.map((cat) => {
           const categoryItems = filterCategory === "all" || filterCategory === cat.value ? cat.items : [];
 
@@ -1578,7 +1578,8 @@ export default function AdminHopeStudioPage() {
             </div>
           );
         })}
-      </div>
     </div>
+      </div>
   );
+}
 }

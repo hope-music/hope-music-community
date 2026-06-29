@@ -165,4 +165,3 @@ export function JesseLiuSection() {
 }
 
 export { JESSE_LIU_STORAGE_KEY };
-export type { JesseLiuData };

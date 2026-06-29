@@ -125,8 +125,8 @@ async function fetchAvailableCities(
   const { data, error } = await q.throwOnError();
   if (error || !data) return [];
 
-  const cities = data
-    .map((r: any) => r.city as string)
+  const cities = (data as Array<{ city: string | null }>)
+    .map((r) => r.city)
     .filter((c): c is string => Boolean(c));
 
   return Array.from(new Set(cities)).sort((a, b) => a.localeCompare(b));

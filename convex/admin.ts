@@ -780,7 +780,6 @@ export const batchImportStageProductions = mutation({
         url: item.url,
         category: item.category,
         mediaLinks: [],
-        status: item.status,
         eventDate: item.eventDate,
         eventTime: "",
         isFeatured: false,
@@ -804,9 +803,6 @@ export const listStageProductions = query({
     let productions = await ctx.db.query("stageProductions").collect();
     if (args.category) {
       productions = productions.filter((p: any) => p.category === args.category);
-    }
-    if (args.status) {
-      productions = productions.filter((p: any) => p.status === args.status);
     }
     if (args.searchQuery) {
       const q = args.searchQuery.toLowerCase();
@@ -892,7 +888,6 @@ export const updateStageProduction = mutation({
     if (args.url !== undefined) updates.url = args.url;
     if (args.category !== undefined) updates.category = args.category;
     if (args.mediaLinks !== undefined) updates.mediaLinks = args.mediaLinks;
-    if (args.status !== undefined) updates.status = args.status;
     if (args.eventDate !== undefined) updates.eventDate = args.eventDate;
     if (args.eventTime !== undefined) updates.eventTime = args.eventTime;
     if (args.isFeatured !== undefined) updates.isFeatured = args.isFeatured;

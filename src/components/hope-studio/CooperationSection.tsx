@@ -260,4 +260,3 @@ export function CooperationSection() {
 }
 
 export { COOPERATION_STORAGE_KEY };
-export type { CooperationData };
