@@ -24,6 +24,11 @@ jobs:
       - name: Install Wrangler
         run: npm install --save-dev wrangler@latest
 
+      - name: Generate Convex types
+        run: npx convex codegen
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
       - name: Build and Deploy
         run: npm run deploy
         env:
