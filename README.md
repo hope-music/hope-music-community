@@ -48,7 +48,7 @@ npm start
 ```
 src/
 ├── app/                    # Next.js App Router
-│   ├── (public routes)     # /, /performance, /news, /insights, /interaction, /hope-studio, /opera
+│   ├── (public routes)     # /, /performance, /news, /insights, /interaction, /hope-studio
 │   ├── admin/              # /admin/* (protected)
 │   └── api/                # /api/auth/*, /api/sync-events/*
 ├── components/             # Shared UI components

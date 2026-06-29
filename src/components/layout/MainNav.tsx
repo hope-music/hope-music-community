@@ -116,7 +116,7 @@ export function MainNav() {
 
 const PERFORMANCE_ITEMS = [
   { label: "Musical", slug: "musical" },
-  { label: "Opera", slug: "opera", href: "/opera" },
+  { label: "Opera", slug: "opera", href: "/performance/opera" },
   { label: "Classical", slug: "classical" },
   { label: "Concert", slug: "concert" },
   { label: "Electronic", slug: "electronic" },
