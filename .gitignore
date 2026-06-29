@@ -54,3 +54,10 @@ convex/_generated/
 
 # Debug scripts
 debug-*.mjs
+# OpenNext
+.open-next
+
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
