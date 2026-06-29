@@ -157,7 +157,10 @@ function TopicList({
   placeholderItems: { id: string; title: string }[];
   footerPrompt?: string;
 }) {
-  const displayItems = items.length >= 10 ? items.slice(0, 10) : [...items, ...placeholderItems].slice(0, 10);
+  // Show only real user-created items. If none exist, fall back to
+  // hardcoded placeholders (this only happens on a fresh install before
+  // any admin / user posts are created).
+  const displayItems = items.length > 0 ? items : placeholderItems;
 
   return (
     <div className="flex flex-col">
