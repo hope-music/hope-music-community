@@ -11,6 +11,10 @@
 		"directory": ".open-next/assets",
 		"binding": "ASSETS"
 	},
+	"vars": {
+		"NEXT_PUBLIC_CONVEX_URL": "https://anonymous-hope-music-community.convex.cloud",
+		"NEXT_PUBLIC_CONVEX_SITE_URL": "https://anonymous-hope-music-community.convex.site"
+	},
 	"services": [
 		{
 			// Self-reference service binding, the service name must match the worker name
