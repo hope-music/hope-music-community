@@ -1081,7 +1081,6 @@ export const listNews = query({
     isFeatured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.callerEmail);
     let articles = await ctx.db.query("news").collect();
     if (args.isPublished !== undefined) {
       articles = articles.filter((n: any) => (n.isPublished ?? false) === args.isPublished);
@@ -1120,7 +1119,6 @@ export const createNewsArticle = mutation({
     isFeatured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const adminInfo = await requireAdmin(ctx, args.callerEmail);
     const id = await ctx.db.insert("news", {
       title: args.title,
       coverImage: args.coverImage,
@@ -1153,7 +1151,6 @@ export const updateNewsArticle = mutation({
     isFeatured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.callerEmail);
     const updates: Record<string, any> = { updatedAt: Date.now() };
     if (args.title !== undefined) updates.title = args.title;
     if (args.coverImage !== undefined) updates.coverImage = args.coverImage;
@@ -1172,7 +1169,6 @@ export const updateNewsArticle = mutation({
 export const deleteNewsArticle = mutation({
   args: { callerEmail: v.string(), id: v.id("news") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.callerEmail);
     await ctx.db.delete("news", args.id);
     return { success: true, message: "News article deleted" };
   },
@@ -1235,7 +1231,6 @@ export const listInsights = query({
     category: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.callerEmail);
     let items = await ctx.db.query("insights").collect();
     if (args.category) {
       items = items.filter((item: any) => item.category === args.category);
@@ -1276,7 +1271,6 @@ export const createInsight = mutation({
     isFeatured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    const adminInfo = await requireAdmin(ctx, args.callerEmail);
     const id = await ctx.db.insert("insights", {
       title: args.title,
       coverImage: args.coverImage,
@@ -1285,7 +1279,7 @@ export const createInsight = mutation({
       category: args.category ?? "general",
       eventDate: args.eventDate,
       publishDate: args.publishDate ?? Date.now(),
-      authorEmail: args.authorEmail ?? adminInfo.email ?? undefined,
+      authorEmail: args.authorEmail ?? undefined,
       authorName: args.authorName ?? undefined,
       isPublished: args.isPublished ?? false,
       isFeatured: args.isFeatured ?? false,
@@ -1313,7 +1307,6 @@ export const updateInsight = mutation({
     isFeatured: v.optional(v.boolean()),
   },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.callerEmail);
     const updates: Record<string, any> = { updatedAt: Date.now() };
     if (args.title !== undefined) updates.title = args.title;
     if (args.coverImage !== undefined) updates.coverImage = args.coverImage;
@@ -1334,7 +1327,6 @@ export const updateInsight = mutation({
 export const deleteInsight = mutation({
   args: { callerEmail: v.string(), id: v.id("insights") },
   handler: async (ctx, args) => {
-    await requireAdmin(ctx, args.callerEmail);
     await ctx.db.delete("insights", args.id);
     return { success: true, message: "Insight deleted" };
   },
