@@ -150,9 +150,11 @@ const INTERACTION_ITEMS = [
 function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolean }) {
   return (
     <div className="group relative">
-      {/* 主链接 - 跳转到首页的 Performance 区块 */}
+      {/* 主链接 - 在新标签页打开 */}
       <Link
         href="/performance"
+        target="_blank"
+        rel="noopener noreferrer"
         className={`relative inline-flex items-center whitespace-nowrap px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-150 lg:px-4 ${
           isActive ? "opacity-100" : "opacity-80"
         }`}
