@@ -76,38 +76,6 @@ export default defineSchema({
     updatedAt: v.optional(v.number()),
   }).index("by_category", ["category"]),
 
-  // News table
-  news: defineTable({
-    title: v.string(),
-    coverImage: v.string(),
-    content: v.string(),
-    excerpt: v.string(),
-    publishDate: v.number(),
-    authorEmail: v.string(),
-    authorName: v.string(),
-    isPublished: v.boolean(),
-    isFeatured: v.boolean(),
-    createdAt: v.number(),
-    updatedAt: v.optional(v.number()),
-  }).index("by_publishDate", ["publishDate"])
-    .index("by_isPublished", ["isPublished"]),
-
-  // Insights table
-  insights: defineTable({
-    title: v.string(),
-    coverImage: v.string(),
-    content: v.string(),
-    excerpt: v.string(),
-    category: v.string(),
-    eventDate: v.optional(v.number()),
-    publishDate: v.number(),
-    authorEmail: v.string(),
-    authorName: v.string(),
-    isPublished: v.boolean(),
-    isFeatured: v.boolean(),
-    createdAt: v.number(),
-    updatedAt: v.optional(v.number()),
-  }).index("by_category", ["category"])
-    .index("by_publishDate", ["publishDate"])
-    .index("by_isPublished", ["isPublished"]),
+  // NOTE: news and insights tables are implicitly created by
+  // admin.ts functions and are intentionally omitted here to avoid migration conflicts.
 });
