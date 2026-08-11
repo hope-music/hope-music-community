@@ -32,6 +32,11 @@ jobs:
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
 
+      - name: Deploy Convex backend
+        run: npx convex deploy
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+
       - name: Build for Cloudflare
         run: npx opennextjs-cloudflare build
         env:
@@ -51,3 +56,14 @@ jobs:
           NEXT_PUBLIC_CONVEX_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_URL }}
           NEXT_PUBLIC_CONVEX_SITE_URL: ${{ secrets.NEXT_PUBLIC_CONVEX_SITE_URL }}
           TICKETMASTER_API_KEY: ${{ secrets.TICKETMASTER_API_KEY }}
+
+      - name: Push runtime secrets to Cloudflare Worker
+        # The admin sync route needs the Supabase service role key at runtime.
+        # Cloudflare secrets OVERRIDE vars set in wrangler.jsonc, so we re-push
+        # everything that must not be inlined into the bundle.
+        run: |
+          echo "$SUPABASE_SERVICE_ROLE_KEY" | npx wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

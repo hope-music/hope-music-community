@@ -627,7 +627,9 @@ export function SearchPageClient({ initialQuery }: SearchPageClientProps) {
   // They are always called unconditionally (hooks rules).
   const convexNews = useQuery(api.admin.getPublishedNews, {});
   const convexInsights = useQuery(api.admin.getPublishedInsights, {});
-  const convexStageProductions = useQuery(api.admin.getAllPublicStageProductions);
+  // Stage productions live in Supabase `${category}_events`, not Convex.
+  // We keep an empty list so the search results section can hide cleanly.
+  const convexStageProductions: any[] = [];
   const convexHopeStudio = useQuery(api.admin.getPublicHopeStudioServices, {});
 
   useEffect(() => {

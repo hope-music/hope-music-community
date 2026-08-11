@@ -1,22 +1,50 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabasePublishableKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY!;
+/**
+ * Read-only browser client. Uses the publishable key and is subject to RLS.
+ * Only safe for SELECT operations backed by the public_read policy.
+ */
+export function getSupabaseBrowserClient(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL not configured");
+  if (!key) throw new Error("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY not configured");
+  return createClient(url, key, {
+    auth: { persistSession: false },
+  });
+}
 
-let _supabase: ReturnType<typeof createClient> | null = null;
-let _supabaseAdmin: ReturnType<typeof createClient> | null = null;
+/**
+ * Server-side admin client. Requires the service role key, which bypasses RLS.
+ * Never bundle this into the browser — it grants full table access.
+ */
+export function getSupabaseServiceClient(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL not configured");
+  if (!serviceKey) throw new Error("SUPABASE_SERVICE_ROLE_KEY not configured");
+  return createClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
+}
 
-export const supabase: ReturnType<typeof createClient> = (() => {
-  if (!_supabase) {
-    _supabase = createClient(supabaseUrl, supabasePublishableKey);
-  }
-  return _supabase;
-})();
+/**
+ * Lazy singleton read-only client used by React components. We resolve the
+ * environment variables on first call so modules that import this at the top
+ * level do not crash during `next build` when env vars are not yet injected.
+ */
+let _browser: SupabaseClient | null = null;
+export const supabase: SupabaseClient = new Proxy({} as SupabaseClient, {
+  get(_target, prop, receiver) {
+    if (!_browser) _browser = getSupabaseBrowserClient();
+    return Reflect.get(_browser, prop, receiver);
+  },
+});
 
-export function createSupabaseAdmin(): ReturnType<typeof createClient> {
-  if (!_supabaseAdmin) {
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    _supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
-  }
-  return _supabaseAdmin;
+/**
+ * Lazy admin client. Existing call sites use `createSupabaseAdmin()`; keep
+ * the name for backwards compatibility but delegate to the strict factory.
+ */
+export function createSupabaseAdmin(): SupabaseClient {
+  return getSupabaseServiceClient();
 }

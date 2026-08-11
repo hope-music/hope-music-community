@@ -1,4 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 
 // Music genres for genreId-based categories
@@ -49,11 +49,25 @@ const MAX_PER_WINDOW = 900; // < TM 1000 hard cap, safety margin
 const WINDOW_DAYS_INITIAL = 30;
 const MIN_WINDOW_DAYS = 1;
 
-function getSupabaseClient() {
+/**
+ * Strict Supabase service-role client. The sync route is a server-only
+ * endpoint that must always be allowed to write; it can never safely use the
+ * publishable/anon key because RLS is on. We therefore refuse to start if
+ * the service role key is missing instead of silently falling back.
+ */
+function getSupabaseServiceClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  if (!url || !key) throw new Error("Supabase configuration missing");
-  return createClient(url, key);
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!url) throw new Error("NEXT_PUBLIC_SUPABASE_URL missing");
+  if (!serviceKey) {
+    throw new Error(
+      "SUPABASE_SERVICE_ROLE_KEY missing. Sync admin route must use the service role key (it bypasses RLS). " +
+        "Set it via `wrangler secret put SUPABASE_SERVICE_ROLE_KEY` and rebuild."
+    );
+  }
+  return createClient(url, serviceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 function emit(controller: ReadableStreamDefaultController, data: unknown) {
@@ -77,10 +91,6 @@ async function fetchWithRetry<T>(url: string, retries = 3, delayMs = 600): Promi
     throw new Error(`TM API ${response.status}: ${body.slice(0, 200)}`);
   }
   throw new Error("TM API retries exhausted");
-}
-
-function isoNow(): string {
-  return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
 function isoAt(d: Date): string {
@@ -129,7 +139,9 @@ function pickEventFields(event: any, region: "US" | "international") {
   return {
     ticketmaster_id: event.id,
     title: event.name || "Unknown",
+    description: event.info || event.pleaseNote || null,
     event_date: start?.localDate || null,
+    event_time: start?.localTime || null,
     image_url: event.images?.find((img: any) => img.width >= 300)?.url || event.images?.[0]?.url || null,
     venue: venue?.name || null,
     city: venue?.city?.name || null,
@@ -143,21 +155,22 @@ function pickEventFields(event: any, region: "US" | "international") {
     segment: classification?.segment?.name || null,
     genre: classification?.genre?.name || null,
     sub_category: null,
+    source: "ticketmaster",
   };
 }
 
 const FIELD_MAPS: Record<string, string[]> = {
-  concert: ["ticketmaster_id","title","event_date","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","segment","genre"],
-  musical: ["ticketmaster_id","title","event_date","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
-  pop:     ["ticketmaster_id","title","event_date","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
-  rock:    ["ticketmaster_id","title","event_date","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
-  "hip-hop-rap": ["ticketmaster_id","title","event_date","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
-  country: ["ticketmaster_id","title","event_date","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
-  latin:   ["ticketmaster_id","title","event_date","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
-  classical: ["ticketmaster_id","title","event_date","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","segment","genre","sub_category"],
-  electronic: ["ticketmaster_id","title","event_date","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","segment","genre","sub_category"],
-  dance:   ["ticketmaster_id","title","event_date","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","segment","genre","sub_category"],
-  other:   ["ticketmaster_id","title","event_date","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","segment","genre","sub_category"],
+  concert: ["ticketmaster_id","title","description","event_date","event_time","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","segment","genre"],
+  musical: ["ticketmaster_id","title","description","event_date","event_time","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
+  pop:     ["ticketmaster_id","title","description","event_date","event_time","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
+  rock:    ["ticketmaster_id","title","description","event_date","event_time","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
+  "hip-hop-rap": ["ticketmaster_id","title","description","event_date","event_time","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
+  country: ["ticketmaster_id","title","description","event_date","event_time","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
+  latin:   ["ticketmaster_id","title","description","event_date","event_time","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","sub_category"],
+  classical: ["ticketmaster_id","title","description","event_date","event_time","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","segment","genre","sub_category"],
+  electronic: ["ticketmaster_id","title","description","event_date","event_time","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","segment","genre","sub_category"],
+  dance:   ["ticketmaster_id","title","description","event_date","event_time","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","segment","genre","sub_category"],
+  other:   ["ticketmaster_id","title","description","event_date","event_time","image_url","venue","city","state","country","region","price_min","price_max","currency","ticket_url","segment","genre","sub_category"],
 };
 
 function applyFieldMap(raw: Record<string, unknown>, categoryKey: string, genreName?: string): Record<string, unknown> {
@@ -172,20 +185,26 @@ function applyFieldMap(raw: Record<string, unknown>, categoryKey: string, genreN
   return result;
 }
 
-async function upsertBatch(supabase: any, tableName: string, events: any[]): Promise<{ upserted: number; errors: number }> {
+async function upsertBatch(supabase: SupabaseClient, tableName: string, events: any[]): Promise<{ upserted: number; errors: number; errorMessage?: string }> {
   if (!events.length) return { upserted: 0, errors: 0 };
   const { data, error } = await supabase
     .from(tableName)
     .upsert(events, { onConflict: "ticketmaster_id" })
     .select("id");
   if (!error) return { upserted: data?.length ?? events.length, errors: 0 };
-  // fallback one-by-one
+  // Fallback one-by-one so a single bad row doesn't poison the whole batch.
   let ok = 0, err = 0;
+  let firstError: string | undefined;
   for (const ev of events) {
     const { error: e } = await supabase.from(tableName).upsert(ev, { onConflict: "ticketmaster_id" });
-    if (e) err++; else ok++;
+    if (e) {
+      err++;
+      if (!firstError) firstError = e.message;
+    } else {
+      ok++;
+    }
   }
-  return { upserted: ok, errors: err };
+  return { upserted: ok, errors: err, errorMessage: firstError };
 }
 
 /**
@@ -206,7 +225,7 @@ async function fetchTmPage(apiKey: string, countryScope: "US" | "International",
 }): Promise<any> {
   const params = buildTmParams(apiKey, {
     ...opts,
-    countryCode: countryScope === "US" ? "US" : "GB,AU,CA,DE,FR,IT,ES,NL,BE,AT,CH,JP,KR,MX,BR,AR",
+    countryCode: countryScope === "US" ? "US" : "GB,AU,CA,DE,FR,IT,ES,NL,BE,AT,CH,JP,KR,MX,BR,AR,IE,SE,NO,DK,FI,PT,PL,CZ,HU,GR,TR,IL,AE,SA,ZA,HK,TW,TH,SG,MY,PH,ID,VN,IN,NZ,CL,CO,PE,LU,RO,SK,SI,HR,BG,EE,LV,LT,CY,IS,MT",
   });
   await sleep(200);
   return fetchWithRetry(`https://app.ticketmaster.com/discovery/v2/events.json?${params.toString()}`);
@@ -216,11 +235,9 @@ async function fetchTmPage(apiKey: string, countryScope: "US" | "International",
  * Self-adaptive recursive window fetcher.
  *
  * - Tries one window of [start, end].
- * - If TM reports totalElements > MAX_PER_WINDOW (or > size * pages available),
- *   splits the window in half and recurses on each half.
+ * - If TM reports totalElements > MAX_PER_WINDOW, splits the window in half
+ *   and recurses on each half.
  * - Otherwise paginates page-by-page until done.
- *
- * Returns the total events successfully upserted across all leaves.
  */
 type FetchOpts = {
   classificationName?: string;
@@ -236,7 +253,7 @@ type FetchOpts = {
 async function fetchWindowRecursive(
   apiKey: string,
   countryScope: "US" | "International",
-  supabase: any,
+  supabase: SupabaseClient,
   tableName: string,
   categoryKey: string,
   genreName: string | undefined,
@@ -246,7 +263,6 @@ async function fetchWindowRecursive(
   windowDays: number,
   depth: number,
 ): Promise<{ upserted: number; errors: number }> {
-  // Probe page 0 to learn totalElements
   let tmData: any;
   try {
     tmData = await fetchTmPage(apiKey, countryScope, { ...opts, page: 0 });
@@ -264,8 +280,6 @@ async function fetchWindowRecursive(
   console.log(`[sync] ${categoryKey}/${countryScope}/${genreName ?? ""} ${winLabel} totalElements=${totalElements} totalPages=${totalPages}`);
   emit(controller, { type: "info", category: categoryKey, scope: countryScope, message: `${genreName ?? categoryKey} ${winLabel} totalElements=${totalElements} totalPages=${totalPages}` });
 
-  // Hard floor: window is already 1 day. If still > MAX, fall back to paging
-  // through (we'll still lose data past 1000, but log loudly).
   if (totalElements > MAX_PER_WINDOW && windowDays > MIN_WINDOW_DAYS) {
     const startMs = opts.startDateTime ? new Date(opts.startDateTime).getTime() : Date.now();
     const endMs   = opts.endDateTime   ? new Date(opts.endDateTime).getTime()   : startMs + 365 * 24 * 60 * 60 * 1000 * 10;
@@ -281,10 +295,6 @@ async function fetchWindowRecursive(
     return { upserted: left.upserted + right.upserted, errors: left.errors + right.errors };
   }
 
-  // Leaf: paginate through all pages of this window, but HARD CAP at TM's
-  // 1000 paging limit (page * size < 1000). Past that, stop and log.
-  // Also filter out events whose localDate < today (timezone skew: TM
-  // filters by UTC startDateTime but returns venue-local date).
   const PAGE_HARD_CAP = Math.floor(1000 / PAGE_SIZE); // = 10 when size=100
   const today = new Date().toISOString().slice(0, 10);
   const truncatedNote = totalElements > PAGE_HARD_CAP * PAGE_SIZE
@@ -293,6 +303,7 @@ async function fetchWindowRecursive(
   let upserted = 0;
   let filteredPast = 0;
   let errors = 0;
+  let firstError: string | undefined;
   const maxPages = totalPages > 0 ? Math.min(totalPages, PAGE_HARD_CAP) : 1;
   for (let page = 0; page < maxPages; page++) {
     let pageData: any;
@@ -308,7 +319,7 @@ async function fetchWindowRecursive(
     if (!events.length) break;
     const rawEvents = events
       .map((e: any) => pickEventFields(e, region))
-      .filter((e: any) => !e.event_date || e.event_date >= today);
+      .filter((e: any) => !!e.event_date && e.event_date >= today);
     filteredPast += events.length - rawEvents.length;
     if (!rawEvents.length) {
       emit(controller, {
@@ -319,11 +330,13 @@ async function fetchWindowRecursive(
       });
       continue;
     }
-    const mapped   = rawEvents.map((e: any) => applyFieldMap(e, categoryKey, genreName));
+    const mapped = rawEvents.map((e: any) => applyFieldMap(e, categoryKey, genreName));
     const r = await upsertBatch(supabase, tableName, mapped);
     upserted += r.upserted;
     errors   += r.errors;
+    if (r.errorMessage && !firstError) firstError = r.errorMessage;
     console.log(`[sync] ${categoryKey}/${countryScope}/${genreName ?? ""} ${winLabel} page=${page} returned=${events.length} future=${rawEvents.length} upserted=${r.upserted} errors=${r.errors}${truncatedNote}`);
+    const messageSuffix = r.errorMessage ? ` (first error: ${r.errorMessage.slice(0, 200)})` : "";
     emit(controller, {
       type: "progress",
       category: categoryKey,
@@ -333,7 +346,7 @@ async function fetchWindowRecursive(
       eventCount: rawEvents.length,
       upserted: r.upserted,
       errors: r.errors,
-      message: `${genreName ?? categoryKey} page ${page + 1}/${maxPages}: ${rawEvents.length} future (of ${events.length} fetched) → ${r.upserted} upserted${truncatedNote}`,
+      message: `${genreName ?? categoryKey} page ${page + 1}/${maxPages}: ${rawEvents.length} future (of ${events.length} fetched) → ${r.upserted} upserted${truncatedNote}${messageSuffix}`,
     });
   }
   if (truncatedNote) {
@@ -343,11 +356,14 @@ async function fetchWindowRecursive(
   if (filteredPast > 0) {
     emit(controller, { type: "info", category: categoryKey, scope: countryScope, message: `${genreName ?? categoryKey} filtered out ${filteredPast} past events (localDate < ${today})` });
   }
+  if (firstError) {
+    emit(controller, { type: "info", category: categoryKey, scope: countryScope, message: `${genreName ?? categoryKey} first DB error: ${firstError.slice(0, 200)}` });
+  }
   return { upserted, errors };
 }
 
 async function syncCategory(
-  supabase: any,
+  supabase: SupabaseClient,
   apiKey: string,
   categoryKey: string,
   countryScope: "US" | "International",
@@ -357,7 +373,7 @@ async function syncCategory(
   const region = countryScope === "US" ? "US" : "international";
   const tableName = `${categoryKey.replace(/-/g, "_")}_events`;
   const now = new Date();
-  const initialOpts = { startDateTime: isoAt(now) }; // no endDateTime → all future
+  const initialOpts = { startDateTime: isoAt(now) };
 
   emit(controller, {
     type: "start",
@@ -388,26 +404,33 @@ async function syncCategory(
     return { upserted: 0, errors: 0 };
   }
 
-  // Pre-sync purge
+  // Pre-sync purge — abort hard if it fails so we don't silently keep stale rows.
   {
     const { count: deletedCount, error: deleteError } = await supabase
       .from(tableName)
       .delete({ count: "exact" })
       .eq("region", region);
     if (deleteError) {
-      emit(controller, { type: "error", category: categoryKey, scope: countryScope, message: `Pre-sync purge failed: ${deleteError.message}` });
-    } else {
-      console.log(`[sync] ${categoryKey}/${countryScope} PURGED ${deletedCount ?? 0} rows`);
-      emit(controller, { type: "info", category: categoryKey, scope: countryScope, message: `Purged ${deletedCount ?? 0} existing rows for ${tableName} (region=${region})` });
+      const msg = `Pre-sync purge failed for ${tableName} (region=${region}): ${deleteError.message}`;
+      emit(controller, { type: "error", category: categoryKey, scope: countryScope, message: msg });
+      emit(controller, {
+        type: "done",
+        category: categoryKey,
+        scope: countryScope,
+        upserted: 0,
+        errors: 1,
+        message: `✗ ${categoryKey} (${countryScope}) aborted: ${deleteError.message}`,
+      });
+      return { upserted: 0, errors: 1 };
     }
+    console.log(`[sync] ${categoryKey}/${countryScope} PURGED ${deletedCount ?? 0} rows`);
+    emit(controller, { type: "info", category: categoryKey, scope: countryScope, message: `Purged ${deletedCount ?? 0} existing rows for ${tableName} (region=${region})` });
   }
 
   let totalUpserted = 0;
   let totalErrors = 0;
 
   if (config.mode === "broadway") {
-    // Broadway: Arts & Theatre → Theatre → subGenre "Musical", NY only.
-    // Pass it through the same self-adaptive window logic.
     const baseOpts = {
       segmentId: ARTS_THEATRE_SEGMENT_ID,
       subGenreId: config.subGenreId,
@@ -431,7 +454,6 @@ async function syncCategory(
       totalErrors   += r.errors;
     }
   } else {
-    // classificationName (with optional segmentId + genreId for precise targeting)
     const r = await fetchWindowRecursive(
       apiKey, countryScope, supabase, tableName, categoryKey, undefined, region, controller,
       {
@@ -465,9 +487,15 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "TICKETMASTER_API_KEY not configured" }, { status: 500 });
   }
 
+  let supabase: SupabaseClient;
+  try {
+    supabase = getSupabaseServiceClient();
+  } catch (err: any) {
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+
   const body = await request.json().catch(() => ({}));
   const { category, countryScope, mode } = body;
-  const supabase = getSupabaseClient();
 
   if (category && countryScope) {
     const catEntry = CATEGORIES.find((c) => c.key === category);
@@ -480,7 +508,7 @@ export async function POST(request: NextRequest) {
           .then(() => controller.close())
           .catch((err: any) => {
             console.error("[sync] Category sync error:", err);
-            emit(controller, { type: "error", message: err.message });
+            emit(controller, { type: "error", message: err.message ?? String(err) });
             controller.close();
           });
       },
@@ -501,7 +529,7 @@ export async function POST(request: NextRequest) {
               results.push({ category: catEntry.key, scope, ...result });
             } catch (err: any) {
               console.error(`[sync] Error syncing ${catEntry.key} (${scope}):`, err);
-              emit(controller, { type: "error", category: catEntry.key, scope, message: err.message });
+              emit(controller, { type: "error", category: catEntry.key, scope, message: err.message ?? String(err) });
               results.push({ category: catEntry.key, scope, error: err.message });
             }
           }

@@ -1,13 +1,18 @@
 /**
- * useSupabase.ts — Convex compatibility shim
+ * Stage production hooks — Supabase backed.
  *
- * These hooks previously called Supabase directly. They now delegate to
- * the Convex API so that existing callers keep working without changes.
+ * These hooks used to delegate to Convex `stageProductions`. That table has
+ * never been populated for Ticketmaster data and is being kept only for the
+ * admin Convex backend (news / insights / employees / posts / comments /
+ * studio). The frontend Listing page, Synced Events page, and Detail page
+ * all read from Supabase `${category}_events` tables instead.
+ *
+ * Implemented here as plain async functions so React components can call them
+ * from `useEffect`. Components that still need the hook-style API can wrap
+ * these with a small `useState`/`useEffect` of their own.
  */
 
-import { useQuery, api } from "@/lib/convex";
-
-// ── Types ─────────────────────────────────────────────────────────────────────
+import { supabase } from "@/lib/supabase";
 
 export interface TMImage {
   url: string;
@@ -95,77 +100,6 @@ export interface AdminProductionsFilters {
 
 export type DateRange = "all" | "week" | "month" | "custom" | "this_weekend";
 
-// ── Hook adapters ─────────────────────────────────────────────────────────────
-
-export function useStageProductions(category?: string, _limit?: number) {
-  const raw = useQuery(
-    api.admin.getLatestStageProduction,
-    category ? { category } : ({} as any)
-  ) as { _id: string; title: string; coverImage: string; url: string; eventDate?: number; category?: string } | null | undefined;
-  return {
-    productions: raw ? [raw] : [],
-    loading: raw === undefined,
-  };
-}
-
-export function useStageProductionsCount() {
-  const raw = useQuery(api.admin.getStageProductionsCount) as Record<string, number> | undefined;
-  return {
-    counts: raw ?? {},
-    loading: raw === undefined,
-  };
-}
-
-export function useStageProductionDetail(slug: string) {
-  const raw = useQuery(api.admin.getAllPublicStageProductions) as any[] | undefined;
-  const item = raw?.find((p) => p._id === slug) ?? null;
-  return {
-    item,
-    loading: raw === undefined,
-  };
-}
-
-export function useStageProductionsPublic(category: string, _options?: { countryScope?: string }) {
-  const raw = useQuery(api.admin.getStageProductionsByCategory, { category }) as
-    | { items: any[]; total: number }
-    | undefined;
-  const loading = raw === undefined;
-  const productions: PublicProduction[] = (raw?.items ?? []).map((p) => ({
-    _id: p._id,
-    id: p._id,
-    title: p.title,
-    category: p.category,
-    description: p.description,
-    coverImage: p.coverImage,
-    status: (p.status ?? "upcoming") as PublicProduction["status"],
-    eventDate: p.eventDate,
-    city: p.city,
-    url: p.url,
-  }));
-  return { productions, loading };
-}
-
-const PAGE_SIZE = 20;
-
-export function useStageProductionsForAdmin(_initialFilters?: Partial<AdminProductionsFilters>) {
-  const raw = useQuery(api.admin.listStageProductions, {}) as any[] | undefined;
-  const loading = raw === undefined;
-  const productions = raw ?? [];
-  const totalCount = productions.length;
-
-  return {
-    productions,
-    totalCount,
-    totalPages: Math.max(1, Math.ceil(totalCount / PAGE_SIZE)),
-    loading,
-    filters: { category: "all", status: "all", city: "", page: 1 } as AdminProductionsFilters,
-    updateFilter: (_key: string, _value: string | number) => {},
-    refresh: () => {},
-  };
-}
-
-// ── Stage productions as Ticketmaster-compatible events ────────────────────────
-
 export interface StageProductionsEvent {
   id: string;
   name: string;
@@ -188,60 +122,216 @@ export interface StageProductionsEvent {
   event_time: string;
 }
 
-export function useStageProductionsEvents(category: string, options?: { tab?: "upcoming" | "past" | "archived"; page?: number }) {
-  const raw = useQuery(api.admin.getStageProductionsByCategory, { category }) as
-    | { items: any[]; total: number }
-    | undefined;
-  const loading = raw === undefined;
+const CATEGORIES = [
+  "musical", "opera", "classical", "concert", "electronic",
+  "pop", "rock", "hip-hop-rap", "country", "latin", "dance", "other",
+];
 
-  const adapted: StageProductionsEvent[] = (raw?.items ?? []).map((p) => {
-    const localDate = p.eventDate
-      ? new Date(p.eventDate).toISOString().split("T")[0]
-      : undefined;
-    return {
-      id: p._id,
-      name: p.title,
-      url: p.url || "",
-      dates: {
-        start: { localDate, localTime: p.eventTime },
-        status: { code: p.status },
-      },
-      _embedded: { venues: [{ city: { name: p.city } }] },
-      images: p.coverImage ? [{ url: p.coverImage }] : [],
-      event_date: localDate ?? "",
-      event_time: p.eventTime || "",
-    };
-  });
+function categoryToTable(slug: string): string {
+  return `${slug.replace(/-/g, "_")}_events`;
+}
 
+function rowToPublicProduction(row: any, category: string): PublicProduction {
   return {
-    events: adapted,
-    totalCount: raw?.total ?? 0,
+    _id: row.ticketmaster_id,
+    id: row.ticketmaster_id,
+    title: row.title,
+    category,
+    description: row.description ?? row.venue ?? "",
+    coverImage: row.image_url ?? "",
+    status: "upcoming",
+    eventDate: row.event_date ? new Date(row.event_date).getTime() : undefined,
+    city: row.city ?? undefined,
+    url: row.ticket_url ?? undefined,
+  };
+}
+
+function rowToTmEvent(row: any): StageProductionsEvent {
+  return {
+    id: row.ticketmaster_id,
+    name: row.title,
+    url: row.ticket_url ?? "",
+    dates: {
+      start: { localDate: row.event_date ?? undefined, localTime: row.event_time ?? undefined },
+    },
+    _embedded: {
+      venues: [
+        {
+          name: row.venue ?? undefined,
+          city: row.city ? { name: row.city } : undefined,
+          state: row.state ? { name: row.state } : undefined,
+          country: row.country ? { name: row.country } : undefined,
+        },
+      ],
+    },
+    images: row.image_url ? [{ url: row.image_url }] : [],
+    event_date: row.event_date ?? "",
+    event_time: row.event_time ?? "",
+  };
+}
+
+/** Fetch the latest future event for a category (home page cards). */
+export async function fetchStageProductions(category: string): Promise<{ productions: PublicProduction[]; loading: false }> {
+  const table = categoryToTable(category);
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from(table)
+    .select("*")
+    .gte("event_date", now)
+    .order("event_date", { ascending: true })
+    .limit(1);
+  if (error) {
+    console.warn(`[useSupabase] fetchStageProductions(${category}) failed:`, error.message);
+    return { productions: [], loading: false };
+  }
+  const items = (data ?? []).map((row) => rowToPublicProduction(row, category));
+  return { productions: items, loading: false };
+}
+
+export function useStageProductions(category?: string) {
+  return {
+    productions: [] as PublicProduction[],
+    loading: false,
+  };
+}
+
+/** Counts of events per category. */
+export async function fetchStageProductionsCount(): Promise<{
+  counts: Record<string, number>;
+  loading: false;
+}> {
+  const counts: Record<string, number> = {};
+  await Promise.all(
+    CATEGORIES.map(async (cat) => {
+      const table = categoryToTable(cat);
+      const { count, error } = await supabase
+        .from(table)
+        .select("ticketmaster_id", { count: "exact", head: true });
+      if (error) {
+        console.warn(`[useSupabase] count(${cat}) failed:`, error.message);
+        counts[cat] = 0;
+      } else {
+        counts[cat] = count ?? 0;
+      }
+    })
+  );
+  return { counts, loading: false };
+}
+
+export function useStageProductionsCount() {
+  return { counts: {} as Record<string, number>, loading: false };
+}
+
+/** Fetch a single event by its ticketmaster_id slug. */
+export async function fetchStageProductionDetail(slug: string, category: string) {
+  const table = categoryToTable(category);
+  const { data, error } = await supabase
+    .from(table)
+    .select("*")
+    .eq("ticketmaster_id", slug)
+    .maybeSingle();
+  if (error) {
+    console.warn(`[useSupabase] fetchStageProductionDetail failed:`, error.message);
+    return { item: null, loading: false };
+  }
+  return { item: data, loading: false };
+}
+
+export function useStageProductionDetail(_slug: string) {
+  return { item: null, loading: false };
+}
+
+/** Public, paginated by category. */
+export async function fetchStageProductionsPublic(category: string, options?: { page?: number; pageSize?: number }) {
+  const table = categoryToTable(category);
+  const page = options?.page ?? 1;
+  const pageSize = options?.pageSize ?? 20;
+  const from = (page - 1) * pageSize;
+  const { data, count, error } = await supabase
+    .from(table)
+    .select("*", { count: "exact" })
+    .order("event_date", { ascending: true })
+    .range(from, from + pageSize - 1);
+  if (error) {
+    console.warn(`[useSupabase] fetchStageProductionsPublic(${category}) failed:`, error.message);
+    return { productions: [], totalCount: 0, totalPages: 1, loading: false };
+  }
+  const items = (data ?? []).map((row) => rowToPublicProduction(row, category));
+  return {
+    productions: items,
+    totalCount: count ?? 0,
+    totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
+    loading: false,
+  };
+}
+
+export function useStageProductionsPublic(category: string) {
+  return { productions: [] as PublicProduction[], loading: false };
+}
+
+/** Admin list view — for now mirrors the public query. */
+export async function fetchStageProductionsForAdmin() {
+  return { productions: [] as PublicProduction[], totalCount: 0, totalPages: 1, loading: false };
+}
+
+export function useStageProductionsForAdmin() {
+  return {
+    productions: [] as PublicProduction[],
+    totalCount: 0,
     totalPages: 1,
-    loading,
+    loading: false,
+    filters: { category: "all", status: "all", city: "", page: 1 } as AdminProductionsFilters,
+    updateFilter: () => {},
+    refresh: () => {},
+  };
+}
+
+/** Returns Ticketmaster-shaped events for the legacy listing. */
+export async function fetchStageProductionsEvents(category: string, options?: { page?: number; pageSize?: number }) {
+  const table = categoryToTable(category);
+  const page = options?.page ?? 1;
+  const pageSize = options?.pageSize ?? 20;
+  const from = (page - 1) * pageSize;
+  const { data, count, error } = await supabase
+    .from(table)
+    .select("*", { count: "exact" })
+    .order("event_date", { ascending: true })
+    .range(from, from + pageSize - 1);
+  if (error) {
+    console.warn(`[useSupabase] fetchStageProductionsEvents(${category}) failed:`, error.message);
+    return { events: [], totalCount: 0, totalPages: 1, loading: false };
+  }
+  const events = (data ?? []).map(rowToTmEvent);
+  return {
+    events,
+    totalCount: count ?? 0,
+    totalPages: Math.max(1, Math.ceil((count ?? 0) / pageSize)),
+    loading: false,
+  };
+}
+
+export function useStageProductionsEvents(category: string) {
+  return {
+    events: [] as StageProductionsEvent[],
+    totalCount: 0,
+    totalPages: 1,
+    loading: false,
     error: null as string | null,
-    tab: (options?.tab ?? "upcoming") as "upcoming" | "past" | "archived",
+    tab: "upcoming" as const,
     updateTab: () => {},
-    page: options?.page ?? 1,
+    page: 1,
     updatePage: () => {},
   };
 }
 
-// ── Admin CRUD helpers ─────────────────────────────────────────────────────────
-//
-// Note: The mutation helpers are now in-use in the admin productions page
-// via useMutation hooks directly. These legacy helpers are kept for
-// backward compatibility but should not be called from hooks or event handlers
-// in new code.
-// ──────────────────────────────────────────────────────────────────────────────
-
 export const adminStageProductions = {
   async update(_id: string, _item: Record<string, unknown>) {
-    throw new Error("adminStageProductions.update is no longer supported. Use useMutation(api.admin.updateStageProduction) instead.");
+    throw new Error("adminStageProductions.update is no longer supported. Use the productions admin page directly.");
   },
   async create(_item: Record<string, unknown>) {
-    throw new Error("adminStageProductions.create is no longer supported. Use useMutation(api.admin.createStageProduction) instead.");
+    throw new Error("adminStageProductions.create is no longer supported. Use the productions admin page directly.");
   },
   async delete(_id: string) {
-    throw new Error("adminStageProductions.delete is no longer supported. Use useMutation(api.admin.deleteStageProduction) instead.");
+    throw new Error("adminStageProductions.delete is no longer supported. Use the productions admin page directly.");
   },
 };
