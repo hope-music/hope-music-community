@@ -150,9 +150,10 @@ const INTERACTION_ITEMS = [
 function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolean }) {
   return (
     <div className="group relative">
-      <Link
-        href={href}
-        className={`relative inline-flex items-center whitespace-nowrap px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-150 hover:opacity-85 lg:px-4 ${
+      {/* Non-clickable trigger - just displays text with dropdown on hover */}
+      <button
+        type="button"
+        className={`relative inline-flex items-center whitespace-nowrap px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-150 lg:px-4 ${
           isActive ? "opacity-100" : "opacity-80"
         }`}
       >
@@ -172,7 +173,7 @@ function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolea
             clipRule="evenodd"
           />
         </svg>
-      </Link>
+      </button>
 
       {/* Dropdown — left-aligned with nav item, flush to bottom, light-blue theme */}
       <div

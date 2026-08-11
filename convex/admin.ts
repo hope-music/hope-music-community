@@ -1125,7 +1125,7 @@ export const createNewsArticle = mutation({
       content: args.content,
       excerpt: args.excerpt,
       publishDate: args.publishDate ?? Date.now(),
-      authorEmail: args.authorEmail ?? adminInfo.email ?? undefined,
+      authorEmail: args.authorEmail ?? undefined,
       authorName: args.authorName ?? undefined,
       isPublished: args.isPublished ?? false,
       isFeatured: args.isFeatured ?? false,
