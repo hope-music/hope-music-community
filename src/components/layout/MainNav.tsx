@@ -234,7 +234,9 @@ function InteractionNavLink({ href, isActive }: { href: string; isActive: boolea
   return (
     <div className="group relative">
       <Link
-        href={href}
+        href="/interaction"
+        target="_blank"
+        rel="noopener noreferrer"
         className={`relative inline-flex items-center whitespace-nowrap px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-150 hover:opacity-85 lg:px-4 ${
           isActive ? "opacity-100" : "opacity-80"
         }`}
