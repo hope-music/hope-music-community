@@ -79,12 +79,12 @@ export default defineSchema({
   // News table
   news: defineTable({
     title: v.string(),
-    coverImage: v.string(),
+    coverImage: v.optional(v.string()),
     content: v.string(),
     excerpt: v.string(),
     publishDate: v.number(),
-    authorEmail: v.string(),
-    authorName: v.string(),
+    authorEmail: v.optional(v.string()),
+    authorName: v.optional(v.string()),
     isPublished: v.boolean(),
     isFeatured: v.boolean(),
     createdAt: v.number(),
