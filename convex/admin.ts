@@ -1041,11 +1041,9 @@ export const getPublishedNews = query({
       title: n.title ?? "",
       coverImage: n.coverImage ?? n.image ?? "",
       content: n.content ?? "",
-      excerpt: n.summary ?? n.excerpt ?? "",
-      publishDate: n.createdAt ?? n.publishDate ?? 0,
-      authorName: n.author ?? n.authorName ?? "",
-      tags: n.tags ?? [],
-      views: n.views ?? 0,
+      excerpt: n.excerpt ?? "",
+      publishDate: n.publishDate ?? n.date,
+      authorName: n.authorName ?? n.author ?? "",
       isPublished: n.isPublished ?? false,
       isFeatured: n.isFeatured ?? false,
     }));
@@ -1065,11 +1063,9 @@ export const getNewsById = query({
       title: article.title ?? "",
       coverImage: (article.coverImage as string) ?? "",
       content: article.content ?? "",
-      excerpt: article.summary ?? article.excerpt ?? "",
-      publishDate: article.createdAt ?? 0,
-      authorName: article.author ?? "",
-      tags: (article.tags as string[]) ?? [],
-      views: (article.views as number) ?? 0,
+      excerpt: article.excerpt ?? "",
+      publishDate: article.publishDate ?? 0,
+      authorName: article.authorName ?? "",
       isPublished: article.isPublished ?? false,
       isFeatured: article.isFeatured ?? false,
       createdAt: article.createdAt ?? Date.now(),
@@ -1097,17 +1093,15 @@ export const listNews = query({
       title: n.title ?? "",
       coverImage: n.coverImage ?? n.image ?? "",
       content: n.content ?? "",
-      excerpt: n.summary ?? n.excerpt ?? "",
-      publishDate: n.createdAt ?? n.publishDate ?? 0,
+      excerpt: n.excerpt ?? "",
+      publishDate: n.publishDate ?? n.date,
       authorEmail: n.authorEmail ?? "",
-      authorName: n.author ?? n.authorName ?? "",
-      tags: n.tags ?? [],
-      views: n.views ?? 0,
+      authorName: n.authorName ?? n.author ?? "",
       isPublished: n.isPublished ?? false,
       isFeatured: n.isFeatured ?? false,
       createdAt: n.createdAt ?? Date.now(),
       updatedAt: n.updatedAt,
-    })).sort((a: any, b: any) => (b.createdAt ?? b.publishDate) - (a.createdAt ?? a.publishDate));
+    })).sort((a: any, b: any) => (b.publishDate ?? b.createdAt) - (a.publishDate ?? a.createdAt));
   },
 });
 
@@ -1129,13 +1123,12 @@ export const createNewsArticle = mutation({
       title: args.title,
       coverImage: args.coverImage,
       content: args.content,
-      summary: args.excerpt ?? "",
-      author: args.authorName ?? "",
-      authorEmail: args.authorEmail,
-      tags: [],
+      excerpt: args.excerpt,
+      publishDate: args.publishDate ?? Date.now(),
+      authorEmail: args.authorEmail ?? undefined,
+      authorName: args.authorName ?? undefined,
       isPublished: args.isPublished ?? true,
       isFeatured: args.isFeatured ?? false,
-      views: 0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -1162,10 +1155,10 @@ export const updateNewsArticle = mutation({
     if (args.title !== undefined) updates.title = args.title;
     if (args.coverImage !== undefined) updates.coverImage = args.coverImage;
     if (args.content !== undefined) updates.content = args.content;
-    if (args.excerpt !== undefined) updates.summary = args.excerpt;
-    if (args.publishDate !== undefined) updates.createdAt = args.publishDate;
+    if (args.excerpt !== undefined) updates.excerpt = args.excerpt;
+    if (args.publishDate !== undefined) updates.publishDate = args.publishDate;
     if (args.authorEmail !== undefined) updates.authorEmail = args.authorEmail;
-    if (args.authorName !== undefined) updates.author = args.authorName;
+    if (args.authorName !== undefined) updates.authorName = args.authorName;
     if (args.isPublished !== undefined) updates.isPublished = args.isPublished;
     if (args.isFeatured !== undefined) updates.isFeatured = args.isFeatured;
     await ctx.db.patch("news", args.id, updates);
@@ -1193,19 +1186,17 @@ export const getPublishedInsights = query({
     if (args.category) {
       items = items.filter((item: any) => item.category === args.category);
     }
-    items = items.sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+    items = items.sort((a: any, b: any) => (b.publishDate ?? b.createdAt ?? 0) - (a.publishDate ?? a.createdAt ?? 0));
     return items.map((item: any) => ({
       _id: item._id,
       title: item.title ?? "",
       coverImage: item.coverImage ?? "",
       content: item.content ?? "",
-      excerpt: item.summary ?? item.excerpt ?? "",
+      excerpt: item.excerpt ?? "",
       category: item.category ?? "",
-      publishDate: item.createdAt ?? 0,
+      publishDate: item.publishDate ?? 0,
       eventDate: item.eventDate,
-      authorName: item.author ?? item.authorName ?? "",
-      tags: item.tags ?? [],
-      views: item.views ?? 0,
+      authorName: item.authorName ?? "",
       isPublished: item.isPublished ?? false,
       isFeatured: item.isFeatured ?? false,
     }));
@@ -1222,13 +1213,11 @@ export const getInsightById = query({
       title: item.title ?? "",
       coverImage: item.coverImage ?? "",
       content: item.content ?? "",
-      excerpt: item.summary ?? item.excerpt ?? "",
+      excerpt: item.excerpt ?? "",
       category: item.category ?? "",
-      publishDate: item.createdAt ?? 0,
+      publishDate: item.publishDate ?? 0,
       eventDate: item.eventDate,
-      authorName: item.author ?? "",
-      tags: (item.tags as string[]) ?? [],
-      views: (item.views as number) ?? 0,
+      authorName: item.authorName ?? "",
       isPublished: item.isPublished ?? false,
       isFeatured: item.isFeatured ?? false,
       createdAt: item.createdAt ?? Date.now(),
@@ -1252,19 +1241,17 @@ export const listInsights = query({
         title: item.title ?? "",
         coverImage: item.coverImage ?? "",
         content: item.content ?? "",
-        excerpt: item.summary ?? item.excerpt ?? "",
+        excerpt: item.excerpt ?? "",
         category: item.category ?? "",
-        publishDate: item.createdAt ?? 0,
+        publishDate: item.publishDate ?? 0,
         eventDate: item.eventDate,
-        authorName: item.author ?? item.authorName ?? "",
-        tags: item.tags ?? [],
-        views: item.views ?? 0,
+        authorName: item.authorName ?? "",
         isPublished: item.isPublished ?? false,
         isFeatured: item.isFeatured ?? false,
         createdAt: item.createdAt ?? Date.now(),
         updatedAt: item.updatedAt,
       }))
-      .sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
+      .sort((a: any, b: any) => (b.publishDate ?? b.createdAt) - (a.publishDate ?? a.createdAt));
   },
 });
 
@@ -1288,15 +1275,14 @@ export const createInsight = mutation({
       title: args.title,
       coverImage: args.coverImage,
       content: args.content,
-      summary: args.excerpt ?? "",
+      excerpt: args.excerpt,
       category: args.category ?? "general",
       eventDate: args.eventDate,
-      author: args.authorName ?? "",
-      authorEmail: args.authorEmail,
-      tags: [],
-      isPublished: args.isPublished ?? true,
+      publishDate: args.publishDate ?? Date.now(),
+      authorEmail: args.authorEmail ?? undefined,
+      authorName: args.authorName ?? undefined,
+      isPublished: args.isPublished ?? false,
       isFeatured: args.isFeatured ?? false,
-      views: 0,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -1325,12 +1311,12 @@ export const updateInsight = mutation({
     if (args.title !== undefined) updates.title = args.title;
     if (args.coverImage !== undefined) updates.coverImage = args.coverImage;
     if (args.content !== undefined) updates.content = args.content;
-    if (args.excerpt !== undefined) updates.summary = args.excerpt;
+    if (args.excerpt !== undefined) updates.excerpt = args.excerpt;
     if (args.category !== undefined) updates.category = args.category;
     if (args.eventDate !== undefined) updates.eventDate = args.eventDate;
-    if (args.publishDate !== undefined) updates.createdAt = args.publishDate;
+    if (args.publishDate !== undefined) updates.publishDate = args.publishDate;
     if (args.authorEmail !== undefined) updates.authorEmail = args.authorEmail;
-    if (args.authorName !== undefined) updates.author = args.authorName;
+    if (args.authorName !== undefined) updates.authorName = args.authorName;
     if (args.isPublished !== undefined) updates.isPublished = args.isPublished;
     if (args.isFeatured !== undefined) updates.isFeatured = args.isFeatured;
     await ctx.db.patch("insights", args.id, updates);
