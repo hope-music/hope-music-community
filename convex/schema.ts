@@ -45,69 +45,77 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_post", ["postId"]),
 
-  // Stage productions table
+  // Stage productions table (Performance events from Ticketmaster)
   stageProductions: defineTable({
+    ticketmaster_id: v.optional(v.string()),
+    title: v.string(),
+    description: v.optional(v.string()),
+    category: v.string(),
+    subcategory: v.optional(v.string()),
+    eventDate: v.string(),
+    eventTime: v.optional(v.string()),
+    venue: v.string(),
+    city: v.string(),
+    state: v.optional(v.string()),
+    country: v.string(),
+    imageUrl: v.optional(v.string()),
+    ticketUrl: v.optional(v.string()),
+    priceRange: v.optional(v.string()),
+    status: v.optional(v.string()),
+    isVisible: v.optional(v.boolean()),
+    featured: v.boolean(),
+    countryScope: v.optional(v.string()),
+    source: v.optional(v.string()),
+  }).index("by_category", ["category"])
+    .index("by_date", ["eventDate"])
+    .index("by_ticketmaster_id", ["ticketmaster_id"])
+    .index("by_visible", ["isVisible"]),
+
+  // Hope Studio Services table
+  hopeStudioServices: defineTable({
     title: v.string(),
     description: v.string(),
-    content: v.string(),
-    coverImage: v.string(),
-    url: v.string(),
     category: v.string(),
-    city: v.string(),
-    eventDate: v.optional(v.number()),
-    eventTime: v.string(),
-    mediaLinks: v.array(v.string()),
-    isFeatured: v.boolean(),
-    status: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.optional(v.number()),
-  }).index("by_category", ["category"]),
-
-  // Hope Studio table
-  hopeStudio: defineTable({
-    serviceName: v.string(),
-    description: v.string(),
-    category: v.string(),
-    availability: v.string(),
-    pricing: v.string(),
-    imageLinks: v.array(v.string()),
-    isActive: v.boolean(),
-    createdAt: v.number(),
-    updatedAt: v.optional(v.number()),
-  }).index("by_category", ["category"]),
+    icon: v.optional(v.string()),
+    link: v.optional(v.string()),
+    isPublished: v.boolean(),
+    order: v.optional(v.number()),
+  }).index("by_category", ["category"])
+    .index("by_published", ["isPublished"]),
 
   // News table
   news: defineTable({
     title: v.string(),
-    coverImage: v.optional(v.string()),
+    summary: v.optional(v.string()),
     content: v.string(),
-    excerpt: v.string(),
-    publishDate: v.number(),
+    coverImage: v.optional(v.string()),
+    author: v.optional(v.string()),
     authorEmail: v.optional(v.string()),
-    authorName: v.optional(v.string()),
+    tags: v.array(v.string()),
     isPublished: v.boolean(),
     isFeatured: v.boolean(),
+    views: v.number(),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
-  }).index("by_publishDate", ["publishDate"])
-    .index("by_isPublished", ["isPublished"]),
+  }).index("by_published", ["isPublished"])
+    .index("by_featured", ["isFeatured"])
+    .index("by_created", ["createdAt"]),
 
   // Insights table
   insights: defineTable({
     title: v.string(),
-    coverImage: v.string(),
+    summary: v.optional(v.string()),
     content: v.string(),
-    excerpt: v.string(),
-    category: v.string(),
-    eventDate: v.optional(v.number()),
-    publishDate: v.number(),
-    authorEmail: v.string(),
-    authorName: v.string(),
+    coverImage: v.optional(v.string()),
+    author: v.optional(v.string()),
+    authorEmail: v.optional(v.string()),
+    tags: v.array(v.string()),
     isPublished: v.boolean(),
     isFeatured: v.boolean(),
+    views: v.number(),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
-  }).index("by_category", ["category"])
-    .index("by_publishDate", ["publishDate"])
-    .index("by_isPublished", ["isPublished"]),
+  }).index("by_published", ["isPublished"])
+    .index("by_featured", ["isFeatured"])
+    .index("by_created", ["createdAt"]),
 });

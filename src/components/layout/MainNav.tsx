@@ -150,9 +150,9 @@ const INTERACTION_ITEMS = [
 function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolean }) {
   return (
     <div className="group relative">
-      {/* Non-clickable trigger - just displays text with dropdown on hover */}
-      <button
-        type="button"
+      {/* 主链接 - 跳转到首页的 Performance 区块 */}
+      <Link
+        href="/performance"
         className={`relative inline-flex items-center whitespace-nowrap px-2 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-white transition-all duration-150 lg:px-4 ${
           isActive ? "opacity-100" : "opacity-80"
         }`}
@@ -161,19 +161,7 @@ function PerformanceNavLink({ href, isActive }: { href: string; isActive: boolea
         {isActive && (
           <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-hmc-orange" />
         )}
-        {/* Dropdown caret */}
-        <svg
-          className="ml-1.5 h-2.5 w-2.5 shrink-0"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-        >
-          <path
-            fillRule="evenodd"
-            d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
-            clipRule="evenodd"
-          />
-        </svg>
-      </button>
+      </Link>
 
       {/* Dropdown — left-aligned with nav item, flush to bottom, light-blue theme */}
       <div

@@ -368,7 +368,7 @@ function CategoryCard({ slug, label }: { slug: string; label: string }) {
 
 export function PerformanceSection() {
   return (
-    <section className="py-6" aria-labelledby="performance-heading">
+    <section id="performance" className="py-6" aria-labelledby="performance-heading">
       <Container>
         <SectionHeading title="Performance" />
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
