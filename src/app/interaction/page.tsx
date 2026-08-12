@@ -21,12 +21,53 @@ interface Interaction {
 
 const CATEGORIES = INTERACTION_CATEGORY_OPTIONS;
 
+const PLACEHOLDER_POSTS: Record<string, Interaction[]> = {
+  "live-performance": [
+    { id: "ph-live-1", title: "Tips for engaging a live audience", category: "live-performance", description: "", coverImage: "", author: "", createdAt: 0 },
+    { id: "ph-live-2", title: "Stage presence techniques for performers", category: "live-performance", description: "", coverImage: "", author: "", createdAt: 0 },
+  ],
+  "dj-edm": [
+    { id: "ph-edm-1", title: "Beatmatching techniques for beginners", category: "dj-edm", description: "", coverImage: "", author: "", createdAt: 0 },
+    { id: "ph-edm-2", title: "Choosing the right DJ controller for your style", category: "dj-edm", description: "", coverImage: "", author: "", createdAt: 0 },
+  ],
+  "ambient-music": [
+    { id: "ph-amb-1", title: "Creating atmospheric textures with synthesizers", category: "ambient-music", description: "", coverImage: "", author: "", createdAt: 0 },
+    { id: "ph-amb-2", title: "The philosophy of ambient music composition", category: "ambient-music", description: "", coverImage: "", author: "", createdAt: 0 },
+  ],
+  "pop-rock": [
+    { id: "ph-pop-1", title: "Writing catchy pop hooks that stick", category: "pop-rock", description: "", coverImage: "", author: "", createdAt: 0 },
+    { id: "ph-pop-2", title: "Rock guitar tone — from clean to heavy", category: "pop-rock", description: "", coverImage: "", author: "", createdAt: 0 },
+  ],
+  "classical": [
+    { id: "ph-class-1", title: "Understanding counterpoint in classical composition", category: "classical", description: "", coverImage: "", author: "", createdAt: 0 },
+    { id: "ph-class-2", title: "Orchestration basics for young composers", category: "classical", description: "", coverImage: "", author: "", createdAt: 0 },
+  ],
+  "film-music": [
+    { id: "ph-film-1", title: "Creating emotional arcs with orchestral scores", category: "film-music", description: "", coverImage: "", author: "", createdAt: 0 },
+    { id: "ph-film-2", title: "Syncing music to picture — timing techniques", category: "film-music", description: "", coverImage: "", author: "", createdAt: 0 },
+  ],
+  "fusion-music": [
+    { id: "ph-fusion-1", title: "Jazz-rock fusion — a historical overview", category: "fusion-music", description: "", coverImage: "", author: "", createdAt: 0 },
+    { id: "ph-fusion-2", title: "Blending electronic and acoustic instruments", category: "fusion-music", description: "", coverImage: "", author: "", createdAt: 0 },
+  ],
+  "music-production": [
+    { id: "ph-prod-1", title: "Mixing fundamentals — getting started", category: "music-production", description: "", coverImage: "", author: "", createdAt: 0 },
+    { id: "ph-prod-2", title: "Mastering your first track", category: "music-production", description: "", coverImage: "", author: "", createdAt: 0 },
+  ],
+  others: [
+    { id: "ph-oth-1", title: "Community guidelines — keeping our forum respectful", category: "others", description: "", coverImage: "", author: "", createdAt: 0 },
+    { id: "ph-oth-2", title: "Introduce yourself to the Hope Music Community!", category: "others", description: "", coverImage: "", author: "", createdAt: 0 },
+  ],
+};
+
 export default function InteractionPage() {
   const [items, setItems] = useState<Interaction[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setItems(normalizeInteractionItems(readInteractionItems<Interaction>()));
+    const realItems = normalizeInteractionItems(readInteractionItems<Interaction>());
+    // If no real items, show placeholders
+    setItems(realItems.length > 0 ? realItems : Object.values(PLACEHOLDER_POSTS).flat());
     setLoading(false);
   }, []);
 

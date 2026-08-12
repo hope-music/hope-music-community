@@ -913,13 +913,13 @@ export const listHopeStudioServices = query({
   args: { callerEmail: v.optional(v.string()), category: v.optional(v.string()) },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.callerEmail);
-    let services = await ctx.db.query("hopeStudio").collect();
+    let services = await ctx.db.query("hopeStudioServices").collect();
     if (args.category) {
       services = services.filter((s: any) => s.category === args.category);
     }
     return services.map((s: any) => ({
       _id: s._id,
-      serviceName: s.serviceName ?? "",
+      serviceName: s.title ?? "",
       description: s.description ?? "",
       category: s.category ?? "",
       availability: s.availability ?? "",
@@ -936,14 +936,14 @@ export const listHopeStudioServices = query({
 export const getPublicHopeStudioServices = query({
   args: { category: v.optional(v.string()) },
   handler: async (ctx, args) => {
-    let services = await ctx.db.query("hopeStudio").collect();
+    let services = await ctx.db.query("hopeStudioServices").collect();
     services = services.filter((s: any) => s.isActive !== false);
     if (args.category) {
       services = services.filter((s: any) => s.category === args.category);
     }
     return services.map((s: any) => ({
       _id: s._id,
-      serviceName: s.serviceName ?? "",
+      serviceName: s.title ?? "",
       description: s.description ?? "",
       category: s.category ?? "",
       availability: s.availability ?? "",
@@ -967,7 +967,7 @@ export const createHopeStudioService = mutation({
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.callerEmail);
-    const id = await ctx.db.insert("hopeStudio", {
+    const id = await ctx.db.insert("hopeStudioServices", {
       serviceName: args.serviceName,
       description: args.description,
       category: args.category ?? "recording",
@@ -1004,7 +1004,7 @@ export const updateHopeStudioService = mutation({
     if (args.pricing !== undefined) updates.pricing = args.pricing;
     if (args.imageLinks !== undefined) updates.imageLinks = args.imageLinks;
     if (args.isActive !== undefined) updates.isActive = args.isActive;
-    await ctx.db.patch("hopeStudio", args.id, updates);
+    await ctx.db.patch("hopeStudioServices", args.id, updates);
     return { success: true, message: "Studio service updated" };
   },
 });
@@ -1013,7 +1013,7 @@ export const deleteHopeStudioService = mutation({
   args: { callerEmail: v.string(), id: v.id("hopeStudio") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.callerEmail);
-    await ctx.db.delete("hopeStudio", args.id);
+    await ctx.db.delete("hopeStudioServices", args.id);
     return { success: true, message: "Studio service deleted" };
   },
 });
@@ -1127,7 +1127,7 @@ export const createNewsArticle = mutation({
       publishDate: args.publishDate ?? Date.now(),
       authorEmail: args.authorEmail ?? undefined,
       authorName: args.authorName ?? undefined,
-      isPublished: args.isPublished ?? false,
+      isPublished: args.isPublished ?? true,
       isFeatured: args.isFeatured ?? false,
       createdAt: Date.now(),
       updatedAt: Date.now(),
