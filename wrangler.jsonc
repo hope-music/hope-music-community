@@ -13,8 +13,8 @@
 	},
 	"vars": {
 		"TICKETMASTER_API_KEY": "G0AVxK4c8bvtFMp0pJapkWEYlyu8DtIE",
-		"NEXT_PUBLIC_CONVEX_URL": "https://anonymous-hope-music-community.convex.cloud",
-		"NEXT_PUBLIC_CONVEX_SITE_URL": "https://anonymous-hope-music-community.convex.site"
+	"NEXT_PUBLIC_CONVEX_URL": "https://woozy-spaniel-880.convex.cloud",
+		"NEXT_PUBLIC_CONVEX_SITE_URL": "https://woozy-spaniel-880.convex.site"
 	},
 	"services": [
 		{

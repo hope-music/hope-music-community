@@ -45,27 +45,34 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_post", ["postId"]),
 
-  // Stage productions table (Performance events from Ticketmaster)
+  // Stage productions table
   stageProductions: defineTable({
-    ticketmaster_id: v.optional(v.string()),
     title: v.string(),
     description: v.optional(v.string()),
+    content: v.optional(v.string()),
+    coverImage: v.optional(v.string()),
+    url: v.optional(v.string()),
     category: v.string(),
     subcategory: v.optional(v.string()),
-    eventDate: v.string(),
-    eventTime: v.optional(v.string()),
-    venue: v.string(),
-    city: v.string(),
+    city: v.optional(v.string()),
     state: v.optional(v.string()),
-    country: v.string(),
+    country: v.optional(v.string()),
+    eventDate: v.optional(v.number()),
+    eventTime: v.optional(v.string()),
+    venue: v.optional(v.string()),
+    mediaLinks: v.optional(v.array(v.string())),
+    isFeatured: v.optional(v.boolean()),
+    isVisible: v.optional(v.boolean()),
+    ticketmaster_id: v.optional(v.string()),
     imageUrl: v.optional(v.string()),
     ticketUrl: v.optional(v.string()),
     priceRange: v.optional(v.string()),
     status: v.optional(v.string()),
-    isVisible: v.optional(v.boolean()),
-    featured: v.boolean(),
+    featured: v.optional(v.boolean()),
     countryScope: v.optional(v.string()),
     source: v.optional(v.string()),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   }).index("by_category", ["category"])
     .index("by_date", ["eventDate"])
     .index("by_ticketmaster_id", ["ticketmaster_id"])
@@ -74,12 +81,19 @@ export default defineSchema({
   // Hope Studio Services table
   hopeStudioServices: defineTable({
     title: v.string(),
+    serviceName: v.optional(v.string()),
     description: v.string(),
     category: v.string(),
+    availability: v.optional(v.string()),
+    pricing: v.optional(v.string()),
     icon: v.optional(v.string()),
+    imageLinks: v.optional(v.array(v.string())),
     link: v.optional(v.string()),
-    isPublished: v.boolean(),
+    isActive: v.optional(v.boolean()),
+    isPublished: v.optional(v.boolean()),
     order: v.optional(v.number()),
+    createdAt: v.optional(v.number()),
+    updatedAt: v.optional(v.number()),
   }).index("by_category", ["category"])
     .index("by_published", ["isPublished"]),
 
@@ -90,11 +104,14 @@ export default defineSchema({
     content: v.string(),
     coverImage: v.optional(v.string()),
     author: v.optional(v.string()),
+    authorName: v.optional(v.string()),
     authorEmail: v.optional(v.string()),
-    tags: v.array(v.string()),
+    publishDate: v.optional(v.number()),
+    excerpt: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
     isPublished: v.boolean(),
     isFeatured: v.boolean(),
-    views: v.number(),
+    views: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   }).index("by_published", ["isPublished"])
@@ -107,15 +124,22 @@ export default defineSchema({
     summary: v.optional(v.string()),
     content: v.string(),
     coverImage: v.optional(v.string()),
+    category: v.optional(v.string()),
+    eventDate: v.optional(v.number()),
     author: v.optional(v.string()),
+    authorName: v.optional(v.string()),
     authorEmail: v.optional(v.string()),
-    tags: v.array(v.string()),
+    publishDate: v.optional(v.number()),
+    excerpt: v.optional(v.string()),
+    tags: v.optional(v.array(v.string())),
     isPublished: v.boolean(),
     isFeatured: v.boolean(),
-    views: v.number(),
+    views: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.optional(v.number()),
   }).index("by_published", ["isPublished"])
     .index("by_featured", ["isFeatured"])
-    .index("by_created", ["createdAt"]),
+    .index("by_created", ["createdAt"])
+    .index("by_category", ["category"])
+    .index("by_publishDate", ["publishDate"]),
 });

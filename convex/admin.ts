@@ -674,8 +674,8 @@ export const getLatestStageProduction = query({
     return {
       _id: p._id,
       title: p.title ?? "",
-      coverImage: p.coverImage ?? "",
-      url: p.url ?? "",
+      coverImage: p.imageUrl ?? "",
+      url: p.ticketUrl ?? "",
       eventDate: p.eventDate,
       status: p.status,
     };
@@ -968,6 +968,7 @@ export const createHopeStudioService = mutation({
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.callerEmail);
     const id = await ctx.db.insert("hopeStudioServices", {
+      title: args.serviceName,
       serviceName: args.serviceName,
       description: args.description,
       category: args.category ?? "recording",
@@ -975,6 +976,7 @@ export const createHopeStudioService = mutation({
       pricing: args.pricing,
       imageLinks: args.imageLinks ?? [],
       isActive: args.isActive ?? true,
+      isPublished: true,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     });
@@ -985,7 +987,7 @@ export const createHopeStudioService = mutation({
 export const updateHopeStudioService = mutation({
   args: {
     callerEmail: v.string(),
-    id: v.id("hopeStudio"),
+    id: v.id("hopeStudioServices"),
     serviceName: v.optional(v.string()),
     description: v.optional(v.string()),
     category: v.optional(v.string()),
@@ -1010,7 +1012,7 @@ export const updateHopeStudioService = mutation({
 });
 
 export const deleteHopeStudioService = mutation({
-  args: { callerEmail: v.string(), id: v.id("hopeStudio") },
+  args: { callerEmail: v.string(), id: v.id("hopeStudioServices") },
   handler: async (ctx, args) => {
     await requireAdmin(ctx, args.callerEmail);
     await ctx.db.delete("hopeStudioServices", args.id);
@@ -1028,25 +1030,30 @@ export const getPublishedNews = query({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    let articles = await ctx.db.query("news").collect();
-    articles = articles.filter((n: any) => n.isPublished === true);
-    articles = articles.sort((a: any, b: any) => 
-      (b.publishDate ?? b.createdAt ?? 0) - (a.publishDate ?? a.createdAt ?? 0)
-    );
-    if (args.limit) {
-      articles = articles.slice(0, args.limit);
+    try {
+      let articles = await ctx.db.query("news").collect();
+      articles = articles.filter((n: any) => n.isPublished !== false && n.isPublished != null);
+      articles = articles.sort((a: any, b: any) =>
+        (b.createdAt ?? 0) - (a.createdAt ?? 0)
+      );
+      if (args.limit) {
+        articles = articles.slice(0, args.limit);
+      }
+      return articles.map((n: any) => ({
+        _id: n._id,
+        title: n.title ?? "",
+        coverImage: n.coverImage ?? n.image ?? "",
+        content: n.content ?? "",
+        excerpt: n.summary ?? "",
+        publishDate: n.createdAt ?? 0,
+        authorName: n.author ?? "",
+        isPublished: n.isPublished ?? false,
+        isFeatured: n.isFeatured ?? false,
+      }));
+    } catch (e: any) {
+      console.error("getPublishedNews error:", e);
+      return [];
     }
-    return articles.map((n: any) => ({
-      _id: n._id,
-      title: n.title ?? "",
-      coverImage: n.coverImage ?? n.image ?? "",
-      content: n.content ?? "",
-      excerpt: n.excerpt ?? "",
-      publishDate: n.publishDate ?? n.date,
-      authorName: n.authorName ?? n.author ?? "",
-      isPublished: n.isPublished ?? false,
-      isFeatured: n.isFeatured ?? false,
-    }));
   },
 });
 
@@ -1063,9 +1070,9 @@ export const getNewsById = query({
       title: article.title ?? "",
       coverImage: (article.coverImage as string) ?? "",
       content: article.content ?? "",
-      excerpt: article.excerpt ?? "",
-      publishDate: article.publishDate ?? 0,
-      authorName: article.authorName ?? "",
+      excerpt: article.summary ?? "",
+      publishDate: article.createdAt ?? 0,
+      authorName: article.author ?? "",
       isPublished: article.isPublished ?? false,
       isFeatured: article.isFeatured ?? false,
       createdAt: article.createdAt ?? Date.now(),
@@ -1093,15 +1100,15 @@ export const listNews = query({
       title: n.title ?? "",
       coverImage: n.coverImage ?? n.image ?? "",
       content: n.content ?? "",
-      excerpt: n.excerpt ?? "",
-      publishDate: n.publishDate ?? n.date,
+      excerpt: n.summary ?? "",
+      publishDate: n.createdAt ?? 0,
       authorEmail: n.authorEmail ?? "",
-      authorName: n.authorName ?? n.author ?? "",
+      authorName: n.author ?? "",
       isPublished: n.isPublished ?? false,
       isFeatured: n.isFeatured ?? false,
       createdAt: n.createdAt ?? Date.now(),
       updatedAt: n.updatedAt,
-    })).sort((a: any, b: any) => (b.publishDate ?? b.createdAt) - (a.publishDate ?? a.createdAt));
+    })).sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
   },
 });
 
@@ -1123,10 +1130,9 @@ export const createNewsArticle = mutation({
       title: args.title,
       coverImage: args.coverImage,
       content: args.content,
-      excerpt: args.excerpt,
-      publishDate: args.publishDate ?? Date.now(),
+      summary: args.excerpt,
+      author: args.authorName,
       authorEmail: args.authorEmail ?? undefined,
-      authorName: args.authorName ?? undefined,
       isPublished: args.isPublished ?? true,
       isFeatured: args.isFeatured ?? false,
       createdAt: Date.now(),
@@ -1155,10 +1161,10 @@ export const updateNewsArticle = mutation({
     if (args.title !== undefined) updates.title = args.title;
     if (args.coverImage !== undefined) updates.coverImage = args.coverImage;
     if (args.content !== undefined) updates.content = args.content;
-    if (args.excerpt !== undefined) updates.excerpt = args.excerpt;
-    if (args.publishDate !== undefined) updates.publishDate = args.publishDate;
+    if (args.excerpt !== undefined) updates.summary = args.excerpt;
+    if (args.publishDate !== undefined) updates.createdAt = args.publishDate;
     if (args.authorEmail !== undefined) updates.authorEmail = args.authorEmail;
-    if (args.authorName !== undefined) updates.authorName = args.authorName;
+    if (args.authorName !== undefined) updates.author = args.authorName;
     if (args.isPublished !== undefined) updates.isPublished = args.isPublished;
     if (args.isFeatured !== undefined) updates.isFeatured = args.isFeatured;
     await ctx.db.patch("news", args.id, updates);
@@ -1186,17 +1192,17 @@ export const getPublishedInsights = query({
     if (args.category) {
       items = items.filter((item: any) => item.category === args.category);
     }
-    items = items.sort((a: any, b: any) => (b.publishDate ?? b.createdAt ?? 0) - (a.publishDate ?? a.createdAt ?? 0));
+    items = items.sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
     return items.map((item: any) => ({
       _id: item._id,
       title: item.title ?? "",
       coverImage: item.coverImage ?? "",
       content: item.content ?? "",
-      excerpt: item.excerpt ?? "",
+      excerpt: item.summary ?? "",
       category: item.category ?? "",
-      publishDate: item.publishDate ?? 0,
+      publishDate: item.createdAt ?? 0,
       eventDate: item.eventDate,
-      authorName: item.authorName ?? "",
+      authorName: item.author ?? "",
       isPublished: item.isPublished ?? false,
       isFeatured: item.isFeatured ?? false,
     }));
@@ -1213,11 +1219,11 @@ export const getInsightById = query({
       title: item.title ?? "",
       coverImage: item.coverImage ?? "",
       content: item.content ?? "",
-      excerpt: item.excerpt ?? "",
+      excerpt: item.summary ?? "",
       category: item.category ?? "",
-      publishDate: item.publishDate ?? 0,
+      publishDate: item.createdAt ?? 0,
       eventDate: item.eventDate,
-      authorName: item.authorName ?? "",
+      authorName: item.author ?? "",
       isPublished: item.isPublished ?? false,
       isFeatured: item.isFeatured ?? false,
       createdAt: item.createdAt ?? Date.now(),
@@ -1241,17 +1247,17 @@ export const listInsights = query({
         title: item.title ?? "",
         coverImage: item.coverImage ?? "",
         content: item.content ?? "",
-        excerpt: item.excerpt ?? "",
+        excerpt: item.summary ?? "",
         category: item.category ?? "",
-        publishDate: item.publishDate ?? 0,
+        publishDate: item.createdAt ?? 0,
         eventDate: item.eventDate,
-        authorName: item.authorName ?? "",
+        authorName: item.author ?? "",
         isPublished: item.isPublished ?? false,
         isFeatured: item.isFeatured ?? false,
         createdAt: item.createdAt ?? Date.now(),
         updatedAt: item.updatedAt,
       }))
-      .sort((a: any, b: any) => (b.publishDate ?? b.createdAt) - (a.publishDate ?? a.createdAt));
+      .sort((a: any, b: any) => (b.createdAt ?? 0) - (a.createdAt ?? 0));
   },
 });
 
@@ -1275,12 +1281,11 @@ export const createInsight = mutation({
       title: args.title,
       coverImage: args.coverImage,
       content: args.content,
-      excerpt: args.excerpt,
+      summary: args.excerpt,
+      author: args.authorName,
+      authorEmail: args.authorEmail ?? undefined,
       category: args.category ?? "general",
       eventDate: args.eventDate,
-      publishDate: args.publishDate ?? Date.now(),
-      authorEmail: args.authorEmail ?? undefined,
-      authorName: args.authorName ?? undefined,
       isPublished: args.isPublished ?? false,
       isFeatured: args.isFeatured ?? false,
       createdAt: Date.now(),
@@ -1311,12 +1316,12 @@ export const updateInsight = mutation({
     if (args.title !== undefined) updates.title = args.title;
     if (args.coverImage !== undefined) updates.coverImage = args.coverImage;
     if (args.content !== undefined) updates.content = args.content;
-    if (args.excerpt !== undefined) updates.excerpt = args.excerpt;
+    if (args.excerpt !== undefined) updates.summary = args.excerpt;
     if (args.category !== undefined) updates.category = args.category;
     if (args.eventDate !== undefined) updates.eventDate = args.eventDate;
-    if (args.publishDate !== undefined) updates.publishDate = args.publishDate;
+    if (args.publishDate !== undefined) updates.createdAt = args.publishDate;
     if (args.authorEmail !== undefined) updates.authorEmail = args.authorEmail;
-    if (args.authorName !== undefined) updates.authorName = args.authorName;
+    if (args.authorName !== undefined) updates.author = args.authorName;
     if (args.isPublished !== undefined) updates.isPublished = args.isPublished;
     if (args.isFeatured !== undefined) updates.isFeatured = args.isFeatured;
     await ctx.db.patch("insights", args.id, updates);

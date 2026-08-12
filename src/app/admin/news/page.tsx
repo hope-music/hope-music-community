@@ -35,10 +35,10 @@ function RichTextEditor({ content, onChange, onImageUpload }: RichTextEditorProp
 
   // Initialize content only once
   useEffect(() => {
-    if (editorRef.current && editorRef.current.innerHTML !== content && !editorRef.current.innerHTML) {
+    if (editorRef.current && content && editorRef.current.innerHTML !== content && !editorRef.current.innerHTML) {
       editorRef.current.innerHTML = content;
     }
-  }, []);
+  }, [content]);
 
   const execCommand = useCallback((cmd: string, value?: string) => {
     document.execCommand(cmd, false, value);
@@ -370,7 +370,7 @@ export default function NewsAdminPage() {
       return;
     }
 
-    const textContent = content.replace(/<[^>]*>/g, "").trim();
+    const textContent = (content || "").replace(/<[^>]*>/g, "").trim();
     if (!textContent) {
       setMessage({ type: "error", text: "Content is required" });
       return;
