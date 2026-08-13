@@ -5,7 +5,7 @@ export interface AvatarConfig {
   emoji: string;
 }
 
-const CHARACTER_AVATARS: AvatarConfig[] = [
+export const CHARACTER_AVATARS: AvatarConfig[] = [
   { id: "char-1", label: "Violet", color: "#c084fc", emoji: "👧" },
   { id: "char-2", label: "Blue Headphones", color: "#3b82f6", emoji: "🎧" },
   { id: "char-3", label: "Red Bandanna", color: "#dc2626", emoji: "🧑" },
@@ -18,7 +18,7 @@ const CHARACTER_AVATARS: AvatarConfig[] = [
   { id: "char-10", label: "Orange Kid", color: "#f97316", emoji: "🧒" },
 ];
 
-const INSTRUMENT_AVATARS: AvatarConfig[] = [
+export const INSTRUMENT_AVATARS: AvatarConfig[] = [
   { id: "inst-1", label: "Acoustic Guitar", color: "#92400e", emoji: "🎸" },
   { id: "inst-2", label: "Piano Keys", color: "#1e293b", emoji: "🎹" },
   { id: "inst-3", label: "Drum Kit", color: "#ca8a04", emoji: "🥁" },
@@ -26,3 +26,4 @@ const INSTRUMENT_AVATARS: AvatarConfig[] = [
 ];
 
 export const ALL_AVATARS = [...CHARACTER_AVATARS, ...INSTRUMENT_AVATARS];
+export const ALL_AVATAR_LABELS = ALL_AVATARS.map(a => a.label);
