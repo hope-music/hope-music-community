@@ -32,6 +32,16 @@ const nextConfig: NextConfig = {
         hostname: "*.universe.com",
       },
       {
+        // Convex Storage CDN for uploaded images (news, insights, etc.)
+        protocol: "https",
+        hostname: "*.convex.cloud",
+      },
+      {
+        // Convex Site URL (alternative storage endpoint)
+        protocol: "https",
+        hostname: "*.convex.site",
+      },
+      {
         protocol: "http",
         hostname: "127.0.0.1",
         port: "3210",
