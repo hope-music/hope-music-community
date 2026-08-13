@@ -79,44 +79,48 @@ function JesseLiuContent({ data }: { data: JesseLiuData }) {
       {/* First Image Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
-          <Image
-            src={data.image1}
-            alt="Jesse Liu 1"
-            width={800}
-            height={600}
-            className="w-full h-full object-contain"
-          />
+            <Image
+              src={data.image1}
+              alt="Jesse Liu 1"
+              width={800}
+              height={600}
+              unoptimized
+              className="w-full h-full object-contain"
+            />
         </div>
         <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
-          <Image
-            src={data.image2}
-            alt="Jesse Liu 2"
-            width={800}
-            height={600}
-            className="w-full h-full object-contain"
-          />
+            <Image
+              src={data.image2}
+              alt="Jesse Liu 2"
+              width={800}
+              height={600}
+              unoptimized
+              className="w-full h-full object-contain"
+            />
         </div>
       </div>
 
       {/* Second Image Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
-          <Image
-            src={data.image3}
-            alt="Jesse Liu 3"
-            width={800}
-            height={600}
-            className="w-full h-full object-contain"
-          />
+            <Image
+              src={data.image3}
+              alt="Jesse Liu 3"
+              width={800}
+              height={600}
+              unoptimized
+              className="w-full h-full object-contain"
+            />
         </div>
         <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
-          <Image
-            src={data.image4}
-            alt="Jesse Liu 4"
-            width={800}
-            height={600}
-            className="w-full h-full object-contain"
-          />
+            <Image
+              src={data.image4}
+              alt="Jesse Liu 4"
+              width={800}
+              height={600}
+              unoptimized
+              className="w-full h-full object-contain"
+            />
         </div>
       </div>
 

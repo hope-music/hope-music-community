@@ -210,7 +210,7 @@ export default function PerformanceDetailPage() {
       <section className="relative h-[70vh] min-h-[500px] overflow-hidden">
         <div className="absolute inset-0">
           {row.image_url ? (
-            <Image src={row.image_url} alt={row.title} fill className="object-cover" priority />
+            <Image src={row.image_url} alt={row.title} fill unoptimized className="object-cover" priority />
           ) : (
             <div className="w-full h-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900" />
           )}

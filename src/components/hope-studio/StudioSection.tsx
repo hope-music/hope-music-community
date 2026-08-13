@@ -49,34 +49,37 @@ function StudioContent({ data }: { data: StudioData }) {
       {/* First Image Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
-          <Image
-            src={data.image1}
-            alt="Hope Studio 1"
-            width={800}
-            height={600}
-            className="w-full h-full object-cover"
-          />
+            <Image
+              src={data.image1}
+              alt="Hope Studio 1"
+              width={800}
+              height={600}
+              unoptimized
+              className="w-full h-full object-cover"
+            />
         </div>
         <div className="rounded-xl overflow-hidden h-64 md:h-80 bg-gray-100">
-          <Image
-            src={data.image2}
-            alt="Hope Studio 2"
-            width={800}
-            height={600}
-            className="w-full h-full object-cover"
-          />
+            <Image
+              src={data.image2}
+              alt="Hope Studio 2"
+              width={800}
+              height={600}
+              unoptimized
+              className="w-full h-full object-cover"
+            />
         </div>
       </div>
 
       {/* Full Width Image */}
       <div className="rounded-xl overflow-hidden h-64 md:h-96 bg-gray-100">
-        <Image
-          src={data.image3}
-          alt="Hope Studio 3"
-          width={1200}
-          height={600}
-          className="w-full h-full object-cover"
-        />
+            <Image
+              src={data.image3}
+              alt="Hope Studio 3"
+              width={1200}
+              height={600}
+              unoptimized
+              className="w-full h-full object-cover"
+            />
       </div>
 
       {/* Musical Shows Section */}

@@ -317,6 +317,7 @@ export default function PerformanceCategoryPage() {
             src={item.coverImage}
             alt={item.title}
             fill
+            unoptimized
             className="object-cover transition-transform duration-500 group-hover:scale-110"
             sizes="128px"
           />

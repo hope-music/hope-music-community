@@ -52,6 +52,7 @@ function CooperationContent({ data }: { data: CooperationData }) {
             alt="Cooperation 1"
             width={1200}
             height={700}
+            unoptimized
             className="w-full h-full object-cover"
           />
         </div>
@@ -103,6 +104,7 @@ function CooperationContent({ data }: { data: CooperationData }) {
               alt="Cooperation 2"
               width={800}
               height={500}
+              unoptimized
               className="w-full h-full object-cover"
             />
           </div>
@@ -178,13 +180,14 @@ function CooperationContent({ data }: { data: CooperationData }) {
           height: "300px",
           background: "#f5f5f5"
         }}>
-          <Image
-            src={data.image3}
-            alt="Cooperation 3"
-            width={800}
-            height={500}
-            className="w-full h-full object-cover"
-          />
+            <Image
+              src={data.image3}
+              alt="Cooperation 3"
+              width={800}
+              height={500}
+              unoptimized
+              className="w-full h-full object-cover"
+            />
         </div>
         <div style={{
           background: "linear-gradient(135deg, #e85d04 0%, #ff7b00 100%)",

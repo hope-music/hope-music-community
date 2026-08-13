@@ -204,6 +204,7 @@ export default function HopeStudioDetailPage({ params }: PageProps) {
               alt={item.title}
               width={1200}
               height={675}
+              unoptimized
               className="h-full w-full object-contain"
               style={{ backgroundColor: "#f5f5f5" }}
             />

@@ -83,6 +83,7 @@ export function CategoryListing({
                   alt={item.title}
                   width={600}
                   height={450}
+                  unoptimized
                   className="h-full w-full rounded-xl object-cover transition-transform duration-200 group-hover:scale-105"
                 />
               </div>

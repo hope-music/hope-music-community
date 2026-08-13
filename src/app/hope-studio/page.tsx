@@ -48,6 +48,7 @@ export default function HopeStudioPage() {
                   alt={item.title}
                   width={800}
                   height={600}
+                  unoptimized
                   className="h-full w-full object-contain"
                 />
               </div>

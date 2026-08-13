@@ -85,6 +85,7 @@ export function WelcomeSection() {
             alt="Community"
             width={800}
             height={600}
+            unoptimized
             className="w-full h-full object-cover"
             priority
           />
@@ -95,6 +96,7 @@ export function WelcomeSection() {
             alt="Music"
             width={800}
             height={600}
+            unoptimized
             className="w-full h-full object-cover"
           />
         </div>
@@ -122,6 +124,7 @@ export function WelcomeSection() {
             alt="Performance"
             width={800}
             height={600}
+            unoptimized
             className="w-full h-full object-cover"
           />
         </div>
@@ -131,6 +134,7 @@ export function WelcomeSection() {
             alt="Concert"
             width={800}
             height={600}
+            unoptimized
             className="w-full h-full object-cover"
           />
         </div>

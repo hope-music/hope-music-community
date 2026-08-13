@@ -109,6 +109,7 @@ export function InteractionThread({ post, categorySlug }: InteractionThreadProps
                 src={post.avatarUrl}
                 alt={post.author}
                 fill
+                unoptimized
                 className="object-cover"
               />
             </div>
@@ -143,6 +144,7 @@ export function InteractionThread({ post, categorySlug }: InteractionThreadProps
                         src={reply.avatarUrl}
                         alt={reply.author}
                         fill
+                        unoptimized
                         className="object-cover"
                       />
                     </div>

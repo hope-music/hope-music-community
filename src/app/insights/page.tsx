@@ -64,6 +64,7 @@ export default function InsightsPage() {
                       alt={insight.title}
                       width={600}
                       height={450}
+                      unoptimized
                       className="h-full w-full rounded-t-xl object-cover transition-transform duration-200 group-hover:scale-105"
                     />
                   ) : (

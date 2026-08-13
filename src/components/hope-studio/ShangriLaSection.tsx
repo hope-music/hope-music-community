@@ -69,6 +69,7 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
               alt="Shangri-La 1"
               width={800}
               height={500}
+              unoptimized
               className="w-full h-full object-contain"
             />
           </div>
@@ -78,6 +79,7 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
               alt="Shangri-La 2"
               width={800}
               height={500}
+              unoptimized
               className="w-full h-full object-contain"
             />
           </div>
@@ -98,6 +100,7 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
               alt="Shangri-La 3"
               width={800}
               height={500}
+              unoptimized
               className="w-full h-full object-contain"
             />
           </div>
@@ -107,6 +110,7 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
               alt="Shangri-La 4"
               width={800}
               height={500}
+              unoptimized
               className="w-full h-full object-contain"
             />
           </div>
@@ -151,6 +155,7 @@ function ShangriLaContent({ data }: { data: ShangriLaData }) {
                       alt={daisyLi.name}
                       width={200}
                       height={200}
+                      unoptimized
                       className="w-40 h-40 md:w-44 md:h-44 rounded-md object-cover"
                     />
                   ) : (
