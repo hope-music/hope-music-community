@@ -18,7 +18,7 @@ export function NewsSection() {
     });
   };
 
-  // Map Convex data to display format
+  // Map data to display format
   const newsItems = (news ?? []).slice(0, 3).map((article: any) => ({
     id: article._id,
     title: article.title || "Untitled",

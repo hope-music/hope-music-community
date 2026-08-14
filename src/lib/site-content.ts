@@ -5,7 +5,7 @@
  * site into a single searchable stream. Used by /search so that users
  * can find content that lives in component defaults (Hope Studio
  * sections, placeholder posts, demo content, navigation labels, footer
- * text, avatar labels) in addition to the Supabase / Convex / dynamic
+ * text, avatar labels) in addition to the Supabase / dynamic
  * localStorage data.
  */
 

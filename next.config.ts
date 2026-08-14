@@ -27,19 +27,13 @@ const nextConfig: NextConfig = {
         hostname: "*.ticketweb.com",
       },
       {
-        // Ticketmaster Universe CDN - international events (UK, EU, etc.)
         protocol: "https",
         hostname: "*.universe.com",
       },
       {
-        // Convex Storage CDN for uploaded images (news, insights, etc.)
+        // Supabase Storage for user-uploaded images
         protocol: "https",
-        hostname: "*.convex.cloud",
-      },
-      {
-        // Convex Site URL (alternative storage endpoint)
-        protocol: "https",
-        hostname: "*.convex.site",
+        hostname: "uudhjhioxukvthmlcrpm.supabase.co",
       },
       {
         protocol: "http",

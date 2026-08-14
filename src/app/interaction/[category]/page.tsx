@@ -128,7 +128,7 @@ export default function InteractionCategoryPage({ params }: PageProps) {
     loadParams();
   }, [params]);
 
-  // Load posts from Convex or localStorage
+  // Load posts from Supabase (or localStorage fallback)
   const { data: allPosts } = usePosts();
   const localPosts = useMemo(() => {
     if (typeof window === "undefined") return [] as any[];

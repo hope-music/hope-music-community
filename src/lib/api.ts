@@ -1,11 +1,45 @@
 // ============================================
-// API Hooks - Clean Supabase-first, replaces Convex
+// API Hooks - Clean Supabase-first
 // ============================================
-import { useState, useEffect, useCallback, useRef } from "react";
-import { supabaseAdmin } from "./supabase-admin";
+//
+// Split in two layers:
+//
+// 1. Read hooks (usePublishedNews, etc.) use the *anon* browser client and rely
+//    on RLS for safety. Safe to ship to the browser; no server keys required.
+// 2. Write helpers (createNewsArticle, etc.) call authenticated admin API
+//    routes under /api/admin/*. They work from both server and browser
+//    contexts because the service-role key stays on the server inside the
+//    route handler.
+// ============================================
+import { useState, useEffect, useCallback } from "react";
+import { supabase as browserSupabase } from "./supabase";
 
 // =====================
-// Helper: Convert DB row to Convex format
+// Admin fetch helpers — never throw on missing service key
+// =====================
+async function adminFetch(path: string, init?: RequestInit): Promise<Response> {
+  const res = await fetch(path, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    let message = `Request failed: ${res.status}`;
+    try {
+      const body = await res.json();
+      if (body?.error) message = body.error;
+    } catch {
+      // ignore
+    }
+    throw new Error(message);
+  }
+  return res;
+}
+
+// =====================
+// Helper: Convert DB row to UI format
 // =====================
 function toTimestamp(dateStr: string | undefined): number {
   if (!dateStr) return Date.now();
@@ -30,51 +64,54 @@ export interface NewsArticle {
   updatedAt?: number;
 }
 
+function rowToNews(r: any): NewsArticle {
+  return {
+    _id: r.id,
+    title: r.title || "",
+    coverImage: r.cover_image || "",
+    content: r.content || "",
+    excerpt: r.excerpt || r.summary || "",
+    publishDate: toTimestamp(r.publish_date || r.created_at),
+    authorName: r.author_name || r.author || "",
+    authorEmail: r.author_email,
+    isPublished: r.is_published ?? false,
+    isFeatured: r.is_featured ?? false,
+    createdAt: toTimestamp(r.created_at),
+    updatedAt: r.updated_at ? toTimestamp(r.updated_at) : undefined,
+  };
+}
+
 export function usePublishedNews(limit?: number) {
   const [data, setData] = useState<NewsArticle[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchNews() {
       try {
-        let query = supabaseAdmin
+        let query = browserSupabase
           .from("news")
           .select("*")
           .eq("is_published", true)
           .order("created_at", { ascending: false });
-
-        if (limit) {
-          query = query.limit(limit);
-        }
-
+        if (limit) query = query.limit(limit);
         const { data: rows, error: err } = await query;
         if (err) throw err;
-
-        const articles = (rows || []).map((r: any) => ({
-          _id: r.id,
-          title: r.title || "",
-          coverImage: r.cover_image || "",
-          content: r.content || "",
-          excerpt: r.excerpt || r.summary || "",
-          publishDate: toTimestamp(r.publish_date || r.created_at),
-          authorName: r.author_name || r.author || "",
-          authorEmail: r.author_email,
-          isPublished: r.is_published ?? false,
-          isFeatured: r.is_featured ?? false,
-          createdAt: toTimestamp(r.created_at),
-          updatedAt: r.updated_at ? toTimestamp(r.updated_at) : undefined,
-        }));
-
-        setData(articles);
+        if (!cancelled) setData((rows || []).map(rowToNews));
       } catch (err: any) {
-        setError(err.message);
-        setData([]);
+        if (!cancelled) {
+          setError(err.message);
+          setData([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchNews();
+    return () => {
+      cancelled = true;
+    };
   }, [limit]);
 
   return { data, loading, error };
@@ -88,29 +125,12 @@ export function useNewsList() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: rows, error: err } = await supabaseAdmin
+      const { data: rows, error: err } = await browserSupabase
         .from("news")
         .select("*")
         .order("created_at", { ascending: false });
-
       if (err) throw err;
-
-      const articles = (rows || []).map((r: any) => ({
-        _id: r.id,
-        title: r.title || "",
-        coverImage: r.cover_image || "",
-        content: r.content || "",
-        excerpt: r.excerpt || r.summary || "",
-        publishDate: toTimestamp(r.publish_date || r.created_at),
-        authorName: r.author_name || r.author || "",
-        authorEmail: r.author_email,
-        isPublished: r.is_published ?? false,
-        isFeatured: r.is_featured ?? false,
-        createdAt: toTimestamp(r.created_at),
-        updatedAt: r.updated_at ? toTimestamp(r.updated_at) : undefined,
-      }));
-
-      setData(articles);
+      setData((rows || []).map(rowToNews));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -135,19 +155,10 @@ export async function createNewsArticle(data: {
   isPublished?: boolean;
   isFeatured?: boolean;
 }) {
-  const insertData = {
-    title: data.title,
-    content: data.content,
-    cover_image: data.coverImage || null,
-    excerpt: data.excerpt || null,
-    author: data.authorName || null,
-    author_email: data.authorEmail || null,
-    is_published: data.isPublished ?? true,
-    is_featured: data.isFeatured ?? false,
-  };
-  const { error } = await supabaseAdmin.from("news").insert(insertData as any);
-
-  if (error) throw error;
+  await adminFetch("/api/admin/news", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function updateNewsArticle(
@@ -162,26 +173,14 @@ export async function updateNewsArticle(
     isFeatured: boolean;
   }>
 ) {
-  const updates: any = {};
-  if (data.title !== undefined) updates.title = data.title;
-  if (data.content !== undefined) updates.content = data.content;
-  if (data.coverImage !== undefined) updates.cover_image = data.coverImage;
-  if (data.excerpt !== undefined) updates.excerpt = data.excerpt;
-  if (data.authorName !== undefined) updates.author = data.authorName;
-  if (data.isPublished !== undefined) updates.is_published = data.isPublished;
-  if (data.isFeatured !== undefined) updates.is_featured = data.isFeatured;
-
-  const { error } = await supabaseAdmin
-    .from("news")
-    .update(updates as any)
-    .eq("id", id);
-
-  if (error) throw error;
+  await adminFetch(`/api/admin/news/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function deleteNewsArticle(id: string) {
-  const { error } = await supabaseAdmin.from("news").delete().eq("id", id);
-  if (error) throw error;
+  await adminFetch(`/api/admin/news/${id}`, { method: "DELETE" });
 }
 
 export function useNewsById(id: string | undefined) {
@@ -195,43 +194,35 @@ export function useNewsById(id: string | undefined) {
       setLoading(false);
       return;
     }
-
+    let cancelled = false;
     async function fetchNews() {
       try {
-        const { data: row, error: err } = await supabaseAdmin
+        const { data: row, error: err } = await browserSupabase
           .from("news")
           .select("*")
           .eq("id", id)
           .single();
-
         if (err) throw err;
-        if (!row || row.is_published !== true) {
-          setData(null);
-          return;
+        if (!cancelled) {
+          if (!row || row.is_published !== true) {
+            setData(null);
+          } else {
+            setData(rowToNews(row));
+          }
         }
-
-        setData({
-          _id: row.id,
-          title: row.title || "",
-          coverImage: row.cover_image || "",
-          content: row.content || "",
-          excerpt: row.excerpt || row.summary || "",
-          publishDate: toTimestamp(row.publish_date || row.created_at),
-          authorName: row.author_name || row.author || "",
-          authorEmail: row.author_email,
-          isPublished: row.is_published ?? false,
-          isFeatured: row.is_featured ?? false,
-          createdAt: toTimestamp(row.created_at),
-          updatedAt: row.updated_at ? toTimestamp(row.updated_at) : undefined,
-        });
       } catch (err: any) {
-        setError(err.message);
-        setData(null);
+        if (!cancelled) {
+          setError(err.message);
+          setData(null);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchNews();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   return { data, loading, error };
@@ -255,56 +246,55 @@ export interface Insight {
   createdAt: number;
 }
 
+function rowToInsight(r: any): Insight {
+  return {
+    _id: r.id,
+    title: r.title || "",
+    coverImage: r.cover_image || "",
+    content: r.content || "",
+    excerpt: r.excerpt || r.summary || "",
+    category: r.category || "general",
+    publishDate: toTimestamp(r.publish_date || r.created_at),
+    eventDate: r.event_date ? toTimestamp(r.event_date) : undefined,
+    authorName: r.author_name || r.author || "",
+    isPublished: r.is_published ?? false,
+    isFeatured: r.is_featured ?? false,
+    createdAt: toTimestamp(r.created_at),
+  };
+}
+
 export function usePublishedInsights(category?: string, limit?: number) {
   const [data, setData] = useState<Insight[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchInsights() {
       try {
-        let query = supabaseAdmin
+        let query = browserSupabase
           .from("insights")
           .select("*")
           .eq("is_published", true);
-
-        if (category) {
-          query = query.eq("category", category);
-        }
-
+        if (category) query = query.eq("category", category);
         query = query.order("created_at", { ascending: false });
-
-        if (limit) {
-          query = query.limit(limit);
-        }
-
+        if (limit) query = query.limit(limit);
         const { data: rows, error: err } = await query;
         if (err) throw err;
-
-        const items = (rows || []).map((r: any) => ({
-          _id: r.id,
-          title: r.title || "",
-          coverImage: r.cover_image || "",
-          content: r.content || "",
-          excerpt: r.excerpt || r.summary || "",
-          category: r.category || "general",
-          publishDate: toTimestamp(r.publish_date || r.created_at),
-          eventDate: r.event_date ? toTimestamp(r.event_date) : undefined,
-          authorName: r.author_name || r.author || "",
-          isPublished: r.is_published ?? false,
-          isFeatured: r.is_featured ?? false,
-          createdAt: toTimestamp(r.created_at),
-        }));
-
-        setData(items);
+        if (!cancelled) setData((rows || []).map(rowToInsight));
       } catch (err: any) {
-        setError(err.message);
-        setData([]);
+        if (!cancelled) {
+          setError(err.message);
+          setData([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchInsights();
+    return () => {
+      cancelled = true;
+    };
   }, [category, limit]);
 
   return { data, loading, error };
@@ -318,30 +308,12 @@ export function useInsightsList() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: rows, error: err } = await supabaseAdmin
+      const { data: rows, error: err } = await browserSupabase
         .from("insights")
         .select("*")
         .order("created_at", { ascending: false });
-
       if (err) throw err;
-
-      const items = (rows || []).map((r: any) => ({
-        _id: r.id,
-        title: r.title || "",
-        coverImage: r.cover_image || "",
-        content: r.content || "",
-        excerpt: r.excerpt || r.summary || "",
-        category: r.category || "general",
-        publishDate: toTimestamp(r.publish_date || r.created_at),
-        eventDate: r.event_date ? toTimestamp(r.event_date) : undefined,
-        authorName: r.author_name || r.author || "",
-        isPublished: r.is_published ?? false,
-        isFeatured: r.is_featured ?? false,
-        createdAt: toTimestamp(r.created_at),
-        updatedAt: r.updated_at ? toTimestamp(r.updated_at) : undefined,
-      }));
-
-      setData(items);
+      setData((rows || []).map(rowToInsight));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -366,19 +338,10 @@ export async function createInsight(data: {
   isPublished?: boolean;
   isFeatured?: boolean;
 }) {
-  const insertData = {
-    title: data.title,
-    content: data.content,
-    cover_image: data.coverImage || null,
-    excerpt: data.excerpt || null,
-    category: data.category || "general",
-    author: data.authorName || null,
-    is_published: data.isPublished ?? false,
-    is_featured: data.isFeatured ?? false,
-  };
-  const { error } = await supabaseAdmin.from("insights").insert(insertData as any);
-
-  if (error) throw error;
+  await adminFetch("/api/admin/insights", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function updateInsight(
@@ -394,27 +357,14 @@ export async function updateInsight(
     isFeatured: boolean;
   }>
 ) {
-  const updates: any = {};
-  if (data.title !== undefined) updates.title = data.title;
-  if (data.content !== undefined) updates.content = data.content;
-  if (data.coverImage !== undefined) updates.cover_image = data.coverImage;
-  if (data.excerpt !== undefined) updates.excerpt = data.excerpt;
-  if (data.category !== undefined) updates.category = data.category;
-  if (data.authorName !== undefined) updates.author = data.authorName;
-  if (data.isPublished !== undefined) updates.is_published = data.isPublished;
-  if (data.isFeatured !== undefined) updates.is_featured = data.isFeatured;
-
-  const { error } = await supabaseAdmin
-    .from("insights")
-    .update(updates as any)
-    .eq("id", id);
-
-  if (error) throw error;
+  await adminFetch(`/api/admin/insights/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function deleteInsight(id: string) {
-  const { error } = await supabaseAdmin.from("insights").delete().eq("id", id);
-  if (error) throw error;
+  await adminFetch(`/api/admin/insights/${id}`, { method: "DELETE" });
 }
 
 export function useInsightById(id: string | undefined) {
@@ -428,43 +378,35 @@ export function useInsightById(id: string | undefined) {
       setLoading(false);
       return;
     }
-
+    let cancelled = false;
     async function fetchInsight() {
       try {
-        const { data: row, error: err } = await supabaseAdmin
+        const { data: row, error: err } = await browserSupabase
           .from("insights")
           .select("*")
           .eq("id", id)
           .single();
-
         if (err) throw err;
-        if (!row || row.is_published !== true) {
-          setData(null);
-          return;
+        if (!cancelled) {
+          if (!row || row.is_published !== true) {
+            setData(null);
+          } else {
+            setData(rowToInsight(row));
+          }
         }
-
-        setData({
-          _id: row.id,
-          title: row.title || "",
-          coverImage: row.cover_image || "",
-          content: row.content || "",
-          excerpt: row.excerpt || row.summary || "",
-          category: row.category || "general",
-          publishDate: toTimestamp(row.publish_date || row.created_at),
-          eventDate: row.event_date ? toTimestamp(row.event_date) : undefined,
-          authorName: row.author_name || row.author || "",
-          isPublished: row.is_published ?? false,
-          isFeatured: row.is_featured ?? false,
-          createdAt: toTimestamp(row.created_at),
-        });
       } catch (err: any) {
-        setError(err.message);
-        setData(null);
+        if (!cancelled) {
+          setError(err.message);
+          setData(null);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchInsight();
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   return { data, loading, error };
@@ -502,6 +444,39 @@ export interface Comment {
   createdAt: number;
 }
 
+function rowToPost(r: any, commentCounts: Record<string, number>): Post {
+  return {
+    _id: r.id,
+    authorEmail: r.author_email || "",
+    authorUsername: r.author_username || "",
+    authorAvatar: r.author_avatar || "",
+    title: r.title || "",
+    content: r.content || "",
+    category: r.category || "",
+    tags: r.tags || [],
+    views: r.views || 0,
+    replyCount: commentCounts[r.id] || 0,
+    isPinned: r.is_pinned || false,
+    isFeatured: r.is_featured || false,
+    isDeleted: r.is_deleted || false,
+    status: r.status || "approved",
+    createdAt: toTimestamp(r.created_at),
+  };
+}
+
+function rowToComment(r: any): Comment {
+  return {
+    _id: r.id,
+    postId: r.post_id,
+    authorEmail: r.author_email || "",
+    authorUsername: r.author_username || "",
+    authorAvatar: r.author_avatar || "",
+    content: r.content || "",
+    isDeleted: r.is_deleted || false,
+    createdAt: toTimestamp(r.created_at),
+  };
+}
+
 export function usePosts(options?: {
   category?: string;
   status?: string;
@@ -512,71 +487,46 @@ export function usePosts(options?: {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchPosts() {
       try {
-        let query = supabaseAdmin
+        let query = browserSupabase
           .from("posts")
           .select("*")
           .eq("is_deleted", false)
           .order("is_pinned", { ascending: false })
           .order("created_at", { ascending: false });
-
-        if (options?.category) {
-          query = query.eq("category", options.category);
-        }
-        if (options?.status) {
-          query = query.eq("status", options.status);
-        }
-        if (options?.authorEmail) {
-          query = query.eq("author_email", options.authorEmail);
-        }
-
+        if (options?.category) query = query.eq("category", options.category);
+        if (options?.status) query = query.eq("status", options.status);
+        if (options?.authorEmail) query = query.eq("author_email", options.authorEmail);
         const { data: rows, error: err } = await query;
         if (err) throw err;
-
-        // Get comment counts
         const postIds = (rows || []).map((r: any) => r.id);
         let commentCounts: Record<string, number> = {};
-
         if (postIds.length > 0) {
-          const { data: comments } = await supabaseAdmin
+          const { data: comments } = await browserSupabase
             .from("comments")
             .select("post_id")
             .in("post_id", postIds)
             .eq("is_deleted", false);
-
           (comments || []).forEach((c: any) => {
             commentCounts[c.post_id] = (commentCounts[c.post_id] || 0) + 1;
           });
         }
-
-        const posts = (rows || []).map((r: any) => ({
-          _id: r.id,
-          authorEmail: r.author_email || "",
-          authorUsername: r.author_username || "",
-          authorAvatar: r.author_avatar || "",
-          title: r.title || "",
-          content: r.content || "",
-          category: r.category || "",
-          tags: r.tags || [],
-          views: r.views || 0,
-          replyCount: commentCounts[r.id] || 0,
-          isPinned: r.is_pinned || false,
-          isFeatured: r.is_featured || false,
-          isDeleted: r.is_deleted || false,
-          status: r.status || "approved",
-          createdAt: toTimestamp(r.created_at),
-        }));
-
-        setData(posts);
+        if (!cancelled) setData((rows || []).map((r) => rowToPost(r, commentCounts)));
       } catch (err: any) {
-        setError(err.message);
-        setData([]);
+        if (!cancelled) {
+          setError(err.message);
+          setData([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchPosts();
+    return () => {
+      cancelled = true;
+    };
   }, [options?.category, options?.status, options?.authorEmail]);
 
   return { data, loading, error };
@@ -588,40 +538,42 @@ export function useComments(postId: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchComments() {
       try {
-        const { data: rows, error: err } = await supabaseAdmin
+        const { data: rows, error: err } = await browserSupabase
           .from("comments")
           .select("*")
           .eq("post_id", postId)
           .eq("is_deleted", false)
           .order("created_at", { ascending: true });
-
         if (err) throw err;
-
-        const comments = (rows || []).map((r: any) => ({
-          _id: r.id,
-          postId: r.post_id,
-          authorEmail: r.author_email || "",
-          authorUsername: r.author_username || "",
-          authorAvatar: r.author_avatar || "",
-          content: r.content || "",
-          isDeleted: r.is_deleted || false,
-          createdAt: toTimestamp(r.created_at),
-        }));
-
-        setData(comments);
+        if (!cancelled) setData((rows || []).map(rowToComment));
       } catch (err: any) {
-        setError(err.message);
-        setData([]);
+        if (!cancelled) {
+          setError(err.message);
+          setData([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchComments();
+    return () => {
+      cancelled = true;
+    };
   }, [postId]);
 
   return { data, loading, error };
+}
+
+// POSTS — write helpers are not yet wired to API routes. Until then, throw a
+// clear error so callers know to use the legacy admin path (REST routes
+// under /api/admin) instead.
+function notImplemented(fnName: string): never {
+  throw new Error(
+    `${fnName} is not yet wired through an admin API route.`
+  );
 }
 
 export async function createPost(data: {
@@ -633,19 +585,8 @@ export async function createPost(data: {
   category: string;
   tags?: string[];
 }) {
-  const insertData = {
-    author_email: data.authorEmail,
-    author_username: data.authorUsername,
-    author_avatar: data.authorAvatar,
-    title: data.title,
-    content: data.content,
-    category: data.category,
-    tags: data.tags || [],
-    status: "approved",
-  };
-  const { error } = await supabaseAdmin.from("posts").insert(insertData as any);
-
-  if (error) throw error;
+  notImplemented("createPost");
+  void data;
 }
 
 export async function updatePost(
@@ -660,37 +601,14 @@ export async function updatePost(
     status: string;
   }>
 ) {
-  const updates: any = {};
-  if (data.title !== undefined) updates.title = data.title;
-  if (data.content !== undefined) updates.content = data.content;
-  if (data.category !== undefined) updates.category = data.category;
-  if (data.tags !== undefined) updates.tags = data.tags;
-  if (data.isPinned !== undefined) updates.is_pinned = data.isPinned;
-  if (data.isFeatured !== undefined) updates.is_featured = data.isFeatured;
-  if (data.status !== undefined) updates.status = data.status;
-
-  const { error } = await supabaseAdmin
-    .from("posts")
-    .update(updates as any)
-    .eq("id", id);
-
-  if (error) throw error;
+  notImplemented("updatePost");
+  void id;
+  void data;
 }
 
 export async function deletePost(id: string) {
-  // Soft delete post
-  const { error: postError } = await supabaseAdmin
-    .from("posts")
-    .update({ is_deleted: true })
-    .eq("id", id);
-
-  if (postError) throw postError;
-
-  // Soft delete all comments
-  await supabaseAdmin
-    .from("comments")
-    .update({ is_deleted: true })
-    .eq("post_id", id);
+  notImplemented("deletePost");
+  void id;
 }
 
 export async function createComment(data: {
@@ -700,49 +618,86 @@ export async function createComment(data: {
   authorAvatar: string;
   content: string;
 }) {
-  const insertData = {
-    post_id: data.postId,
-    author_email: data.authorEmail,
-    author_username: data.authorUsername,
-    author_avatar: data.authorAvatar,
-    content: data.content,
-  };
-  const { error } = await supabaseAdmin.from("comments").insert(insertData as any);
-
-  if (error) throw error;
-
-  // Update reply count
-  const { count } = await supabaseAdmin
-    .from("comments")
-    .select("*", { count: "exact", head: true })
-    .eq("post_id", data.postId)
-    .eq("is_deleted", false);
-
-  await supabaseAdmin
-    .from("posts")
-    .update({ reply_count: count || 0 })
-    .eq("id", data.postId);
+  notImplemented("createComment");
+  void data;
 }
 
 export async function deleteComment(id: string, postId: string) {
-  const { error } = await supabaseAdmin
-    .from("comments")
-    .update({ is_deleted: true })
-    .eq("id", id);
+  notImplemented("deleteComment");
+  void id;
+  void postId;
+}
 
-  if (error) throw error;
+export async function createStageProduction(data: {
+  title: string;
+  description?: string;
+  content?: string;
+  coverImage?: string;
+  url?: string;
+  category: string;
+  eventDate?: number;
+  isFeatured?: boolean;
+}) {
+  notImplemented("createStageProduction");
+  void data;
+}
 
-  // Update reply count
-  const { count } = await supabaseAdmin
-    .from("comments")
-    .select("*", { count: "exact", head: true })
-    .eq("post_id", postId)
-    .eq("is_deleted", false);
+export async function updateStageProduction(
+  id: string,
+  data: Partial<{
+    title: string;
+    description: string;
+    content: string;
+    coverImage: string;
+    url: string;
+    category: string;
+    eventDate: number;
+    isFeatured: boolean;
+  }>
+) {
+  notImplemented("updateStageProduction");
+  void id;
+  void data;
+}
 
-  await supabaseAdmin
-    .from("posts")
-    .update({ reply_count: count || 0 })
-    .eq("id", postId);
+export async function deleteStageProduction(id: string) {
+  notImplemented("deleteStageProduction");
+  void id;
+}
+
+export async function createHopeStudioService(data: {
+  serviceName: string;
+  description: string;
+  category?: string;
+  availability?: string;
+  pricing?: string;
+  imageLinks?: string[];
+  isActive?: boolean;
+}) {
+  notImplemented("createHopeStudioService");
+  void data;
+}
+
+export async function updateHopeStudioService(
+  id: string,
+  data: Partial<{
+    serviceName: string;
+    description: string;
+    category: string;
+    availability: string;
+    pricing: string;
+    imageLinks: string[];
+    isActive: boolean;
+  }>
+) {
+  notImplemented("updateHopeStudioService");
+  void id;
+  void data;
+}
+
+export async function deleteHopeStudioService(id: string) {
+  notImplemented("deleteHopeStudioService");
+  void id;
 }
 
 // =====================
@@ -758,6 +713,18 @@ export interface User {
   createdAt: number;
 }
 
+function rowToUser(r: any): User {
+  return {
+    _id: r.id,
+    email: r.email || "",
+    username: r.username || "",
+    avatar: r.avatar || "",
+    role: r.role || "member",
+    status: r.status || "active",
+    createdAt: toTimestamp(r.created_at),
+  };
+}
+
 export function useUsers() {
   const [data, setData] = useState<User[] | null>(null);
   const [loading, setLoading] = useState(true);
@@ -766,24 +733,12 @@ export function useUsers() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: rows, error: err } = await supabaseAdmin
+      const { data: rows, error: err } = await browserSupabase
         .from("users")
         .select("*")
         .order("created_at", { ascending: false });
-
       if (err) throw err;
-
-      const users = (rows || []).map((r: any) => ({
-        _id: r.id,
-        email: r.email || "",
-        username: r.username || "",
-        avatar: r.avatar || "",
-        role: r.role || "member",
-        status: r.status || "active",
-        createdAt: toTimestamp(r.created_at),
-      }));
-
-      setData(users);
+      setData((rows || []).map(rowToUser));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -804,16 +759,10 @@ export async function createUser(data: {
   avatar: string;
   role: string;
 }) {
-  const insertData = {
-    email: data.email,
-    username: data.username,
-    avatar: data.avatar,
-    role: data.role,
-    status: "active",
-  };
-  const { error } = await supabaseAdmin.from("users").insert(insertData as any);
-
-  if (error) throw error;
+  await adminFetch("/api/admin/users", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function updateUser(
@@ -825,23 +774,14 @@ export async function updateUser(
     avatar: string;
   }>
 ) {
-  const updates: any = {};
-  if (data.role !== undefined) updates.role = data.role;
-  if (data.status !== undefined) updates.status = data.status;
-  if (data.username !== undefined) updates.username = data.username;
-  if (data.avatar !== undefined) updates.avatar = data.avatar;
-
-  const { error } = await supabaseAdmin
-    .from("users")
-    .update(updates as any)
-    .eq("id", id);
-
-  if (error) throw error;
+  await adminFetch(`/api/admin/users/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
 }
 
 export async function deleteUser(id: string) {
-  const { error } = await supabaseAdmin.from("users").delete().eq("id", id);
-  if (error) throw error;
+  await adminFetch(`/api/admin/users/${id}`, { method: "DELETE" });
 }
 
 // =====================
@@ -861,54 +801,54 @@ export interface StageProduction {
   createdAt: number;
 }
 
+function rowToStageProduction(r: any): StageProduction {
+  return {
+    _id: r.id,
+    title: r.title || "",
+    description: r.description || "",
+    content: r.content || "",
+    coverImage: r.cover_image || "",
+    url: r.url || "",
+    category: r.category || "",
+    city: r.city,
+    eventDate: r.event_date ? toTimestamp(r.event_date) : undefined,
+    isFeatured: r.is_featured || false,
+    createdAt: toTimestamp(r.created_at),
+  };
+}
+
 export function useStageProductions(category?: string, limit?: number) {
   const [data, setData] = useState<StageProduction[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchProductions() {
       try {
-        let query = supabaseAdmin
+        let query = browserSupabase
           .from("stage_productions")
           .select("*")
           .eq("is_visible", true)
           .order("event_date", { ascending: false });
-
-        if (category) {
-          query = query.eq("category", category);
-        }
-
-        if (limit) {
-          query = query.limit(limit);
-        }
-
+        if (category) query = query.eq("category", category);
+        if (limit) query = query.limit(limit);
         const { data: rows, error: err } = await query;
         if (err) throw err;
-
-        const productions = (rows || []).map((r: any) => ({
-          _id: r.id,
-          title: r.title || "",
-          description: r.description || "",
-          content: r.content || "",
-          coverImage: r.cover_image || "",
-          url: r.url || "",
-          category: r.category || "",
-          city: r.city,
-          eventDate: r.event_date ? toTimestamp(r.event_date) : undefined,
-          isFeatured: r.is_featured || false,
-          createdAt: toTimestamp(r.created_at),
-        }));
-
-        setData(productions);
+        if (!cancelled) setData((rows || []).map(rowToStageProduction));
       } catch (err: any) {
-        setError(err.message);
-        setData([]);
+        if (!cancelled) {
+          setError(err.message);
+          setData([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchProductions();
+    return () => {
+      cancelled = true;
+    };
   }, [category, limit]);
 
   return { data, loading, error };
@@ -922,29 +862,12 @@ export function useStageProductionsList() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: rows, error: err } = await supabaseAdmin
+      const { data: rows, error: err } = await browserSupabase
         .from("stage_productions")
         .select("*")
         .order("event_date", { ascending: false });
-
       if (err) throw err;
-
-      const productions = (rows || []).map((r: any) => ({
-        _id: r.id,
-        title: r.title || "",
-        description: r.description || "",
-        content: r.content || "",
-        coverImage: r.cover_image || "",
-        url: r.url || "",
-        category: r.category || "",
-        city: r.city,
-        eventDate: r.event_date ? toTimestamp(r.event_date) : undefined,
-        isFeatured: r.is_featured || false,
-        createdAt: toTimestamp(r.created_at),
-        updatedAt: r.updated_at ? toTimestamp(r.updated_at) : undefined,
-      }));
-
-      setData(productions);
+      setData((rows || []).map(rowToStageProduction));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -957,72 +880,6 @@ export function useStageProductionsList() {
   }, [fetch]);
 
   return { data, loading, error, refetch: fetch };
-}
-
-export async function createStageProduction(data: {
-  title: string;
-  description?: string;
-  content?: string;
-  coverImage?: string;
-  url?: string;
-  category: string;
-  eventDate?: number;
-  isFeatured?: boolean;
-}) {
-  const insertData = {
-    title: data.title,
-    description: data.description || "",
-    content: data.content || "",
-    cover_image: data.coverImage || "",
-    url: data.url || "",
-    category: data.category,
-    event_date: data.eventDate ? new Date(data.eventDate).toISOString() : null,
-    is_featured: data.isFeatured ?? false,
-  };
-  const { error } = await supabaseAdmin.from("stage_productions").insert(insertData as any);
-
-  if (error) throw error;
-}
-
-export async function updateStageProduction(
-  id: string,
-  data: Partial<{
-    title: string;
-    description: string;
-    content: string;
-    coverImage: string;
-    url: string;
-    category: string;
-    eventDate: number;
-    isFeatured: boolean;
-  }>
-) {
-  const updates: any = {};
-  if (data.title !== undefined) updates.title = data.title;
-  if (data.description !== undefined) updates.description = data.description;
-  if (data.content !== undefined) updates.content = data.content;
-  if (data.coverImage !== undefined) updates.cover_image = data.coverImage;
-  if (data.url !== undefined) updates.url = data.url;
-  if (data.category !== undefined) updates.category = data.category;
-  if (data.eventDate !== undefined) {
-    updates.event_date = new Date(data.eventDate).toISOString();
-  }
-  if (data.isFeatured !== undefined) updates.is_featured = data.isFeatured;
-
-  const { error } = await supabaseAdmin
-    .from("stage_productions")
-    .update(updates as any)
-    .eq("id", id);
-
-  if (error) throw error;
-}
-
-export async function deleteStageProduction(id: string) {
-  const { error } = await supabaseAdmin
-    .from("stage_productions")
-    .delete()
-    .eq("id", id);
-  if (error) throw error;
 }
 
 // =====================
@@ -1040,48 +897,51 @@ export interface HopeStudioService {
   createdAt: number;
 }
 
+function rowToService(r: any): HopeStudioService {
+  return {
+    _id: r.id,
+    serviceName: r.title || r.service_name || "",
+    description: r.description || "",
+    category: r.category || "",
+    availability: r.availability,
+    pricing: r.pricing,
+    imageLinks: r.image_links || [],
+    isActive: r.is_active ?? true,
+    createdAt: toTimestamp(r.created_at),
+  };
+}
+
 export function useHopeStudioServices(category?: string) {
   const [data, setData] = useState<HopeStudioService[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
     async function fetchServices() {
       try {
-        let query = supabaseAdmin
+        let query = browserSupabase
           .from("hope_studio_services")
           .select("*")
           .eq("is_active", true)
           .order("sort_order", { ascending: true });
-
-        if (category) {
-          query = query.eq("category", category);
-        }
-
+        if (category) query = query.eq("category", category);
         const { data: rows, error: err } = await query;
         if (err) throw err;
-
-        const services = (rows || []).map((r: any) => ({
-          _id: r.id,
-          serviceName: r.title || r.service_name || "",
-          description: r.description || "",
-          category: r.category || "",
-          availability: r.availability,
-          pricing: r.pricing,
-          imageLinks: r.image_links || [],
-          isActive: r.is_active ?? true,
-          createdAt: toTimestamp(r.created_at),
-        }));
-
-        setData(services);
+        if (!cancelled) setData((rows || []).map(rowToService));
       } catch (err: any) {
-        setError(err.message);
-        setData([]);
+        if (!cancelled) {
+          setError(err.message);
+          setData([]);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
     fetchServices();
+    return () => {
+      cancelled = true;
+    };
   }, [category]);
 
   return { data, loading, error };
@@ -1095,27 +955,12 @@ export function useHopeStudioServicesList() {
   const fetch = useCallback(async () => {
     setLoading(true);
     try {
-      const { data: rows, error: err } = await supabaseAdmin
+      const { data: rows, error: err } = await browserSupabase
         .from("hope_studio_services")
         .select("*")
         .order("sort_order", { ascending: true });
-
       if (err) throw err;
-
-      const services = (rows || []).map((r: any) => ({
-        _id: r.id,
-        serviceName: r.title || r.service_name || "",
-        description: r.description || "",
-        category: r.category || "",
-        availability: r.availability,
-        pricing: r.pricing,
-        imageLinks: r.image_links || [],
-        isActive: r.is_active ?? true,
-        createdAt: toTimestamp(r.created_at),
-        updatedAt: r.updated_at ? toTimestamp(r.updated_at) : undefined,
-      }));
-
-      setData(services);
+      setData((rows || []).map(rowToService));
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -1128,71 +973,6 @@ export function useHopeStudioServicesList() {
   }, [fetch]);
 
   return { data, loading, error, refetch: fetch };
-}
-
-export async function createHopeStudioService(data: {
-  serviceName: string;
-  description: string;
-  category?: string;
-  availability?: string;
-  pricing?: string;
-  imageLinks?: string[];
-  isActive?: boolean;
-}) {
-  const insertData = {
-    title: data.serviceName,
-    service_name: data.serviceName,
-    description: data.description,
-    category: data.category || "recording",
-    availability: data.availability,
-    pricing: data.pricing,
-    image_links: data.imageLinks || [],
-    is_active: data.isActive ?? true,
-    is_published: true,
-  };
-  const { error } = await supabaseAdmin.from("hope_studio_services").insert(insertData as any);
-
-  if (error) throw error;
-}
-
-export async function updateHopeStudioService(
-  id: string,
-  data: Partial<{
-    serviceName: string;
-    description: string;
-    category: string;
-    availability: string;
-    pricing: string;
-    imageLinks: string[];
-    isActive: boolean;
-  }>
-) {
-  const updates: any = {};
-  if (data.serviceName !== undefined) {
-    updates.title = data.serviceName;
-    updates.service_name = data.serviceName;
-  }
-  if (data.description !== undefined) updates.description = data.description;
-  if (data.category !== undefined) updates.category = data.category;
-  if (data.availability !== undefined) updates.availability = data.availability;
-  if (data.pricing !== undefined) updates.pricing = data.pricing;
-  if (data.imageLinks !== undefined) updates.image_links = data.imageLinks;
-  if (data.isActive !== undefined) updates.is_active = data.isActive;
-
-  const { error } = await supabaseAdmin
-    .from("hope_studio_services")
-    .update(updates as any)
-    .eq("id", id);
-
-  if (error) throw error;
-}
-
-export async function deleteHopeStudioService(id: string) {
-  const { error } = await supabaseAdmin
-    .from("hope_studio_services")
-    .delete()
-    .eq("id", id);
-  if (error) throw error;
 }
 
 // =====================

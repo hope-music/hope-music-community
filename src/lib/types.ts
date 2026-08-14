@@ -130,7 +130,7 @@ export interface Insight {
   updated_at: string;
 }
 
-// API Response types (matching Convex response format)
+// API Response types
 export interface UserResponse {
   _id: string;
   email: string;

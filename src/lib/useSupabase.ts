@@ -1,15 +1,9 @@
 /**
  * Stage production hooks — Supabase backed.
  *
- * These hooks used to delegate to Convex `stageProductions`. That table has
- * never been populated for Ticketmaster data and is being kept only for the
- * admin Convex backend (news / insights / employees / posts / comments /
- * studio). The frontend Listing page, Synced Events page, and Detail page
- * all read from Supabase `${category}_events` tables instead.
- *
- * Implemented here as plain async functions so React components can call them
- * from `useEffect`. Components that still need the hook-style API can wrap
- * these with a small `useState`/`useEffect` of their own.
+ * Plain async functions for the Ticketmaster event tables. Components that
+ * need a hook-style API can wrap these with `useState` / `useEffect` of their
+ * own.
  */
 
 import { supabase } from "@/lib/supabase";
