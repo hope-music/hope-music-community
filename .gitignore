@@ -59,3 +59,7 @@ debug-*.mjs
 .wrangler
 .dev.vars*
 !.dev.vars.example
+
+# Convex (removed)
+/convex/_generated/
+/.convex/
