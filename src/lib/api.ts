@@ -94,7 +94,7 @@ export function usePublishedNews(limit?: number) {
           .from("news")
           .select("*")
           .eq("is_published", true)
-          .order("created_at", { ascending: false });
+          .order("publish_date", { ascending: false, nullsFirst: false });
         if (limit) query = query.limit(limit);
         const { data: rows, error: err } = await query;
         if (err) throw err;
@@ -128,7 +128,7 @@ export function useNewsList() {
       const { data: rows, error: err } = await browserSupabase
         .from("news")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("publish_date", { ascending: false, nullsFirst: false });
       if (err) throw err;
       setData((rows || []).map(rowToNews));
     } catch (err: any) {
@@ -154,6 +154,7 @@ export async function createNewsArticle(data: {
   authorEmail?: string;
   isPublished?: boolean;
   isFeatured?: boolean;
+  publishDate?: string;
 }) {
   await adminFetch("/api/admin/news", {
     method: "POST",
@@ -171,6 +172,7 @@ export async function updateNewsArticle(
     authorName: string;
     isPublished: boolean;
     isFeatured: boolean;
+    publishDate: string;
   }>
 ) {
   await adminFetch(`/api/admin/news/${id}`, {
@@ -277,7 +279,7 @@ export function usePublishedInsights(category?: string, limit?: number) {
           .select("*")
           .eq("is_published", true);
         if (category) query = query.eq("category", category);
-        query = query.order("created_at", { ascending: false });
+        query = query.order("publish_date", { ascending: false, nullsFirst: false });
         if (limit) query = query.limit(limit);
         const { data: rows, error: err } = await query;
         if (err) throw err;
@@ -311,7 +313,7 @@ export function useInsightsList() {
       const { data: rows, error: err } = await browserSupabase
         .from("insights")
         .select("*")
-        .order("created_at", { ascending: false });
+        .order("publish_date", { ascending: false, nullsFirst: false });
       if (err) throw err;
       setData((rows || []).map(rowToInsight));
     } catch (err: any) {
@@ -337,6 +339,7 @@ export async function createInsight(data: {
   authorName?: string;
   isPublished?: boolean;
   isFeatured?: boolean;
+  publishDate?: string;
 }) {
   await adminFetch("/api/admin/insights", {
     method: "POST",
@@ -355,6 +358,7 @@ export async function updateInsight(
     authorName: string;
     isPublished: boolean;
     isFeatured: boolean;
+    publishDate: string;
   }>
 ) {
   await adminFetch(`/api/admin/insights/${id}`, {

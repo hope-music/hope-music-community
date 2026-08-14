@@ -359,6 +359,7 @@ export default function NewsAdminPage() {
           excerpt,
           isPublished,
           isFeatured,
+          publishDate,
         });
         setMessage({ type: "success", text: "Article updated successfully!" });
       } else {
@@ -370,6 +371,7 @@ export default function NewsAdminPage() {
           excerpt,
           isPublished,
           isFeatured,
+          publishDate,
         });
         setMessage({ type: "success", text: "Article created successfully!" });
       }

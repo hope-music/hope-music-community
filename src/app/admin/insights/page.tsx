@@ -360,6 +360,7 @@ export default function AdminInsightsPage() {
           excerpt,
           isPublished,
           isFeatured,
+          publishDate,
         });
         setMessage({ type: "success", text: "Insight updated successfully!" });
       } else {
@@ -371,6 +372,7 @@ export default function AdminInsightsPage() {
           excerpt,
           isPublished,
           isFeatured,
+          publishDate,
         });
         setMessage({ type: "success", text: "Insight created successfully!" });
       }

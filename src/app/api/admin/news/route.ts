@@ -26,10 +26,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const admin = getSupabaseServiceClient();
   const body = await request.json();
-  const { title, content, coverImage, excerpt, authorName, authorEmail, isPublished, isFeatured } = body || {};
+  const { title, content, coverImage, excerpt, authorName, authorEmail, isPublished, isFeatured, publishDate } = body || {};
   if (!title || !content) {
     return NextResponse.json({ error: "title and content are required" }, { status: 400 });
   }
+  const publishDateValue = publishDate ? new Date(publishDate).toISOString() : new Date().toISOString();
   const { data, error } = await admin
     .from("news")
     .insert({
@@ -41,6 +42,7 @@ export async function POST(request: NextRequest) {
       author_email: authorEmail || null,
       is_published: isPublished ?? true,
       is_featured: isFeatured ?? false,
+      publish_date: publishDateValue,
     })
     .select("id")
     .single();

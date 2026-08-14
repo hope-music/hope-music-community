@@ -14,10 +14,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   const admin = getSupabaseServiceClient();
   const body = await request.json();
-  const { title, content, coverImage, excerpt, category, authorName, isPublished, isFeatured } = body || {};
+  const { title, content, coverImage, excerpt, category, authorName, isPublished, isFeatured, publishDate } = body || {};
   if (!title || !content) {
     return NextResponse.json({ error: "title and content are required" }, { status: 400 });
   }
+  const publishDateValue = publishDate ? new Date(publishDate).toISOString() : new Date().toISOString();
   const { data, error } = await admin
     .from("insights")
     .insert({
@@ -29,6 +30,7 @@ export async function POST(request: NextRequest) {
       author: authorName || null,
       is_published: isPublished ?? false,
       is_featured: isFeatured ?? false,
+      publish_date: publishDateValue,
     })
     .select("id")
     .single();

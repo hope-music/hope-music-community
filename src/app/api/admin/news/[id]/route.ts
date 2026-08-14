@@ -16,6 +16,7 @@ export async function PATCH(
   if (body.authorName !== undefined) updates.author = body.authorName;
   if (body.isPublished !== undefined) updates.is_published = body.isPublished;
   if (body.isFeatured !== undefined) updates.is_featured = body.isFeatured;
+  if (body.publishDate !== undefined) updates.publish_date = new Date(body.publishDate).toISOString();
 
   const { error } = await admin.from("news").update(updates).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
