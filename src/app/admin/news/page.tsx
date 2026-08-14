@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import { useQuery, useMutation } from "@/lib/convex";
-import { api } from "@/lib/convex";
+import { useNewsList, createNewsArticle, updateNewsArticle, deleteNewsArticle, uploadImageToStorage } from "@/lib/api";
 
 interface NewsArticle {
   _id: string;
@@ -11,8 +10,8 @@ interface NewsArticle {
   content: string;
   excerpt: string;
   publishDate: number;
-  authorEmail: string;
   authorName: string;
+  authorEmail?: string;
   isPublished: boolean;
   isFeatured: boolean;
   createdAt: number;
@@ -33,9 +32,8 @@ function RichTextEditor({ content, onChange, onImageUpload }: RichTextEditorProp
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
 
-  // Initialize content only once
   useEffect(() => {
-    if (editorRef.current && content && editorRef.current.innerHTML !== content && !editorRef.current.innerHTML) {
+    if (editorRef.current && content && editorRef.current.innerHTML !== content) {
       editorRef.current.innerHTML = content;
     }
   }, [content]);
@@ -175,7 +173,7 @@ function RichTextEditor({ content, onChange, onImageUpload }: RichTextEditorProp
         }}
       />
 
-      {/* Image URL Input Modal */}
+      {/* Image URL Modal */}
       <ImageUrlModal onInsert={(url) => execCommand("insertImage", url)} />
     </div>
   );
@@ -255,13 +253,7 @@ function ImageUrlModal({ onInsert }: { onInsert: (url: string) => void }) {
 // Main Admin Page
 // =====================
 export default function NewsAdminPage() {
-  const adminEmail = typeof window !== "undefined" ? localStorage.getItem("user_email") || "" : "";
-  const allArticles = useQuery(api.admin.listNews, { callerEmail: adminEmail }) as NewsArticle[] | undefined;
-  const createArticle = useMutation(api.admin.createNewsArticle);
-  const updateArticle = useMutation(api.admin.updateNewsArticle);
-  const deleteArticle = useMutation(api.admin.deleteNewsArticle);
-  const generateUploadUrl = useMutation(api.admin.generateUploadUrl);
-  const getFileUrl = useMutation(api.admin.getFileUrl);
+  const { data: allArticles, loading, refetch } = useNewsList();
 
   // Form state
   const [showForm, setShowForm] = useState(false);
@@ -273,7 +265,7 @@ export default function NewsAdminPage() {
   const [publishDate, setPublishDate] = useState("");
   const [isPublished, setIsPublished] = useState(true);
   const [isFeatured, setIsFeatured] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading2, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const coverFileInputRef = useRef<HTMLInputElement>(null);
@@ -283,35 +275,13 @@ export default function NewsAdminPage() {
       const t = setTimeout(() => setMessage(null), 5000);
       return () => clearTimeout(t);
     }
-  }, [message]);const articles = allArticles || [];
+  }, [message]);
 
-  // Upload image to Convex storage and get actual URL
+  const articles = allArticles || [];
+
+  // Upload image to Supabase Storage
   const uploadImage = async (file: File): Promise<string> => {
-    const uploadUrl = await generateUploadUrl();
-    const response = await fetch(uploadUrl, {
-      method: "POST",
-      headers: { "Content-Type": file.type },
-      body: file,
-    });
-    if (!response.ok) throw new Error("Upload failed");
-
-    // Get the storage ID from the response (it's JSON format)
-    const responseText = await response.text();
-    let storageId: string;
-
-    try {
-      const parsed = JSON.parse(responseText);
-      storageId = parsed.storageId || parsed.id || responseText;
-    } catch {
-      // If not JSON, use the text directly
-      storageId = responseText;
-    }
-
-    // Get the actual accessible URL
-    const fileUrl = await getFileUrl({ storageId });
-    if (!fileUrl) throw new Error("Failed to get file URL");
-
-    return fileUrl;
+    return await uploadImageToStorage(file);
   };
 
   // Handle cover image selection
@@ -378,32 +348,26 @@ export default function NewsAdminPage() {
 
     setLoading(true);
     try {
-      const publishDateNum = publishDate ? new Date(publishDate).getTime() : Date.now();
       const excerpt = textContent.substring(0, 150);
 
       if (editingId) {
-        await updateArticle({
-          callerEmail: adminEmail,
-          id: editingId as any,
+        await updateNewsArticle(editingId, {
           title: title.trim(),
           authorName: authorName.trim() || undefined,
           content,
           coverImage: coverImage || undefined,
           excerpt,
-          publishDate: publishDateNum,
           isPublished,
           isFeatured,
         });
         setMessage({ type: "success", text: "Article updated successfully!" });
       } else {
-        await createArticle({
-          callerEmail: adminEmail,
+        await createNewsArticle({
           title: title.trim(),
           authorName: authorName.trim() || undefined,
           content,
           coverImage: coverImage || undefined,
           excerpt,
-          publishDate: publishDateNum,
           isPublished,
           isFeatured,
         });
@@ -411,6 +375,7 @@ export default function NewsAdminPage() {
       }
       setShowForm(false);
       resetForm();
+      refetch();
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Failed to save" });
     } finally {
@@ -422,8 +387,9 @@ export default function NewsAdminPage() {
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this article permanently?")) return;
     try {
-      await deleteArticle({ callerEmail: adminEmail, id: id as any });
+      await deleteNewsArticle(id);
       setMessage({ type: "success", text: "Article deleted" });
+      refetch();
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Failed to delete" });
     }
@@ -464,7 +430,14 @@ export default function NewsAdminPage() {
           <h1 className="text-2xl font-bold text-gray-900">News</h1>
           <p className="mt-1 text-sm text-gray-500">Manage news articles ({articles.length} total)</p>
         </div>
-        <div className="flex items-center gap-2"><button
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => refetch()}
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Refresh
+          </button>
+          <button
             onClick={handleNewArticle}
             className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700"
           >
@@ -615,10 +588,10 @@ export default function NewsAdminPage() {
                 </button>
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading2}
                   className="rounded-md bg-hmc-orange px-6 py-2.5 text-sm font-medium text-white hover:bg-hmc-orange/90 disabled:opacity-50"
                 >
-                  {loading ? "Saving..." : editingId ? "Update" : "Create"}
+                  {loading2 ? "Saving..." : editingId ? "Update" : "Create"}
                 </button>
               </div>
             </form>
@@ -627,7 +600,7 @@ export default function NewsAdminPage() {
       )}
 
       {/* Articles Grid */}
-      {allArticles === undefined ? (
+      {loading ? (
         <div className="rounded-lg border border-gray-200 bg-white p-8 text-center text-gray-500">
           Loading articles...
         </div>

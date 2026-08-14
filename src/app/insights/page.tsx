@@ -1,12 +1,11 @@
 "use client";
 
-import { useQuery } from "@/lib/convex";
-import { api } from "@/lib/convex";
+import { usePublishedInsights } from "@/lib/api";
 import Image from "next/image";
 import Link from "next/link";
 
 export default function InsightsPage() {
-  const insights = useQuery(api.admin.getPublishedInsights, {}) as any[] | undefined;
+  const { data: insights, loading } = usePublishedInsights();
 
   const formatDate = (timestamp?: number): string => {
     if (!timestamp) return "";
@@ -28,7 +27,7 @@ export default function InsightsPage() {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-8">
-        {insights === undefined ? (
+        {loading ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="animate-pulse overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -40,7 +39,7 @@ export default function InsightsPage() {
               </div>
             ))}
           </div>
-        ) : insights.length === 0 ? (
+        ) : !insights || insights.length === 0 ? (
           <div className="py-20 text-center text-gray-500">
             <p className="text-lg">No insights found.</p>
             <Link href="/" className="mt-4 inline-block text-hmc-orange hover:underline">

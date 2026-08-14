@@ -4,8 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
-import { useQuery } from "@/lib/convex";
-import { api } from "@/lib/convex";
+import { usePublishedNews, usePublishedInsights, useHopeStudioServices } from "@/lib/api";
 import { readInteractionItems } from "@/lib/interaction";
 import {
   PERFORMANCE_CATEGORY_OPTIONS,
@@ -623,14 +622,10 @@ export function SearchPageClient({ initialQuery }: SearchPageClientProps) {
   const [status, setStatus] = useState<Status>("idle");
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Convex data — these re-render when data arrives.
-  // They are always called unconditionally (hooks rules).
-  const convexNews = useQuery(api.admin.getPublishedNews, {});
-  const convexInsights = useQuery(api.admin.getPublishedInsights, {});
-  // Stage productions live in Supabase `${category}_events`, not Convex.
-  // We keep an empty list so the search results section can hide cleanly.
-  const convexStageProductions: any[] = [];
-  const convexHopeStudio = useQuery(api.admin.getPublicHopeStudioServices, {});
+  // Supabase data - use our new API hooks
+  const { data: newsData } = usePublishedNews();
+  const { data: insightsData } = usePublishedInsights();
+  const { data: hopeStudioData } = useHopeStudioServices();
 
   useEffect(() => {
     const q = submittedQuery.trim();
@@ -652,11 +647,11 @@ export function SearchPageClient({ initialQuery }: SearchPageClientProps) {
 
         if (cancelled) return;
 
-        // Convex data is already available via useQuery (above) — filter synchronously.
-        const news = searchNews(convexNews as any[] | undefined, q);
-        const insights = searchInsights(convexInsights as any[] | undefined, q);
-        const stageProductions = searchStageProductions(convexStageProductions as any[] | undefined, q);
-        const hopeStudio = searchHopeStudio(convexHopeStudio as any[] | undefined, q);
+        // Supabase data - filter synchronously
+        const news = searchNews(newsData as any[] | undefined, q);
+        const insights = searchInsights(insightsData as any[] | undefined, q);
+        const stageProductions = searchStageProductions(undefined, q);
+        const hopeStudio = searchHopeStudio(hopeStudioData as any[] | undefined, q);
 
         if (cancelled) return;
 
@@ -679,7 +674,7 @@ export function SearchPageClient({ initialQuery }: SearchPageClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [submittedQuery, convexNews, convexInsights, convexStageProductions, convexHopeStudio]);
+  }, [submittedQuery, newsData, insightsData, hopeStudioData]);
 
   // Group hits by type for sectioned display
   const grouped = useMemo(() => {

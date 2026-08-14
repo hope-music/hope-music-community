@@ -1,11 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useQuery } from "@/lib/convex";
-import { api } from "@/lib/convex";
+import { usePublishedNews } from "@/lib/api";
 
 export default function NewsListingPage() {
-  const allArticles = useQuery(api.admin.getPublishedNews, {}) as any[] | undefined;
+  const { data: allArticles, loading } = usePublishedNews();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 9;
 
@@ -34,7 +33,7 @@ export default function NewsListingPage() {
       </div>
 
       <div className="mx-auto max-w-6xl px-4 py-8">
-        {allArticles === undefined ? (
+        {loading ? (
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div key={i} className="animate-pulse overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">

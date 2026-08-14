@@ -1,13 +1,15 @@
 /**
- * Convex API exports for Next.js
+ * Compatibility layer - re-exports from new Supabase-based API
+ * This maintains backwards compatibility with existing code that imports from "@/lib/convex"
  * 
- * This module provides the Convex API for use in React components.
- * The actual API comes from `convex/_generated/api` when `npx convex dev` is running.
+ * Note: useQuery and useMutation are Convex-specific and no longer available.
+ * Components should now use the new hooks from "@/lib/api" directly.
  * 
- * Usage:
- *   import { useQuery, useMutation, api } from "@/lib/convex";
- *   const news = useQuery(api.admin.getPublishedNews);
+ * Old usage: import { useQuery, useMutation, api } from "@/lib/convex";
+ * New usage: import { api } from "@/lib/convex"; // api has all the functions
  */
 
-export { useQuery, useMutation, useQuery_experimental } from "convex/react";
-export { api } from "../../convex/_generated/api";
+// Re-export all API functions under `api` namespace for compatibility
+import * as apiFunctions from "./api";
+
+export const api = apiFunctions;

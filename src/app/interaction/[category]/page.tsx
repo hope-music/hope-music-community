@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { api } from "@/lib/convex";
-import { useQuery_experimental } from "@/lib/convex";
+import { usePosts } from "@/lib/api";
 import {
   getInteractionCategoriesWithIcons,
   INTERACTION_STORAGE_KEY,
@@ -12,20 +11,6 @@ import {
 } from "@/lib/interaction";
 
 type TimeFilter = "all" | "today" | "week" | "month" | "year";
-
-// Wrapper to safely call useQuery without crashing on errors
-function useAdminPosts() {
-  const result = useQuery_experimental({
-    query: api.admin.listAllPosts,
-    args: {},
-    throwOnError: false,
-  });
-
-  if (result.status === "success") {
-    return result.data as Post[];
-  }
-  return undefined;
-}
 
 interface Post {
   _id: string;
@@ -144,7 +129,7 @@ export default function InteractionCategoryPage({ params }: PageProps) {
   }, [params]);
 
   // Load posts from Convex or localStorage
-  const allPosts = useAdminPosts();
+  const { data: allPosts } = usePosts();
   const localPosts = useMemo(() => {
     if (typeof window === "undefined") return [] as any[];
     return parseInteractionItems(localStorage.getItem(INTERACTION_STORAGE_KEY)).map((p: any) => ({

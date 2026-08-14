@@ -1,7 +1,6 @@
 "use client";
 
-import { useQuery } from "@/lib/convex";
-import { api } from "@/lib/convex";
+import { usePublishedInsights } from "@/lib/api";
 import { useParams } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,7 +20,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
 export default function InsightsCategoryPage() {
   const params = useParams();
   const category = params.category as string;
-  const insights = useQuery(api.admin.getPublishedInsights, { category }) as any[] | undefined;
+  const { data: insights, loading } = usePublishedInsights(category);
 
   const formatDate = (timestamp?: number): string => {
     if (!timestamp) return "";
@@ -58,7 +57,7 @@ export default function InsightsCategoryPage() {
               </div>
             ))}
           </div>
-        ) : insights.length === 0 ? (
+        ) : !insights || insights.length === 0 ? (
           <div className="py-20 text-center text-gray-500">
             <p className="text-lg">No insights in this category.</p>
             <Link href="/insights" className="mt-4 inline-block text-hmc-orange hover:underline">

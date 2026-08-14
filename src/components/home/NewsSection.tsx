@@ -1,13 +1,12 @@
 "use client";
 
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex";
+import { usePublishedNews } from "@/lib/api";
 import { Container } from "@/components/ui/Container";
 import { ViewMoreButton } from "@/components/ui/ViewMoreButton";
 
 export function NewsSection() {
-  // Fetch published news from Convex (real-time reactive)
-  const news = useQuery(api.admin.getPublishedNews, { limit: 3 }) as any[] | undefined;
+  // Fetch published news from Supabase (reactive)
+  const { data: news, loading } = usePublishedNews(3);
 
   const formatDate = (dateValue?: number | string): string => {
     if (!dateValue) return "";
@@ -38,7 +37,7 @@ export function NewsSection() {
           <ViewMoreButton href="/news" />
         </div>
 
-        {news === undefined ? (
+        {news === undefined || loading ? (
           // Loading state
           <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
             {[1, 2, 3].map((i) => (

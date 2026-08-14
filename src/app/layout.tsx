@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { SiteHeader } from "@/components/layout/SiteHeader";
-import ConvexClientProvider from "./ConvexClientProvider";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import "./globals.css";
 
@@ -22,13 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full antialiased">
       <body className="flex min-h-full flex-col font-sans text-hmc-text">
-        <ConvexClientProvider>
-          <AuthProvider>
-            <SiteHeader />
-            <main className="flex-1">{children}</main>
-            <SiteFooter />
-          </AuthProvider>
-        </ConvexClientProvider>
+        <AuthProvider>
+          <SiteHeader />
+          <main className="flex-1">{children}</main>
+          <SiteFooter />
+        </AuthProvider>
       </body>
     </html>
   );

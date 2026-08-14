@@ -3,25 +3,20 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useQuery } from "convex/react";
-import { api } from "@/lib/convex";
+import { useNewsById } from "@/lib/api";
 import { CommentSection } from "@/components/comments/CommentSection";
 
 export default function NewsDetailPage() {
   const params = useParams();
   const articleId = params.id as string;
-
-  const article = useQuery(
-    api.admin.getNewsById,
-    articleId ? { id: articleId as any } : "skip"
-  );
+  const { data: article, loading } = useNewsById(articleId);
 
   const [readProgress, setReadProgress] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxImage, setLightboxImage] = useState("");
   const [isVisible, setIsVisible] = useState(false);
 
-  const loading = !articleId || article === undefined;
+  const pageLoading = !articleId || loading;
 
   useEffect(() => {
     setIsVisible(true);
@@ -77,7 +72,7 @@ export default function NewsDetailPage() {
     setShowLightbox(true);
   };
 
-  if (loading) {
+  if (pageLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

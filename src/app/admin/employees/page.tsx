@@ -2,8 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@/lib/convex";
+import { useUsers, createUser, updateUser, deleteUser } from "@/lib/api";
 
 interface Employee {
   _id: string;
@@ -25,7 +24,6 @@ export default function EmployeesPage() {
   const router = useRouter();
   const [isClient, setIsClient] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [currentUserEmail, setCurrentUserEmail] = useState<string>("");
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
@@ -34,35 +32,14 @@ export default function EmployeesPage() {
   const [newAvatar, setNewAvatar] = useState("");
   const [newRole, setNewRole] = useState<"super_admin" | "operator" | "member">("member");
 
-  // Client-side check
+  const { data: employeesResult, loading, refetch } = useUsers();
+
   useEffect(() => {
     setIsClient(true);
-    // Check admin login status from sessionStorage
     const loggedIn = sessionStorage.getItem("adminLoggedIn") === "true";
     setIsLoggedIn(loggedIn);
-    // Also get user email from localStorage
-    const userData = localStorage.getItem("user_data");
-    if (userData) {
-      try {
-        const user = JSON.parse(userData);
-        setCurrentUserEmail(user.email);
-      } catch (e) {
-        // ignore parse errors
-      }
-    }
   }, []);
 
-  // Query employees
-  const employeesResult = useQuery(
-    api.admin.listEmployees,
-    isClient && isLoggedIn && currentUserEmail ? { callerEmail: currentUserEmail } : "skip"
-  );
-
-  // Mutations
-  const createEmployeeFn = useMutation(api.admin.createEmployee);
-  const toggleUserStatusFn = useMutation(api.admin.toggleUserStatus);
-  const updateUserRoleFn = useMutation(api.admin.updateUserRole);
-  const deleteUserFn = useMutation(api.admin.deleteUser);// Listen for messages
   useEffect(() => {
     if (message) {
       const timer = setTimeout(() => setMessage(null), 4000);
@@ -70,7 +47,6 @@ export default function EmployeesPage() {
     }
   }, [message]);
 
-  // Redirect if not logged in
   useEffect(() => {
     if (isClient && !isLoggedIn) {
       router.push("/admin/login");
@@ -85,31 +61,30 @@ export default function EmployeesPage() {
     }
 
     try {
-      const result = await createEmployeeFn({
-        callerEmail: currentUserEmail,
+      await createUser({
         email: newEmail,
         username: newUsername,
         avatar: newAvatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${newUsername}`,
         role: newRole,
       });
-      setMessage({ type: "success", text: result.message });
+      setMessage({ type: "success", text: "Employee created successfully" });
       setShowCreateModal(false);
       setNewEmail("");
       setNewUsername("");
       setNewAvatar("");
       setNewRole("member");
+      refetch();
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Failed to create" });
     }
   };
 
-  const handleToggleStatus = async (userId: string) => {
+  const handleToggleStatus = async (userId: string, currentStatus: string) => {
     try {
-      const result = await toggleUserStatusFn({
-        callerEmail: currentUserEmail,
-        userId: userId as any,
-      });
-      setMessage({ type: "success", text: result.message });
+      const newStatus = currentStatus === "active" ? "disabled" : "active";
+      await updateUser(userId, { status: newStatus });
+      setMessage({ type: "success", text: `User ${newStatus === "active" ? "enabled" : "disabled"}` });
+      refetch();
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Operation failed" });
     }
@@ -117,12 +92,9 @@ export default function EmployeesPage() {
 
   const handleUpdateRole = async (userId: string, newRole: "super_admin" | "operator" | "member") => {
     try {
-      const result = await updateUserRoleFn({
-        callerEmail: currentUserEmail,
-        userId: userId as any,
-        newRole,
-      });
-      setMessage({ type: "success", text: result.message });
+      await updateUser(userId, { role: newRole });
+      setMessage({ type: "success", text: "Role updated" });
+      refetch();
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Operation failed" });
     }
@@ -131,11 +103,9 @@ export default function EmployeesPage() {
   const handleDeleteUser = async (userId: string) => {
     if (!confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
     try {
-      const result = await deleteUserFn({
-        callerEmail: currentUserEmail,
-        userId: userId as any,
-      });
-      setMessage({ type: "success", text: result.message });
+      await deleteUser(userId);
+      setMessage({ type: "success", text: "User deleted" });
+      refetch();
     } catch (err: any) {
       setMessage({ type: "error", text: err.message || "Delete failed" });
     }
@@ -149,7 +119,6 @@ export default function EmployeesPage() {
     });
   };
 
-  // Show loading if not client-side yet
   if (!isClient || !isLoggedIn) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -161,38 +130,7 @@ export default function EmployeesPage() {
     );
   }
 
-  // Handle Convex query result
-  if (employeesResult === undefined || employeesResult === null) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-500">Loading...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Check if it's an error object
-  if (typeof employeesResult === "object" && !Array.isArray(employeesResult)) {
-    const errorObj = employeesResult as { message?: string };
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center p-8 bg-red-50 rounded-lg max-w-md">
-          <h2 className="text-xl font-bold text-red-600 mb-2">Access Denied</h2>
-          <p className="text-gray-600 mb-4">{errorObj.message || "You do not have permission to access this page"}</p>
-          <button
-            onClick={() => router.push("/")}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Back to Home
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  const employees: Employee[] = Array.isArray(employeesResult) ? employeesResult : [];
+  const employees: any[] = employeesResult || [];
   const activeCount = employees.filter(e => e.status === "active").length;
   const disabledCount = employees.filter(e => e.status === "disabled").length;
 
@@ -209,12 +147,19 @@ export default function EmployeesPage() {
               <span className="text-red-500"> | Disabled {disabledCount}</span>
             </p>
           </div>
-          <div className="flex items-center gap-2"><button
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => refetch()}
+              className="px-4 py-2 border border-gray-300 bg-white text-gray-700 rounded-lg hover:bg-gray-50"
+            >
+              Refresh
+            </button>
+            <button
               onClick={() => setShowCreateModal(true)}
               className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 flex items-center gap-2"
             >
               <span>+</span> New Employee
-          </button>
+            </button>
           </div>
         </div>
 
@@ -238,74 +183,85 @@ export default function EmployeesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {employees.map((employee) => (
-                <tr key={employee._id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center gap-3">
-                      <img
-                        src={employee.avatar}
-                        alt={employee.username}
-                        className="w-10 h-10 rounded-full bg-gray-200"
-                      />
-                      <div>
-                        <div className="font-medium text-gray-900">{employee.username}</div>
-                        <div className="text-sm text-gray-500">{employee.email}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <select
-                      value={employee.role}
-                      onChange={(e) => handleUpdateRole(employee._id, e.target.value as any)}
-                      className={`px-2 py-1 rounded text-xs font-medium border-0 ${ROLE_COLORS[employee.role] || ROLE_COLORS.member}`}
-                    >
-                      <option value="super_admin">Super Admin</option>
-                      <option value="operator">Operator</option>
-                      <option value="member">Member</option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded text-xs font-medium ${
-                      employee.status === "active" 
-                        ? "bg-green-100 text-green-700" 
-                        : "bg-red-100 text-red-700"
-                    }`}>
-                      {employee.status === "active" ? "Active" : "Disabled"}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {formatDate(employee.createdAt)}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleToggleStatus(employee._id)}
-                        className={`px-3 py-1 rounded text-xs font-medium ${
-                          employee.status === "active"
-                            ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
-                            : "bg-green-100 text-green-700 hover:bg-green-200"
-                        }`}
-                      >
-                        {employee.status === "active" ? "Disable" : "Enable"}
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(employee._id)}
-                        className="px-3 py-1 rounded text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200"
-                      >
-                        Delete
-                      </button>
-                    </div>
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
+                    Loading...
                   </td>
                 </tr>
-              ))}
+              ) : employees.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
+                    No employees found
+                  </td>
+                </tr>
+              ) : (
+                employees.map((employee) => (
+                  <tr key={employee._id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-3">
+                        <img
+                          src={employee.avatar}
+                          alt={employee.username}
+                          className="w-10 h-10 rounded-full bg-gray-200"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = `https://api.dicebear.com/7.x/avataaars/svg?seed=${employee.username}`;
+                          }}
+                        />
+                        <div>
+                          <div className="font-medium text-gray-900">{employee.username}</div>
+                          <div className="text-sm text-gray-500">{employee.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <select
+                        value={employee.role}
+                        onChange={(e) => handleUpdateRole(employee._id, e.target.value as any)}
+                        className={`px-2 py-1 rounded text-xs font-medium border-0 ${ROLE_COLORS[employee.role] || ROLE_COLORS.member}`}
+                      >
+                        <option value="super_admin">Super Admin</option>
+                        <option value="operator">Operator</option>
+                        <option value="member">Member</option>
+                      </select>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded text-xs font-medium ${
+                        employee.status === "active" 
+                          ? "bg-green-100 text-green-700" 
+                          : "bg-red-100 text-red-700"
+                      }`}>
+                        {employee.status === "active" ? "Active" : "Disabled"}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {formatDate(employee.createdAt)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleToggleStatus(employee._id, employee.status)}
+                          className={`px-3 py-1 rounded text-xs font-medium ${
+                            employee.status === "active"
+                              ? "bg-yellow-100 text-yellow-700 hover:bg-yellow-200"
+                              : "bg-green-100 text-green-700 hover:bg-green-200"
+                          }`}
+                        >
+                          {employee.status === "active" ? "Disable" : "Enable"}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(employee._id)}
+                          className="px-3 py-1 rounded text-xs font-medium bg-red-100 text-red-700 hover:bg-red-200"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
-
-          {employees.length === 0 && (
-            <div className="text-center py-12 text-gray-500">
-              No employees found
-            </div>
-          )}
         </div>
       </div>
 
@@ -351,7 +307,7 @@ export default function EmployeesPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                 <select
                   value={newRole}
-                  onChange={(e) => setNewRole(e.target.value as "super_admin" | "operator" | "member")}
+                  onChange={(e) => setNewRole(e.target.value as any)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md"
                 >
                   <option value="member">Member</option>

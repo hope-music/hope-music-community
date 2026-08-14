@@ -3,21 +3,20 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useQuery } from "@/lib/convex";
-import { api } from "@/lib/convex";
+import { useInsightById } from "@/lib/api";
 import { CommentSection } from "@/components/comments/CommentSection";
 
 export default function InsightsDetailPage() {
   const params = useParams();
   const slug = params.slug as string;
-  const insight = useQuery(api.admin.getInsightById, { id: slug as any }) as any;
+  const { data: insight, loading } = useInsightById(slug);
 
   const [readProgress, setReadProgress] = useState(0);
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxImage, setLightboxImage] = useState("");
   const [isVisible, setIsVisible] = useState(false);
 
-  const loading = !slug || insight === undefined;
+  const pageLoading = !slug || loading;
 
   useEffect(() => {
     setIsVisible(true);
@@ -73,7 +72,7 @@ export default function InsightsDetailPage() {
     setShowLightbox(true);
   };
 
-  if (loading) {
+  if (pageLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
